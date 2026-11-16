@@ -1,6 +1,6 @@
 # ⚡ Ladder Master — PLC Merdiven Mantığı Bulmacası
 
-*PLC ladder logic puzzle game for mobile — Türkçe / English* · **Sürüm v1.0.4**
+*PLC ladder logic puzzle game for mobile — Türkçe / English* · **Sürüm v1.0.5**
 
 Telefon ekranı için tasarlanmış, tarayıcıda çalışan bir **PLC Ladder (merdiven) mantık bulmaca oyunu**.
 Tek bir HTML dosyası; harici kütüphane, görsel veya ses dosyası yok.
@@ -11,7 +11,7 @@ Tek bir HTML dosyası; harici kütüphane, görsel veya ses dosyası yok.
 Ya da `index.html` dosyasını tarayıcıda aç.
 
 ## Özellikler
-- **Yol haritası:** Temel Mantık, Zamanlayıcılar, Sayıcılar — her biri sonsuz, giderek zorlaşan bir yol; her 10. bölüm 🔥 Ekstra Zor
+- **Yol haritası:** tek, sonsuz ve giderek zorlaşan bir yol. Temel mantıkla başlar, 16. bölümde zamanlayıcılar, 36. bölümde sayıcılar katılır, sonra hepsi karışık gelir; her 10. bölüm 🔥 Ekstra Zor
 - **Sanal PLC:** 20 ms scan cycle; Açık/Kapalı kontak, Bobin, Set/Reset, TON, TOF, CTU, CTD, paralel kol (OR)
 - **Canlı izleme:** RUN modunda enerjili hatlar neon yeşil, zamanlayıcı/sayıcı değerleri canlı
 - **Fabrika simülasyonu:** konveyör, sensörler, pistonlar, dolum valfi, boya kabini, lambalar
@@ -32,7 +32,7 @@ Kaynak `src/` klasöründe parçalar halinde durur:
 
 ```sh
 ./build.sh                      # src/ → index.html
-node tests/levels.test.js       # her yolun ilk 400 bölümünü referans çözümle doğrular
+node tests/levels.test.js       # yolun ilk 1200 bölümünü referans çözümle doğrular
 ```
 
 Yeni bölüm tipi eklemek için `gen.js` içindeki `TPL` dizisine bir şablon fonksiyonu eklemek yeterli.

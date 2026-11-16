@@ -5,7 +5,7 @@ function run(lv,prog,maxT=200){ const w=new M.World(lv),p=new M.PLC(),bot=lv.bot
   for(;t<maxT;t+=M.SCAN){ bot(w,a=>w.press(a),t); const iv=w.sense(); for(const k in iv)p.b[k]=iv[k]; p.scan(prog,20); w.advance(p.b,M.SCAN); if(w.err||w.done)break; }
   return w; }
 let bad=0,maxT=0; const fails={};
-const IDS=[]; for(let c=0;c<3;c++) for(let i=0;i<400;i++) IDS.push(c*M.ROAD+i);
+const IDS=[]; for(let i=0;i<1200;i++) IDS.push(i);
 for(const id of IDS){ const lv=M.getLevel(id); const w=run(lv,lv.sol);
   if(!(w.done&&!w.err)){ bad++; const key=id+' '+lv.title; if(Object.keys(fails).length<25) fails[key]=(w.err||'')+' | '+w.goalList().map(g=>g.l+(g.ok?'✔':'·')).join(' ')+' t='+w.t.toFixed(1);}
   maxT=Math.max(maxT,w.t);

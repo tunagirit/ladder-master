@@ -281,6 +281,11 @@ html[data-theme=light] #io{background:#1a222c}
 .mapbar{position:sticky;top:-14px;z-index:5;background:var(--bg);margin:-14px -14px 0;padding:14px}
 @keyframes bob{50%{transform:translate(-50%,-56%)}}
 @keyframes ring{from{transform:scale(.85);opacity:.7}to{transform:scale(1.25);opacity:0}}
+.nd s.tp{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:16px;height:4px;border-radius:2px;opacity:.85}
+.nd.cur s.tp{bottom:9px}
+.pic{flex:0 0 46px;height:46px;border-radius:10px;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;background:var(--icb)}
+.pic svg *{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+.pic svg text{fill:currentColor;stroke:none;font:700 11px ui-monospace,monospace;text-anchor:middle}
 </style></head><body>
 <div id="app">
  <div id="top"><button class="ib" id="bMenu" aria-label="Menu">☰</button><div id="title"></div><span id="pill">STOP</span><button class="ib" id="bSnd">🔊</button></div>

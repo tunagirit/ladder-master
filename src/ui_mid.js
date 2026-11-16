@@ -11,7 +11,7 @@ function loadLevel(id,quiet){
   if(!quiet&&S.fresh.length) setTimeout(()=>showIntro(S.fresh),150);
   else if(!quiet&&lv.extra&&!S.view) toast('🔥 '+tx('Ekstra zor bölüm — bol şans!','Extra hard level — good luck!'));
 }
-function lvLabel(lv){ return `${CATS[lv.cat].n} · ${tx('Bölüm','Level')} ${lv.n+1}`; }
+function lvLabel(lv){ return `${tx('Bölüm','Level')} ${lv.n+1} · ${CATS[lv.cat].n}`; }
 function setHeader(){ const lv=S.lv, C=CATS[lv.cat];
   $('#title').innerHTML=`<small style="color:${lv.extra?'var(--red)':C.c}">${lvLabel(lv).toUpperCase()}${lv.extra?' · 🔥 '+tx('EKSTRA ZOR','EXTRA HARD'):''}</small>${lv.title}`;
   $('#task').innerHTML=esc(lv.task).replace(/\b([IQMTC]\d\.\d|[TC]\d)\b/g,'<b>$1</b>'); }

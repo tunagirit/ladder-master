@@ -263,25 +263,29 @@ const TPL=[
     [mDivert,mCtdTwo(false),mRestart(false)],
     [hFinal,mCtdTwo(true),mRestart(true)] ]];
 const LV_CACHE={};
-// yoldaki i. bölüm için şablon seçimi (saf fonksiyon: aynı i her zaman aynı bölümü verir)
-function pickTpl(c,i){
-  const E=TPL[c][0], M=TPL[c][1], H=TPL[c][2];
-  if(isExtra(i)) return {pool:2, t:Math.floor(mkRng(c*977+i*31+5)()*H.length)};
-  if(i<E.length) return {pool:0, t:i};                       // ilk bölümler sırayla: elemanlar adım adım tanıtılır
-  const r=mkRng(c*7919+i*104729+17);
-  const pm=Math.max(0,Math.min(0.85,(i-E.length)/60));       // ilerledikçe orta seviye şablon olasılığı artar
-  const pool=r()<pm?1:0, P=pool?M:E;
-  return {pool, t:Math.floor(r()*P.length)};
+// TEK YOL: tüm konular bir arada. Konular sırayla tanıtılır, sonra karışık gelir.
+const TOPIC_START=[0,15,35];          // temel mantık, zamanlayıcılar, sayıcılar ilk kez bu bölümde
+function intro(i){ for(let c=0;c<3;c++){ const k=i-TOPIC_START[c]; if(k>=0&&k<TPL[c][0].length&&(c===0||k<3)) return {c,pool:0,t:k}; } return null; }
+function pickTpl(i){
+  const r=mkRng(i*104729+17);
+  const open=[0,1,2].filter(c=>i>=TOPIC_START[c]+3);                 // tanıtımı bitmiş konular
+  if(isExtra(i)){ const c=open[Math.floor(r()*open.length)]; return {c,pool:2,t:Math.floor(r()*TPL[c][2].length)}; }
+  const fx=intro(i); if(fx) return fx;
+  const w=open.map(c=>i-TOPIC_START[c]<28?2:1);                       // yeni açılan konu ilk bölümlerinde biraz daha sık gelsin
+  let x=r()*w.reduce((a,b)=>a+b,0), c=open[0]; for(let j=0;j<open.length;j++){ x-=w[j]; if(x<0){ c=open[j]; break; } }
+  const pm=Math.max(0,Math.min(0.85,(i-TOPIC_START[c]-6)/50));       // konu içinde orta seviye olasılığı zamanla artar
+  const pool=r()<pm?1:0, P=TPL[c][pool];
+  return {c,pool,t:Math.floor(r()*P.length)};
 }
 function getLevel(id){
   if(LV_CACHE[id]) return LV_CACHE[id];
-  const cat=Math.floor(id/ROAD), n=id%ROAD;
-  let p=pickTpl(cat,n);
-  if(n>0&&!isExtra(n)){ const q=pickTpl(cat,n-1); if(q.pool===p.pool&&q.t===p.t){ const L=TPL[cat][p.pool].length; p={pool:p.pool,t:(p.t+1)%L}; } }
+  const n=id;
+  let p=pickTpl(n);
+  if(n>0&&!isExtra(n)){ const q=pickTpl(n-1); if(q.c===p.c&&q.pool===p.pool&&q.t===p.t){ const L=TPL[p.c][p.pool].length; p=Object.assign({},p,{t:(p.t+1)%L}); } }
   const r=mkRng(id*7919+13);
-  const k=isExtra(n)?Math.min(1,0.45+n/160):Math.min(1,n/120);  // parametre zorluğu (hız, adet, süre)
-  const lv=TPL[cat][p.pool][p.t](r,k,n);
-  if(isExtra(n)){ lv.scene.speed=Math.round(lv.scene.speed*1.15); }
-  Object.assign(lv,{id,cat,diff:p.pool,n,extra:isExtra(n)}); lv.opt=countBlocks(lv.sol);
+  const k=isExtra(n)?Math.min(1,0.45+n/200):Math.min(1,n/160);
+  const lv=TPL[p.c][p.pool][p.t](r,k,n);
+  if(isExtra(n)) lv.scene.speed=Math.round(lv.scene.speed*1.15);
+  Object.assign(lv,{id,cat:p.c,diff:p.pool,n,extra:isExtra(n)}); lv.opt=countBlocks(lv.sol);
   return LV_CACHE[id]=lv;
 }
