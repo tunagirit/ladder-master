@@ -1,7 +1,7 @@
 /* ---------- HESAP & LİDERLİK TABLOSU (Supabase REST) ---------- */
 // Supabase proje ayarları (Project Settings → API). Boşsa çevrimiçi özellikler kapalı.
-const SB_URL='';
-const SB_KEY='';
+const SB_URL='https://uqjhhyuwgrqkhvdkqezm.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxamhoeXV3Z3Jxa2h2ZGtxZXptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4MzUwMTgsImV4cCI6MjExMDQxMTAxOH0.tbRbfqYHlijk6KrmrjgHxC0RJX_wsGstfABezToGTAI';
 const NET={ok:!!(SB_URL&&SB_KEY), sess:null, busy:false, lastPush:0};
 const MAILDOM='@users.laddermaster.app';
 try{ NET.sess=JSON.parse(localStorage.getItem('lm_sess')||'null'); }catch(e){}
