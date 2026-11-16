@@ -7,7 +7,7 @@ function setPill(){ const p=$('#pill'); if(world.err){p.textContent=tx('HATA','F
 function startSim(){
   if(!countBlocks(S.prog)){ toast(tx('Program boş — önce ladder satırlarını doldur','Program is empty — fill in the ladder rungs first')); return; }
   Snd.init(); $('#err').style.display='none'; closeAll();
-  world.reset(); plc.reset(); S.running=true; $('#run').textContent='■ STOP'; $('#run').classList.add('on'); setPill(); Snd.click();
+  world.reset(); plc.reset(); idleT=0; S.running=true; $('#run').textContent='■ STOP'; $('#run').classList.add('on'); setPill(); Snd.click();
 }
 function stopSim(silent){
   S.running=false; if(world) world.reset(); plc.reset(); $('#err').style.display='none';

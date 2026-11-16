@@ -1,4 +1,12 @@
 /* ---------- Ana döngü ---------- */
+// bant uzun süre duruyor, kutular bekliyor ve START butonu varsa oyuncuya hatırlat
+let idleT=0;
+function idleNudge(dt){
+  const sc=world.sc, st=S.lv.io.I.find(d=>d.n==='START'||d.k==='btn');
+  const waiting=!world.motor&&world.boxes.some(b=>b.st==='belt')&&!S.lv.scene.ackA;
+  if(!waiting||!st||!sc.startA){ idleT=0; return; }
+  idleT+=dt*S.speed; if(idleT>3.5){ idleT=-30; Hap.tap(); toast(tx(`⏸ Bant duruyor — devam etmek için START (${sc.startA}) butonuna bas`,`⏸ Belt is stopped — press START (${sc.startA}) to continue`)); }
+}
 let last=performance.now(), acc=0, fr=0;
 function scanOnce(){
   const iv=world.sense(); for(const k in iv) plc.b[k]=iv[k];
@@ -14,6 +22,7 @@ function frame(now){
   if(S.running){ acc+=dt*S.speed; let n=0; while(acc>=SCAN&&n<300&&S.running){ scanOnce(); acc-=SCAN; n++; } } else acc=0;
   const mOpen=$('#menu').classList.contains('show');
   if(mOpen&&S.mscr==='main') drawMenuAnim(now);
+  if(S.running&&world&&!world.err&&!world.done) idleNudge(dt);
   if(!mOpen){ drawScene(); if((fr++&1)===0){ updateLive(); updatePanel(); } }
   requestAnimationFrame(frame);
 if(me()) pullProgress().catch(()=>{});
