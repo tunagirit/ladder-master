@@ -16,6 +16,7 @@ function frame(now){
   if(mOpen&&S.mscr==='main') drawMenuAnim(now);
   if(!mOpen){ drawScene(); if((fr++&1)===0) updateLive(); }
   requestAnimationFrame(frame);
+if(me()) pullProgress().catch(()=>{});
 }
 function relayout(){ resizeCanvas(); if(S.prog){ const cw=calcCW(); if(cw!==S.cw) renderLadder(); } }
 window.addEventListener('resize',relayout); if(window.ResizeObserver) new ResizeObserver(relayout).observe($('#sceneWrap'));
@@ -25,3 +26,4 @@ resizeCanvas(); loadLevel(save.last>=0&&save.last<TOTAL?save.last:0,true);
 showMenu('main');
 if(!save.intro){ card(`<h3>⚡ ${tx('Ladder Master\'a hoş geldin!','Welcome to Ladder Master!')}</h3>${HOW()}<div class="brow"><button class="btn pri wide" id="ok">${tx('Başlayalım','Let\'s go')}</button></div>`,e=>{ if(e.target.id==='ok'){ save.intro=true; persist(); closeAll(); showMenu('main'); } }); }
 requestAnimationFrame(frame);
+if(me()) pullProgress().catch(()=>{});

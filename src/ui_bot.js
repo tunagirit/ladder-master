@@ -38,7 +38,7 @@ function onWin(){
   S.running=false; $('#run').textContent='▶ RUN'; $('#run').classList.remove('on'); setPill();
   const wasView=S.view, first=!save.done[S.id], n=countBlocks(S.prog), lv=S.lv;
   save.done[S.id]={prog:{rungs:clone(S.prog.rungs)},tags:customTags(S.tags)}; delete save.draft[S.id]; persist();
-  S.redo=false; S.view=true; refreshMode(); Snd.win();
+  S.redo=false; S.view=true; refreshMode(); Snd.win(); schedulePush();
   setTimeout(()=>{ if(!world.done) return;
     const nx=lv.n<PER-1?S.id+1:null;
     card(`<h3 style="color:var(--neon);font-size:21px">${tx('BÖLÜM TAMAM!','LEVEL COMPLETE!')}</h3><div class="gain">${first?tx('+1 PUAN','+1 POINT'):wasView?tx('✔ Çözüm çalışıyor','✔ Solution works'):tx('✔ Çözüm güncellendi','✔ Solution updated')}</div>
@@ -58,9 +58,10 @@ function showMenu(scr,cat,diff){
     const L=save.last>=0?getLevel(save.last):null;
     h=`<div class="mm"><canvas id="mcv"></canvas><div class="mm-title">LADDER<span>MASTER</span></div><div class="mm-sub">${tx('PLC MERDİVEN MANTIĞI BULMACASI','PLC LADDER LOGIC PUZZLE')}</div>
     <div class="pts">⚡ ${points()} / ${TOTAL} ${tx('puan','points')}</div>
+    <button class="acct" data-go="acct">${me()?`👤 <b>${esc(me().username)}</b>`:tx('👤 Giriş yap / Kayıt ol','👤 Sign in / Sign up')}</button>
     <button class="bigbtn play" data-go="cats">${tx('▶ OYNA','▶ PLAY')}</button>
     ${L?`<button class="bigbtn" data-go="cont">${tx('⏵ Devam Et','⏵ Continue')} <small>${CATS[L.cat].n} · ${DIFFS[L.diff].n} ${L.n+1}</small></button>`:''}
-    <button class="bigbtn" data-go="prog">${tx('🏆 İlerleme','🏆 Progress')}</button>
+    <div class="brow2"><button class="bigbtn" data-go="board">${tx('🏆 Liderlik','🏆 Leaderboard')}</button><button class="bigbtn" data-go="prog">${tx('📊 İlerleme','📊 Progress')}</button></div>
     <button class="bigbtn" data-go="how">${tx('❓ Nasıl Oynanır','❓ How to Play')}</button>
     <button class="bigbtn" data-go="set">${tx('⚙ Ayarlar','⚙ Settings')}</button></div>`;
   } else if(scr==='cats'){
@@ -88,10 +89,28 @@ function showMenu(scr,cat,diff){
     <div class="grp">${tx('OYUN','GAME')}</div>
     <button class="mi" data-go="snd">${save.sound?tx('🔊 Ses: Açık','🔊 Sound: On'):tx('🔇 Ses: Kapalı','🔇 Sound: Off')}</button>
     <button class="mi" data-go="rst" style="color:var(--redt)">${tx('↺ Tüm ilerlemeyi sıfırla','↺ Reset all progress')}</button>`;
+  } else if(scr==='acct'){
+    if(me()) h=`<div class="topbar">${back('main')}<h3>${tx('Hesabım','My Account')}</h3></div>
+      <div class="prof"><div class="av">${esc(me().username[0].toUpperCase())}</div><b>${esc(me().username)}</b><span>⚡ ${points()} ${tx('puan','points')}</span></div>
+      <p class="t">${tx('İlerlemen bu hesaba kaydediliyor. Başka bir cihazda aynı kullanıcı adıyla giriş yaparsan çözümlerin ve puanın gelir.','Your progress is saved to this account. Sign in with the same username on another device to get your solutions and points.')}</p>
+      <button class="mi" data-go="sync">${tx('⟳ Şimdi senkronize et','⟳ Sync now')}</button>
+      <button class="mi" data-go="board">${tx('🏆 Liderlik tablosu','🏆 Leaderboard')}</button>
+      <button class="mi" data-go="out" style="color:var(--redt)">${tx('⎋ Çıkış yap','⎋ Sign out')}</button>`;
+    else h=`<div class="topbar">${back('main')}<h3>${S.mreg?tx('Kayıt Ol','Sign Up'):tx('Giriş Yap','Sign In')}</h3></div>
+      ${NET.ok?'':`<p class="t" style="color:var(--amb)">${tx('Çevrimiçi hesaplar henüz yapılandırılmadı.','Online accounts are not configured yet.')}</p>`}
+      <div class="fld"><label>${tx('Kullanıcı adı','Username')}</label><input id="uN" maxlength="16" autocomplete="username" autocapitalize="off" placeholder="${tx('ör: tuna_plc','e.g. tuna_plc')}"></div>
+      <div class="fld"><label>${tx('Şifre','Password')}</label><input id="uP" type="password" autocomplete="${S.mreg?'new-password':'current-password'}" placeholder="••••••"></div>
+      <p class="t" id="uErr" style="color:var(--red);min-height:1.4em;margin:6px 0"></p>
+      <button class="bigbtn play" data-go="${S.mreg?'doReg':'doLogin'}" style="min-height:52px;font-size:17px">${S.mreg?tx('Kayıt Ol','Sign Up'):tx('Giriş Yap','Sign In')}</button>
+      <button class="mi" data-go="tog" style="margin-top:10px;text-align:center">${S.mreg?tx('Hesabın var mı? Giriş yap','Have an account? Sign in'):tx('Hesabın yok mu? Kayıt ol','No account? Sign up')}</button>
+      <p class="t" style="font-size:11.5px;color:var(--dim)">${tx('Kullanıcı adın liderlik tablosunda herkese görünür. 3-16 karakter: harf, rakam, alt çizgi.','Your username is visible to everyone on the leaderboard. 3-16 chars: letters, digits, underscore.')}</p>`;
+  } else if(scr==='board'){
+    h=`<div class="topbar">${back('main')}<h3>${tx('🏆 Liderlik Tablosu','🏆 Leaderboard')}</h3><button class="ib" data-go="board">⟳</button></div><div id="brd"><p class="t" style="text-align:center">${tx('Yükleniyor…','Loading…')}</p></div>`;
   } else if(scr==='how'){
     h=`<div class="topbar">${back('main')}<h3>${tx('Nasıl Oynanır?','How to Play')}</h3></div>${HOW()}<div class="cat">${tx('ELEMAN REHBERİ','ELEMENT GUIDE')}</div>${ELEM_ORDER.map(k=>`<div class="gcard">${elemHTML(k,true)}</div>`).join('')}<button class="bigbtn play" data-go="cats" style="margin-top:12px">${tx('▶ OYNA','▶ PLAY')}</button>`;
   }
   $('#menuIn').innerHTML=h; $('#menuIn').scrollTop=0; $('#menu').classList.add('show');
+  if(scr==='board') loadBoard();
   if(scr==='grid'){ const cur=$('#menuIn .lv5.cur'); if(cur) cur.scrollIntoView({block:'center'}); }
 }
 const HOW=()=>tx(`<p class="t"><b>Amaç:</b> Görevdeki fabrika makinesini ladder (merdiven) diyagramı ile programla.</p>
@@ -115,11 +134,21 @@ $('#menuIn').onclick=e=>{
   else if(g==='grid') showMenu('grid',+b.dataset.c,+b.dataset.d);
   else if(g==='cont') loadLevel(save.last);
   else if(g==='lvl'){ const id=+b.dataset.id; if(!unlocked(id)){ toast(tx('Önce önceki bölümü tamamla','Complete the previous level first')); return; } loadLevel(id); }
+  else if(g==='acct'){ S.mreg=false; showMenu('acct'); }
+  else if(g==='board') showMenu('board');
+  else if(g==='tog'){ S.mreg=!S.mreg; showMenu('acct'); }
+  else if(g==='doLogin'||g==='doReg'){ if(NET.busy) return; const u=$('#uN').value.trim(), p=$('#uP').value, er=$('#uErr');
+    if(!NET.ok){ er.textContent=tx('Çevrimiçi hesaplar henüz yapılandırılmadı.','Online accounts are not configured yet.'); return; }
+    NET.busy=true; b.disabled=true; er.style.color='var(--dim)'; er.textContent=tx('Bağlanıyor…','Connecting…');
+    (g==='doReg'?register(u,p):login(u,p)).then(()=>{ toast(tx('Hoş geldin, ','Welcome, ')+me().username+'!'); showMenu('main'); })
+      .catch(e=>{ er.style.color='var(--red)'; er.textContent=e.msg||String(e); }).finally(()=>{ NET.busy=false; b.disabled=false; }); }
+  else if(g==='out'){ logout(); toast(tx('Çıkış yapıldı','Signed out')); showMenu('main'); }
+  else if(g==='sync'){ pullProgress().then(n=>{ toast(tx('Senkronize edildi','Synced')+(n?` (+${n})`:'')); showMenu('acct'); }).catch(e=>toast(e.msg||'!')); }
   else if(g==='theme'){ save.theme=b.dataset.v; persist(); applyTheme(); showMenu('set'); }
   else if(g==='lang'){ setLang(b.dataset.v); showMenu('set'); }
   else if(g==='snd'){ setSound(!save.sound); showMenu('set'); }
   else if(g==='rst'){ card(`<h3>${tx('Tüm ilerleme silinsin mi?','Delete all progress?')}</h3><p class="t" style="text-align:center">${tx('Puanlar ve kayıtlı çözümler silinecek.','Points and saved solutions will be deleted.')}</p><div class="brow"><button class="btn wide" id="n">${tx('İptal','Cancel')}</button><button class="btn dan wide" id="y">${tx('Sıfırla','Reset')}</button></div>`,ev=>{
-      if(ev.target.id==='y'){ save.done={}; save.draft={}; save.last=-1; persist(); loadLevel(0); showMenu('main'); } else if(ev.target.id==='n') $('#ovCard').classList.remove('show'); }); }
+      if(ev.target.id==='y'){ save.done={}; save.draft={}; save.last=-1; persist(); if(me()) pushProgress().catch(()=>{}); loadLevel(0,true); showMenu('main'); } else if(ev.target.id==='n') $('#ovCard').classList.remove('show'); }); }
 };
 function drawMenuAnim(now){
   const c=document.getElementById('mcv'); if(!c) return; const r=c.getBoundingClientRect(); if(!r.width) return;
@@ -161,4 +190,20 @@ function setLang(l){
   if(S.lv){ const lv=S.lv=getLevel(S.id); S.tags=Object.assign(defaultTags(lv),customTags(S.tags)); world=new World(lv); plc.reset(); stopSim(true);
     const D=DIFFS[lv.diff]; $('#title').innerHTML=`<small style="color:${D.c}">${D.n[0]}${lv.n+1}</small>${lv.title}`; $('#task').textContent=lv.task;
     buildPalette(); refreshMode(); renderLadder(); }
+}
+
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function loadBoard(){
+  const el=()=>document.getElementById('brd'); if(!el()) return;
+  if(!NET.ok){ el().innerHTML=`<p class="t" style="text-align:center;color:var(--amb)">${tx('Çevrimiçi liderlik tablosu henüz yapılandırılmadı.','The online leaderboard is not configured yet.')}</p>`; return; }
+  try{
+    if(me()&&Date.now()-NET.lastPush>3000) await pushProgress().catch(()=>{});
+    const {list,rank}=await fetchBoard(); if(!el()) return;
+    const medal=i=>i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+    let h=me()?`<div class="myr">${tx('Senin sıran','Your rank')}: <b>#${rank||'—'}</b> · ⚡ ${points()}</div>`
+      :`<button class="mi" data-go="acct" style="text-align:center;color:var(--neon)">${tx('👤 Listeye girmek için giriş yap','👤 Sign in to join the leaderboard')}</button>`;
+    h+=list.length?'<div class="lb">'+list.map((x,i)=>`<div class="lbr ${me()&&x.id===me().id?'me':''}"><span class="rk">${medal(i)}</span><span class="nm">${esc(x.username)}</span><span class="sc">⚡ ${x.points}</span></div>`).join('')+'</div>'
+      :`<p class="t" style="text-align:center">${tx('Henüz kimse yok — ilk sen ol!','No one yet — be the first!')}</p>`;
+    el().innerHTML=h;
+  }catch(e){ if(el()) el().innerHTML=`<p class="t" style="text-align:center;color:var(--red)">${esc(e.msg||tx('Yüklenemedi','Could not load'))}</p>`; }
 }

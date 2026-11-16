@@ -36,3 +36,11 @@ node tests/levels.test.js       # 900 bölümü referans çözümle doğrular
 ```
 
 Yeni bölüm tipi eklemek için `gen.js` içindeki `TPL` dizisine bir şablon fonksiyonu eklemek yeterli.
+
+## Çevrimiçi hesap ve liderlik tablosu (Supabase)
+1. [supabase.com](https://supabase.com) → yeni proje oluştur.
+2. **SQL Editor** → `supabase.sql` dosyasının içeriğini yapıştır → **Run**.
+3. **Authentication → Sign In / Providers → Email** → *Confirm email* seçeneğini **kapat** (kullanıcı adı + şifre ile giriş için).
+4. **Project Settings → API**'den *Project URL* ve *anon public* anahtarını `src/net.js` içindeki `SB_URL` ve `SB_KEY`'e yaz, `./build.sh` çalıştır.
+
+`SB_URL` boşsa oyun çevrimdışı çalışır; hesap ve liderlik ekranları "yapılandırılmadı" der.
