@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="tr" data-theme="dark"><head><meta charset="utf-8">
 <meta name="theme-color" content="#0d1117">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ladder Master">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Ladder Master — PLC Logic Puzzle</title>
 <style>
@@ -286,6 +293,12 @@ html[data-theme=light] #io{background:#1a222c}
 .pic{flex:0 0 46px;height:46px;border-radius:10px;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;background:var(--icb)}
 .pic svg *{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
 .pic svg text{fill:currentColor;stroke:none;font:700 11px ui-monospace,monospace;text-anchor:middle}
+.instb{background:linear-gradient(90deg,color-mix(in srgb,var(--blu) 22%,var(--big)),var(--big));border-color:color-mix(in srgb,var(--blu) 55%,var(--ln))}
+.ishot{display:flex;align-items:center;gap:12px;margin:8px 0 4px;text-align:left}
+.ishot img{width:64px;height:64px;border-radius:15px;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.ishot b{font-size:17px}.ishot small{display:block;color:var(--dim);font-size:12px;margin-top:2px}
+.isteps{text-align:left;font-size:14px;line-height:1.6;margin:10px 0 0;padding-left:20px}
+.isteps b{color:var(--blu)}
 </style></head><body>
 <div id="app">
  <div id="top"><button class="ib" id="bMenu" aria-label="Menu">☰</button><div id="title"></div><span id="pill">STOP</span><button class="ib" id="bSnd">🔊</button></div>
@@ -817,7 +830,7 @@ function getLevel(id){
 }
 /*==UI==*/
 const $=(s,r=document)=>r.querySelector(s);
-const VERSION='v1.0.5';
+const VERSION='v1.0.6';
 const SKEY='ladderustasi_v2';
 let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1,theme:'auto',lang:null,seen:{}};
 try{const s=JSON.parse(localStorage.getItem(SKEY)||'null'); if(s) save=Object.assign(save,s);}catch(e){}
@@ -1333,7 +1346,7 @@ function onWin(){
     <p class="t" style="text-align:center">⚡ <b style="color:var(--neon)">${points()}</b> ${tx('puan','points')}<br>${tx('Kullanılan blok','Blocks used')}: <b>${n}</b> · ${tx('referans','reference')} ${lv.opt}</p>
     ${nx!==null?'<div class="brow"><button class="btn pri wide" id="nx">'+tx('Sonraki Bölüm ▶','Next Level ▶')+'</button></div>':''}
     <div class="brow"><button class="btn wide" id="rt">${tx('👁 Çözümü Gör','👁 View Solution')}</button><button class="btn wide" id="mn">${tx('🗺 Harita','🗺 Map')}</button></div>`,e=>{
-      if(e.target.id==='nx') loadLevel(nx); else if(e.target.id==='rt'){ stopSim(true); closeAll(); renderLadder(); } else if(e.target.id==='mn'){ stopSim(true); closeAll(); showMenu('map'); } }); },700);
+      if(e.target.id==='nx'){ loadLevel(nx); } else if(e.target.id==='rt'){ stopSim(true); closeAll(); renderLadder(); } else if(e.target.id==='mn'){ stopSim(true); closeAll(); showMenu('map'); } }); },700);
 }
 
 /* ---------- MENÜLER ---------- */
@@ -1350,6 +1363,7 @@ function showMenu(scr,cat,diff){
     <button class="bigbtn play" data-go="map">${tx('▶ OYNA','▶ PLAY')}</button>
     ${L?`<button class="bigbtn" data-go="cont">${tx('⏵ Devam Et','⏵ Continue')} <small>${lvLabel(L)}</small></button>`:''}
     <div class="brow2"><button class="bigbtn" data-go="board">${tx('🏆 Liderlik','🏆 Leaderboard')}</button><button class="bigbtn" data-go="prog">${tx('📊 İlerleme','📊 Progress')}</button></div>
+    ${canInstall()?`<button class="bigbtn instb" data-go="install">${tx('📲 Uygulamayı Yükle','📲 Install App')}</button>`:''}
     <button class="bigbtn" data-go="how">${tx('❓ Nasıl Oynanır','❓ How to Play')}</button>
     <button class="bigbtn" data-go="set">${tx('⚙ Ayarlar','⚙ Settings')}</button><div class="ver">Ladder Master ${VERSION}</div></div>`;
   } else if(scr==='map'){
@@ -1392,6 +1406,7 @@ function showMenu(scr,cat,diff){
   $('#menuIn').innerHTML=h; $('#menuIn').scrollTop=0; $('#menu').classList.add('show');
   if(scr==='board') loadBoard();
   if(scr==='map') drawRoad();
+  if(scr==='main') maybeAskInstall();
 }
 const HOW=()=>tx(`<p class="t"><b>Amaç:</b> Görevdeki fabrika makinesini ladder (merdiven) diyagramı ile programla.</p>
 <p class="t"><b>1.</b> Alttaki paletten bir bloğu tutup ızgaradaki boş kutuya <b>sürükle-bırak</b> (ya da bloğa dokunup sonra kutuya dokun).<br>
@@ -1413,6 +1428,7 @@ $('#menuIn').onclick=e=>{
   if(g==='main') S.setBack=null;
   if(g==='main'||g==='cats'||g==='prog'||g==='set'||g==='how') showMenu(g);
   else if(g==='map') showMenu('map');
+  else if(g==='install') installFlow(true);
   else if(g==='cont') loadLevel(save.last);
   else if(g==='lvl'){ const id=+b.dataset.id; if(!unlocked(id)){ toast(tx('Önce önceki bölümü tamamla','Complete the previous level first')); return; } loadLevel(id); }
   else if(g==='acct'){ S.mreg=false; showMenu('acct'); }
@@ -1509,6 +1525,40 @@ function drawRoad(){ const c=0;
   box.innerHTML=h;
   const cur=box.querySelector('.nd.cur'); if(cur){ const m=$('#menuIn'); m.scrollTop=Math.max(0,cur.offsetTop-m.clientHeight*0.55); }
 }
+
+/* ---------- UYGULAMA OLARAK YÜKLEME (PWA) ---------- */
+let deferredInstall=null;
+const isStandalone=()=>(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const canInstall=()=>!isStandalone()&&(!!deferredInstall||isIOS());
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredInstall=e; if(S.mscr==='main'&&$('#menu').classList.contains('show')) showMenu('main'); });
+window.addEventListener('appinstalled',()=>{ deferredInstall=null; save.installed=1; persist(); toast(tx('✔ Uygulama yüklendi! Ana ekrandan açabilirsin.','✔ App installed! Open it from your home screen.')); if(S.mscr==='main') showMenu('main'); });
+function installCard(){
+  const head=`<div class="ishot"><img src="icons/icon-192.png" alt=""><div><b>Ladder Master</b><small>${tx('Ana ekrana ekle · tam ekran · internetsiz oyna','Home screen · full screen · plays offline')}</small></div></div>`;
+  if(deferredInstall) return `<h3>📲 ${tx('Uygulamayı yüklemek ister misiniz?','Install the app?')}</h3>${head}
+    <div class="brow"><button class="btn wide" id="iL">${tx('Daha sonra','Later')}</button><button class="btn pri wide" id="iY">${tx('Yükle','Install')}</button></div>`;
+  return `<h3>📲 ${tx('Uygulamayı yüklemek ister misiniz?','Install the app?')}</h3>${head}
+    <ol class="isteps"><li>${tx('Safari\'de alttaki <b>Paylaş</b> ⬆︎ düğmesine dokun','Tap the <b>Share</b> ⬆︎ button in Safari')}</li><li>${tx('<b>Ana Ekrana Ekle</b>\'yi seç','Choose <b>Add to Home Screen</b>')}</li><li>${tx('Sağ üstte <b>Ekle</b>\'ye dokun','Tap <b>Add</b> in the top right')}</li></ol>
+    <div class="brow"><button class="btn pri wide" id="iL">${tx('Tamam','OK')}</button></div>`;
+}
+function installFlow(manual){
+  if(isStandalone()){ if(manual) toast(tx('Uygulama zaten yüklü','The app is already installed')); return; }
+  if(!deferredInstall&&!isIOS()){ if(manual) toast(tx('Tarayıcı menüsünden "Ana ekrana ekle"yi seç','Use "Add to Home screen" in the browser menu')); return; }
+  card(installCard(),e=>{
+    if(e.target.id==='iL'){ save.instAsk=Date.now(); persist(); $('#ovCard').classList.remove('show'); }
+    if(e.target.id==='iY'&&deferredInstall){ const p=deferredInstall; deferredInstall=null; $('#ovCard').classList.remove('show');
+      p.prompt(); (p.userChoice||Promise.resolve({})).then(r=>{ if(r.outcome!=='accepted'){ save.instAsk=Date.now(); persist(); } if(S.mscr==='main') showMenu('main'); }); }
+  });
+}
+// otomatik sor: kurulmamışsa, en az 1 bölüm bitmişse ve son "daha sonra"dan 3 gün geçtiyse
+function maybeAskInstall(){
+  if(isStandalone()||!canInstall()||!save.intro) return;
+  if(save.instAsk&&Date.now()-save.instAsk<3*864e5) return;
+  if(points()<1) return;
+  if($('#ovCard').classList.contains('show')||S.running) return;
+  setTimeout(()=>{ if(!$('#ovCard').classList.contains('show')&&!S.running) installFlow(false); },900);
+}
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
 /* ---------- Canvas sahnesi ---------- */
 const cv=$('#cv'),ctx=cv.getContext('2d'); let W=300,H=300,hits=[],flash={};
 function resizeCanvas(){ const r=$('#sceneWrap').getBoundingClientRect(); const D=Math.min(2,window.devicePixelRatio||1); W=r.width;H=r.height; cv.width=Math.round(W*D);cv.height=Math.round(H*D); ctx.setTransform(D,0,0,D,0,0); }
@@ -1607,6 +1657,7 @@ function frame(now){
   if(!mOpen){ drawScene(); if((fr++&1)===0){ updateLive(); updatePanel(); } }
   requestAnimationFrame(frame);
 if(me()) pullProgress().catch(()=>{});
+if(isIOS()) setTimeout(maybeAskInstall,1500);
 }
 function relayout(){ resizeCanvas(); if(S.prog){ const cw=calcCW(); if(cw!==S.cw) renderLadder(); } }
 window.addEventListener('resize',relayout); if(window.ResizeObserver) new ResizeObserver(relayout).observe($('#sceneWrap'));
@@ -1617,4 +1668,5 @@ showMenu('main');
 if(!save.intro){ card(`<h3>⚡ ${tx('Ladder Master\'a hoş geldin!','Welcome to Ladder Master!')}</h3>${HOW()}<div class="brow"><button class="btn pri wide" id="ok">${tx('Başlayalım','Let\'s go')}</button></div>`,e=>{ if(e.target.id==='ok'){ save.intro=true; persist(); closeAll(); showMenu('main'); } }); }
 requestAnimationFrame(frame);
 if(me()) pullProgress().catch(()=>{});
+if(isIOS()) setTimeout(maybeAskInstall,1500);
 </script></body></html>

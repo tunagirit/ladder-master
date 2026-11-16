@@ -17,6 +17,7 @@ function frame(now){
   if(!mOpen){ drawScene(); if((fr++&1)===0){ updateLive(); updatePanel(); } }
   requestAnimationFrame(frame);
 if(me()) pullProgress().catch(()=>{});
+if(isIOS()) setTimeout(maybeAskInstall,1500);
 }
 function relayout(){ resizeCanvas(); if(S.prog){ const cw=calcCW(); if(cw!==S.cw) renderLadder(); } }
 window.addEventListener('resize',relayout); if(window.ResizeObserver) new ResizeObserver(relayout).observe($('#sceneWrap'));
@@ -27,3 +28,4 @@ showMenu('main');
 if(!save.intro){ card(`<h3>⚡ ${tx('Ladder Master\'a hoş geldin!','Welcome to Ladder Master!')}</h3>${HOW()}<div class="brow"><button class="btn pri wide" id="ok">${tx('Başlayalım','Let\'s go')}</button></div>`,e=>{ if(e.target.id==='ok'){ save.intro=true; persist(); closeAll(); showMenu('main'); } }); }
 requestAnimationFrame(frame);
 if(me()) pullProgress().catch(()=>{});
+if(isIOS()) setTimeout(maybeAskInstall,1500);

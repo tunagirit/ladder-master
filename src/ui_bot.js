@@ -72,7 +72,7 @@ function onWin(){
     <p class="t" style="text-align:center">⚡ <b style="color:var(--neon)">${points()}</b> ${tx('puan','points')}<br>${tx('Kullanılan blok','Blocks used')}: <b>${n}</b> · ${tx('referans','reference')} ${lv.opt}</p>
     ${nx!==null?'<div class="brow"><button class="btn pri wide" id="nx">'+tx('Sonraki Bölüm ▶','Next Level ▶')+'</button></div>':''}
     <div class="brow"><button class="btn wide" id="rt">${tx('👁 Çözümü Gör','👁 View Solution')}</button><button class="btn wide" id="mn">${tx('🗺 Harita','🗺 Map')}</button></div>`,e=>{
-      if(e.target.id==='nx') loadLevel(nx); else if(e.target.id==='rt'){ stopSim(true); closeAll(); renderLadder(); } else if(e.target.id==='mn'){ stopSim(true); closeAll(); showMenu('map'); } }); },700);
+      if(e.target.id==='nx'){ loadLevel(nx); } else if(e.target.id==='rt'){ stopSim(true); closeAll(); renderLadder(); } else if(e.target.id==='mn'){ stopSim(true); closeAll(); showMenu('map'); } }); },700);
 }
 
 /* ---------- MENÜLER ---------- */
@@ -89,6 +89,7 @@ function showMenu(scr,cat,diff){
     <button class="bigbtn play" data-go="map">${tx('▶ OYNA','▶ PLAY')}</button>
     ${L?`<button class="bigbtn" data-go="cont">${tx('⏵ Devam Et','⏵ Continue')} <small>${lvLabel(L)}</small></button>`:''}
     <div class="brow2"><button class="bigbtn" data-go="board">${tx('🏆 Liderlik','🏆 Leaderboard')}</button><button class="bigbtn" data-go="prog">${tx('📊 İlerleme','📊 Progress')}</button></div>
+    ${canInstall()?`<button class="bigbtn instb" data-go="install">${tx('📲 Uygulamayı Yükle','📲 Install App')}</button>`:''}
     <button class="bigbtn" data-go="how">${tx('❓ Nasıl Oynanır','❓ How to Play')}</button>
     <button class="bigbtn" data-go="set">${tx('⚙ Ayarlar','⚙ Settings')}</button><div class="ver">Ladder Master ${VERSION}</div></div>`;
   } else if(scr==='map'){
@@ -131,6 +132,7 @@ function showMenu(scr,cat,diff){
   $('#menuIn').innerHTML=h; $('#menuIn').scrollTop=0; $('#menu').classList.add('show');
   if(scr==='board') loadBoard();
   if(scr==='map') drawRoad();
+  if(scr==='main') maybeAskInstall();
 }
 const HOW=()=>tx(`<p class="t"><b>Amaç:</b> Görevdeki fabrika makinesini ladder (merdiven) diyagramı ile programla.</p>
 <p class="t"><b>1.</b> Alttaki paletten bir bloğu tutup ızgaradaki boş kutuya <b>sürükle-bırak</b> (ya da bloğa dokunup sonra kutuya dokun).<br>
@@ -152,6 +154,7 @@ $('#menuIn').onclick=e=>{
   if(g==='main') S.setBack=null;
   if(g==='main'||g==='cats'||g==='prog'||g==='set'||g==='how') showMenu(g);
   else if(g==='map') showMenu('map');
+  else if(g==='install') installFlow(true);
   else if(g==='cont') loadLevel(save.last);
   else if(g==='lvl'){ const id=+b.dataset.id; if(!unlocked(id)){ toast(tx('Önce önceki bölümü tamamla','Complete the previous level first')); return; } loadLevel(id); }
   else if(g==='acct'){ S.mreg=false; showMenu('acct'); }
@@ -248,3 +251,37 @@ function drawRoad(){ const c=0;
   box.innerHTML=h;
   const cur=box.querySelector('.nd.cur'); if(cur){ const m=$('#menuIn'); m.scrollTop=Math.max(0,cur.offsetTop-m.clientHeight*0.55); }
 }
+
+/* ---------- UYGULAMA OLARAK YÜKLEME (PWA) ---------- */
+let deferredInstall=null;
+const isStandalone=()=>(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const canInstall=()=>!isStandalone()&&(!!deferredInstall||isIOS());
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredInstall=e; if(S.mscr==='main'&&$('#menu').classList.contains('show')) showMenu('main'); });
+window.addEventListener('appinstalled',()=>{ deferredInstall=null; save.installed=1; persist(); toast(tx('✔ Uygulama yüklendi! Ana ekrandan açabilirsin.','✔ App installed! Open it from your home screen.')); if(S.mscr==='main') showMenu('main'); });
+function installCard(){
+  const head=`<div class="ishot"><img src="icons/icon-192.png" alt=""><div><b>Ladder Master</b><small>${tx('Ana ekrana ekle · tam ekran · internetsiz oyna','Home screen · full screen · plays offline')}</small></div></div>`;
+  if(deferredInstall) return `<h3>📲 ${tx('Uygulamayı yüklemek ister misiniz?','Install the app?')}</h3>${head}
+    <div class="brow"><button class="btn wide" id="iL">${tx('Daha sonra','Later')}</button><button class="btn pri wide" id="iY">${tx('Yükle','Install')}</button></div>`;
+  return `<h3>📲 ${tx('Uygulamayı yüklemek ister misiniz?','Install the app?')}</h3>${head}
+    <ol class="isteps"><li>${tx('Safari\'de alttaki <b>Paylaş</b> ⬆︎ düğmesine dokun','Tap the <b>Share</b> ⬆︎ button in Safari')}</li><li>${tx('<b>Ana Ekrana Ekle</b>\'yi seç','Choose <b>Add to Home Screen</b>')}</li><li>${tx('Sağ üstte <b>Ekle</b>\'ye dokun','Tap <b>Add</b> in the top right')}</li></ol>
+    <div class="brow"><button class="btn pri wide" id="iL">${tx('Tamam','OK')}</button></div>`;
+}
+function installFlow(manual){
+  if(isStandalone()){ if(manual) toast(tx('Uygulama zaten yüklü','The app is already installed')); return; }
+  if(!deferredInstall&&!isIOS()){ if(manual) toast(tx('Tarayıcı menüsünden "Ana ekrana ekle"yi seç','Use "Add to Home screen" in the browser menu')); return; }
+  card(installCard(),e=>{
+    if(e.target.id==='iL'){ save.instAsk=Date.now(); persist(); $('#ovCard').classList.remove('show'); }
+    if(e.target.id==='iY'&&deferredInstall){ const p=deferredInstall; deferredInstall=null; $('#ovCard').classList.remove('show');
+      p.prompt(); (p.userChoice||Promise.resolve({})).then(r=>{ if(r.outcome!=='accepted'){ save.instAsk=Date.now(); persist(); } if(S.mscr==='main') showMenu('main'); }); }
+  });
+}
+// otomatik sor: kurulmamışsa, en az 1 bölüm bitmişse ve son "daha sonra"dan 3 gün geçtiyse
+function maybeAskInstall(){
+  if(isStandalone()||!canInstall()||!save.intro) return;
+  if(save.instAsk&&Date.now()-save.instAsk<3*864e5) return;
+  if(points()<1) return;
+  if($('#ovCard').classList.contains('show')||S.running) return;
+  setTimeout(()=>{ if(!$('#ovCard').classList.contains('show')&&!S.running) installFlow(false); },900);
+}
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
