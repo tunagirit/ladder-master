@@ -13,8 +13,8 @@ const Snd={ctx:null,nb:null,
 
 /* ---------- Yardımcılar ---------- */
 let toastT; function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
-const BN={NO:'Açık Kontak',NC:'Kapalı Kontak',COIL:'Bobin',SET:'Set Bobini',RST:'Reset Bobini',TON:'TON Zamanlayıcı',TOF:'TOF Zamanlayıcı',CTU:'CTU Yukarı Sayıcı',CTD:'CTD Aşağı Sayıcı'};
-const BS={NO:'Açık',NC:'Kapalı',COIL:'Bobin',SET:'Set',RST:'Reset',TON:'TON',TOF:'TOF',CTU:'CTU',CTD:'CTD'};
+const BN=I18({NO:['Açık Kontak','NO Contact'],NC:['Kapalı Kontak','NC Contact'],COIL:['Bobin','Coil'],SET:['Set Bobini','Set Coil'],RST:['Reset Bobini','Reset Coil'],TON:['TON Zamanlayıcı','TON Timer'],TOF:['TOF Zamanlayıcı','TOF Timer'],CTU:['CTU Yukarı Sayıcı','CTU Up Counter'],CTD:['CTD Aşağı Sayıcı','CTD Down Counter']});
+const BS=I18({NO:['Açık','NO'],NC:['Kapalı','NC'],COIL:['Bobin','Coil'],SET:'Set',RST:'Reset',TON:'TON',TOF:'TOF',CTU:'CTU',CTD:'CTD'});
 function palSym(t){
   const m=17,y=12; let s='<svg width="34" height="24" viewBox="0 0 34 24">';
   if(t==='NO'||t==='NC'){ s+=`<path d="M0 ${y}H${m-6}M${m+6} ${y}H34M${m-6} 3V21M${m+6} 3V21"/>`; if(t==='NC') s+=`<path d="M${m-8} 20L${m+8} 4"/>`; }
@@ -23,5 +23,7 @@ function palSym(t){
   return s+'</svg>';
 }
 const defPV=t=>(t==='TON'||t==='TOF')?2:3;
+const DEFTAG=new Set(['START','STOP','I0.0']); for(const k in TAGEN){ DEFTAG.add(k); DEFTAG.add(TAGEN[k]); }
+function customTags(t){ const o={}; if(t) for(const a in t){ const v=(t[a]||'').trim(); if(v&&!DEFTAG.has(v)) o[a]=v; } return o; }
 function defaultTags(lv){ const o={}; lv.io.I.concat(lv.io.Q).forEach(d=>o[d.a]=d.n); return o; }
 

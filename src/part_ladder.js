@@ -46,7 +46,7 @@ function renderLadder(){
     if(sp){ for(const [k,x] of [['vl',sp.from*cw+4],['vr',(sp.to+1)*cw+4]]){ const v=document.createElement('div'); v.className='vw'; v.style.cssText=`left:${x-1.5}px;top:22px;height:44px`; g.appendChild(v); L[k]=v; } }
     box.appendChild(el); LIVE.push(L);
   });
-  if(S.prog.rungs.length<8&&!S.view){ const b=document.createElement('button'); b.id='addr'; b.textContent='＋ Satır Ekle'; box.appendChild(b); }
+  if(S.prog.rungs.length<8&&!S.view){ const b=document.createElement('button'); b.id='addr'; b.textContent=tx('＋ Satır Ekle','＋ Add Rung'); box.appendChild(b); }
   box.scrollTop=sc; refreshTool();
 }
 function updateLive(){

@@ -1,7 +1,7 @@
 /*==UI==*/
 const $=(s,r=document)=>r.querySelector(s);
 const SKEY='ladderustasi_v2';
-let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1};
+let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1,theme:'auto',lang:null};
 try{const s=JSON.parse(localStorage.getItem(SKEY)||'null'); if(s) save=Object.assign(save,s);}catch(e){}
 const persist=()=>{try{localStorage.setItem(SKEY,JSON.stringify(save));}catch(e){}};
 const S={id:0,lv:null,prog:null,tags:{},tool:null,running:false,speed:1,cw:70,view:false,redo:false,mscr:null};

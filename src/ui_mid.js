@@ -2,8 +2,8 @@
 function loadLevel(id){
   S.id=id; const lv=S.lv=getLevel(id); save.last=id; persist();
   const dn=save.done[id]; S.redo=false; S.tool=null;
-  if(dn){ S.view=true; S.prog=clone(dn.prog); S.tags=Object.assign(defaultTags(lv),dn.tags||{}); }
-  else { S.view=false; const d=save.draft[id]; S.prog=d&&d.rungs&&d.rungs.length?{rungs:clone(d.rungs)}:{rungs:[mkRung(),mkRung()]}; S.tags=Object.assign(defaultTags(lv),(d&&d.tags)||{}); }
+  if(dn){ S.view=true; S.prog=clone(dn.prog); S.tags=Object.assign(defaultTags(lv),customTags(dn.tags)); }
+  else { S.view=false; const d=save.draft[id]; S.prog=d&&d.rungs&&d.rungs.length?{rungs:clone(d.rungs)}:{rungs:[mkRung(),mkRung()]}; S.tags=Object.assign(defaultTags(lv),customTags(d&&d.tags)); }
   world=new World(lv); plc.reset(); stopSim(true);
   const D=DIFFS[lv.diff];
   $('#title').innerHTML=`<small style="color:${D.c}">${D.n[0]}${lv.n+1}</small>${lv.title}`;
@@ -14,11 +14,11 @@ function refreshMode(){
   $('#palette').style.display=S.view?'none':'flex'; $('#doneBar').style.display=S.view?'flex':'none';
   $('#bClear').style.visibility=S.view?'hidden':'visible'; updInfo();
 }
-function saveDraft(){ if(S.view||S.redo) return; save.draft[S.id]={rungs:S.prog.rungs,tags:S.tags}; persist(); }
+function saveDraft(){ if(S.view||S.redo) return; save.draft[S.id]={rungs:S.prog.rungs,tags:customTags(S.tags)}; persist(); }
 const saveProg=saveDraft;
-function guard(){ if(S.view){ toast('Tamamlanmış bölüm — düzenlemek için alttaki Sıfırla\'ya bas'); return true; } return false; }
+function guard(){ if(S.view){ toast(tx('Tamamlanmış bölüm — düzenlemek için alttaki Sıfırla\'ya bas','Level completed — tap Reset below to edit')); return true; } return false; }
 $('#bReset').onclick=()=>{ Snd.init(); Snd.click(); S.view=false; S.redo=true; S.prog={rungs:[mkRung(),mkRung()]}; S.tags=defaultTags(S.lv); S.tool=null;
-  stopSim(true); refreshMode(); renderLadder(); toast('Sıfırlandı — çözmeden çıkarsan eski çözümün korunur'); };
+  stopSim(true); refreshMode(); renderLadder(); toast(tx('Sıfırlandı — çözmeden çıkarsan eski çözümün korunur','Reset — if you leave without solving, your old solution is kept')); };
 
 /* ---------- Palet ---------- */
 function buildPalette(){
@@ -33,15 +33,15 @@ function refreshTool(){
 }
 function updInfo(){
   const n=countBlocks(S.prog);
-  const msg=S.view?'<span style="color:#39ff6a">✔ Kayıtlı çözümün</span> — ▶ RUN ile çalıştırıp izle'
-    :S.redo?'<span style="color:#ffb020">Yeniden çözüyorsun</span> — yeni çözüm bulana kadar eskisi korunur'
-    :S.tool?`Seçili: <b style="color:#4da3ff">${BN[S.tool]}</b> — ${isOut(S.tool)?'son sütuna':'sol sütunlara'} dokun`:'Bloğu yukarı <b>sürükle-bırak</b> ya da seç &amp; dokun';
-  $('#einfo').innerHTML=`Blok <b>${n}</b> · referans çözüm ${S.lv.opt} blok<br>${msg}`;
+  const msg=S.view?tx('<span style="color:var(--neon)">✔ Kayıtlı çözümün</span> — ▶ RUN ile çalıştırıp izle','<span style="color:var(--neon)">✔ Your saved solution</span> — press ▶ RUN to watch')
+    :S.redo?tx('<span style="color:var(--amb)">Yeniden çözüyorsun</span> — yeni çözüm bulana kadar eskisi korunur','<span style="color:var(--amb)">Re-solving</span> — old solution kept until you solve it again')
+    :S.tool?tx(`Seçili: <b style="color:var(--blu)">${BN[S.tool]}</b> — ${isOut(S.tool)?'son sütuna':'sol sütunlara'} dokun`,`Selected: <b style="color:var(--blu)">${BN[S.tool]}</b> — tap ${isOut(S.tool)?'the last column':'a left column'}`):tx('Bloğu yukarı <b>sürükle-bırak</b> ya da seç &amp; dokun','<b>Drag &amp; drop</b> a block up, or select &amp; tap');
+  $('#einfo').innerHTML=tx(`Blok <b>${n}</b> · referans çözüm ${S.lv.opt} blok`,`Blocks <b>${n}</b> · reference solution ${S.lv.opt}`)+`<br>${msg}`;
 }
 function canPlace(t,i,r,c){
   const rg=S.prog.rungs[i]; if(!rg||rg.c[r][c]) return 'dolu'; if(r===1&&!rg.br) return 'x';
-  if(isOut(t)){ if(c!==OUTC||r!==0) return r===1?'Paralel kolda yalnızca kontak olur':'Bobin / zamanlayıcı / sayıcı en sağ sütuna konur'; }
-  else if(c===OUTC) return 'Kontaklar sol sütunlara konur';
+  if(isOut(t)){ if(c!==OUTC||r!==0) return r===1?tx('Paralel kolda yalnızca kontak olur','Only contacts go on a parallel branch'):tx('Bobin / zamanlayıcı / sayıcı en sağ sütuna konur','Coils / timers / counters go in the rightmost column'); }
+  else if(c===OUTC) return tx('Kontaklar sol sütunlara konur','Contacts go in the left columns');
   return '';
 }
 
@@ -53,7 +53,7 @@ $('#rungs').addEventListener('click',e=>{
   const ce=e.target.closest('.cell'); if(!ce) return; if(guard()) return;
   const i=+ce.closest('.rung').dataset.i, r=+ce.dataset.r, c=+ce.dataset.c, cell=S.prog.rungs[i].c[r][c];
   if(cell){ openEditor(i,r,c,cell,false); return; }
-  if(!S.tool){ toast('Paletten bir bloğu buraya sürükle ya da önce seç'); return; }
+  if(!S.tool){ toast(tx('Paletten bir bloğu buraya sürükle ya da önce seç','Drag a block here from the palette, or select one first')); return; }
   const m=canPlace(S.tool,i,r,c); if(m){ toast(m); return; }
   openEditor(i,r,c,{t:S.tool,a:null,pv:defPV(S.tool)},true);
 });
@@ -105,12 +105,12 @@ window.addEventListener('pointerup',e=>{
   if(!drag||e.pointerId!==drag.pid) return; const d=drag; drag=null; dragClean();
   if(!d.on) return; justDragged=true; setTimeout(()=>justDragged=false,60); Snd.init();
   const rs=S.prog.rungs;
-  if(d.from&&inPalette(e.clientX,e.clientY)){ rs[d.from.i].c[d.from.r][d.from.c]=null; saveDraft(); renderLadder(); Snd.click(); toast('Blok silindi'); return; }
+  if(d.from&&inPalette(e.clientX,e.clientY)){ rs[d.from.i].c[d.from.r][d.from.c]=null; saveDraft(); renderLadder(); Snd.click(); toast(tx('Blok silindi','Block deleted')); return; }
   const ce=cellAt(e.clientX,e.clientY); if(!ce) return;
   const i=+ce.closest('.rung').dataset.i, r=+ce.dataset.r, c=+ce.dataset.c, a=dropAction(d,i,r,c);
   if(a==='new') openEditor(i,r,c,{t:d.t,a:null,pv:defPV(d.t)},true);
   else if(a==='move'){ rs[i].c[r][c]=rs[d.from.i].c[d.from.r][d.from.c]; rs[d.from.i].c[d.from.r][d.from.c]=null; saveDraft(); renderLadder(); Snd.place(); }
-  else if(a==='swap'){ const t=rs[i].c[r][c]; rs[i].c[r][c]=rs[d.from.i].c[d.from.r][d.from.c]; rs[d.from.i].c[d.from.r][d.from.c]=t; saveDraft(); renderLadder(); Snd.place(); toast('Bloklar yer değiştirdi'); }
+  else if(a==='swap'){ const t=rs[i].c[r][c]; rs[i].c[r][c]=rs[d.from.i].c[d.from.r][d.from.c]; rs[d.from.i].c[d.from.r][d.from.c]=t; saveDraft(); renderLadder(); Snd.place(); toast(tx('Bloklar yer değiştirdi','Blocks swapped')); }
   else if(a!=='dolu'&&a!=='x') toast(a);
 });
 window.addEventListener('pointercancel',e=>{ if(drag&&e.pointerId===drag.pid){ drag=null; dragClean(); } });

@@ -1,4 +1,6 @@
-# ⚡ Ladder Ustası — PLC Merdiven Mantığı Bulmacası
+# ⚡ Ladder Master — PLC Merdiven Mantığı Bulmacası
+
+*PLC ladder logic puzzle game for mobile — Türkçe / English*
 
 Telefon ekranı için tasarlanmış, tarayıcıda çalışan bir **PLC Ladder (merdiven) mantık bulmaca oyunu**.
 Tek bir HTML dosyası; harici kütüphane, görsel veya ses dosyası yok.
@@ -14,6 +16,8 @@ Tek bir HTML dosyası; harici kütüphane, görsel veya ses dosyası yok.
 - **Sürükle-bırak editör:** blok yerleştir, taşı, yer değiştir, palete sürükleyerek sil
 - **Puan sistemi:** her tamamlanan bölüm 1 puan; çözümler `localStorage`'a kaydedilir
 - **Web Audio** ile üretilen röle, piston ve melodi sesleri
+- **Tema:** Açık / Karanlık / Otomatik (sistem temasını izler)
+- **Dil:** Türkçe / English (tüm bölüm metinleri dahil)
 
 ## Geliştirme
 Kaynak `src/` klasöründe parçalar halinde durur:

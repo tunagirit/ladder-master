@@ -10,7 +10,7 @@ function drawScene(){
   const x0=16, us=(W-16-50)/100, X=u=>x0+u*us, BWp=8*us, bh=Math.max(34,BWp+10), panelH=58;
   const by=Math.max(44+48+bh/2+Math.max(0,(H-250)*0.3),sc.pistons.length?0:(H-panelH)*0.52); const push=Math.max(24,Math.min(46,(H-panelH)-by-bh/2-BWp/2-16));
   // zemin ve tepsiler
-  sc.pistons.forEach(p=>{ ctx.fillStyle='#10171e'; ctx.strokeStyle='#3a4757'; ctx.lineWidth=2; rr(X(p.x)-26,by+bh/2+4,52,push+BWp/2+10,6); ctx.fill(); ctx.stroke(); ctx.fillStyle='#4a5b6e'; ctx.font='700 8px system-ui'; ctx.textAlign='center'; ctx.fillText('AYRILAN',X(p.x),by+bh/2+push+BWp/2+11); });
+  sc.pistons.forEach(p=>{ ctx.fillStyle='#10171e'; ctx.strokeStyle='#3a4757'; ctx.lineWidth=2; rr(X(p.x)-26,by+bh/2+4,52,push+BWp/2+10,6); ctx.fill(); ctx.stroke(); ctx.fillStyle='#4a5b6e'; ctx.font='700 8px system-ui'; ctx.textAlign='center'; ctx.fillText(tx('AYRILAN','DIVERTED'),X(p.x),by+bh/2+push+BWp/2+11); });
   // bant
   ctx.fillStyle='#0b0f14'; rr(x0-8,by-bh/2-6,100*us+16,bh+12,8); ctx.fill();
   ctx.fillStyle='#252e38'; ctx.fillRect(x0,by-bh/2,100*us,bh);
@@ -21,10 +21,10 @@ function drawScene(){
   ctx.fillStyle='#6b7c8f'; ctx.font='700 14px system-ui'; ctx.textAlign='center'; ctx.fillText(w.motor?'▶▶':'▷▷',x0+10,by-bh/2-8);
   // depo
   const dx=X(100)+8; ctx.fillStyle='#14202b'; ctx.strokeStyle='#4da3ff'; ctx.lineWidth=2; rr(dx,by-bh/2-4,W-dx-4,bh+8,6); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='#4da3ff'; ctx.font='800 8px system-ui'; ctx.fillText('DEPO',dx+(W-dx-4)/2,by-3); ctx.font='800 13px ui-monospace,monospace'; ctx.fillStyle='#dfe8f2'; ctx.fillText(w.delivered,dx+(W-dx-4)/2,by+12);
+  ctx.fillStyle='#4da3ff'; ctx.font='800 8px system-ui'; ctx.fillText(tx('DEPO','STORE'),dx+(W-dx-4)/2,by-3); ctx.font='800 13px ui-monospace,monospace'; ctx.fillStyle='#dfe8f2'; ctx.fillText(w.delivered,dx+(W-dx-4)/2,by+12);
   // istasyonlar / kabin
   sc.valves.forEach(v=>{ const vx=X(v.x), on=!!w.q[v.a], spray=v.kind==='spray';
-    if(spray){ ctx.fillStyle='rgba(120,140,160,.10)'; ctx.strokeStyle='#5d6e80'; ctx.lineWidth=2; rr(X(v.x-13),by-bh/2-34,26*us,bh+44,6); ctx.fill(); ctx.stroke(); ctx.fillStyle='#7d8a99'; ctx.font='700 8px system-ui'; ctx.fillText('BOYA KABİNİ',vx,by-bh/2-38); }
+    if(spray){ ctx.fillStyle='rgba(120,140,160,.10)'; ctx.strokeStyle='#5d6e80'; ctx.lineWidth=2; rr(X(v.x-13),by-bh/2-34,26*us,bh+44,6); ctx.fill(); ctx.stroke(); ctx.fillStyle='#7d8a99'; ctx.font='700 8px system-ui'; ctx.fillText(tx('BOYA KABİNİ','PAINT BOOTH'),vx,by-bh/2-38); }
     ctx.fillStyle='#2b3744'; ctx.fillRect(vx-3,by-bh/2-30,6,20); ctx.fillStyle=on?(spray?'#ff8c2a':'#4da3ff'):'#59697b'; ctx.beginPath(); ctx.moveTo(vx-7,by-bh/2-10); ctx.lineTo(vx+7,by-bh/2-10); ctx.lineTo(vx,by-bh/2-2); ctx.fill();
     if(on){ ctx.strokeStyle=spray?'rgba(255,140,42,.8)':'rgba(77,163,255,.85)'; ctx.lineWidth=spray?10:3; ctx.setLineDash([4,3]); ctx.lineDashOffset=-w.t*40; ctx.beginPath(); ctx.moveTo(vx,by-bh/2-2); ctx.lineTo(vx,by); ctx.stroke(); ctx.setLineDash([]); }
     ctx.fillStyle='#7d8a99'; ctx.font='700 8px system-ui'; ctx.fillText(v.a,vx,spray?by+bh/2+14:by-bh/2-32); });
@@ -55,7 +55,7 @@ function drawScene(){
   // lambalar
   sc.lamps.forEach((l,i)=>{ const lx=W-24-i*38, ly=by-bh/2-52, on=!!w.q[l.a], c=LC[l.c]; ctx.fillStyle='#2b3744'; ctx.fillRect(lx-3,ly+10,6,12);
     ctx.fillStyle=on?c[0]:c[1]; ctx.strokeStyle='#59697b'; ctx.lineWidth=2; if(on){ctx.shadowColor=c[0];ctx.shadowBlur=16;} ctx.beginPath(); ctx.arc(lx,ly,10,0,7); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
-    ctx.fillStyle='#8da0b4'; ctx.font='700 7.5px system-ui'; ctx.textAlign='center'; ctx.fillText(l.n,lx,ly+31); });
+    ctx.fillStyle='#8da0b4'; ctx.font='700 7.5px system-ui'; ctx.textAlign='center'; ctx.fillText(tg(l.n),lx,ly+31); });
   // panel
   ctx.fillStyle='#0c1117'; ctx.fillRect(0,H-panelH,W,panelH); ctx.strokeStyle='#2a3542'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,H-panelH); ctx.lineTo(W,H-panelH); ctx.stroke();
   const ops=lv.io.I.filter(d=>d.k==='btn'||d.k==='sw'); hits=[];
@@ -73,5 +73,5 @@ function drawScene(){
   if(w.done){ ctx.strokeStyle='rgba(57,255,106,.9)'; ctx.lineWidth=5; ctx.strokeRect(2,2,W-4,H-4); }
 }
 cv.addEventListener('pointerdown',e=>{ const r=cv.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
-  for(const h of hits){ if(Math.hypot(x-h.x,y-h.y)<=h.r){ Snd.init(); Snd.click(); if(!S.running){ toast('Önce ▶ RUN ile simülasyonu başlat'); return; } world.press(h.a); flash[h.a]=0.25; return; } } });
+  for(const h of hits){ if(Math.hypot(x-h.x,y-h.y)<=h.r){ Snd.init(); Snd.click(); if(!S.running){ toast(tx('Önce ▶ RUN ile simülasyonu başlat','Start the simulation with ▶ RUN first')); return; } world.press(h.a); flash[h.a]=0.25; return; } } });
 

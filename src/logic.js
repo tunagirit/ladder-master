@@ -1,4 +1,7 @@
 'use strict';
+let LANG='tr';
+const tx=(a,b)=>LANG==='en'?b:a;
+const fx=x=>LANG==='en'?String(x):String(x).replace('.',',');
 /* ===== PLC LADDER BULMACA — MANTIK ÇEKİRDEĞİ ===== */
 const COLS=5, OUTC=4, SCAN=0.02, BW=4, PIST_V=3;
 const OUTT=['COIL','SET','RST','TON','TOF','CTU','CTD'];
@@ -90,9 +93,9 @@ class World{
     // piston itme
     for(const p of sc.pistons){ if(this.ext[p.a]>0.3){ for(const b of this.boxes){ if(b.st==='belt'&&Math.abs(b.x-p.x)<=6){
       b.st='pushed'; b.py=0;
-      if(sc.divertIf&&!this.iv[sc.divertIf]) return this.fail('Hata: Onay anahtarı kapalıyken kutu ayrıldı!');
-      if(sc.divertEvery&&b.id%sc.divertEvery!==0) return this.fail('Hata: Yanlış kutu ayrıldı! Yalnızca her '+sc.divertEvery+'. kutu ayrılmalı.');
-      if(sc.waitRange){ if(b.wait<sc.waitRange[0]) return this.fail('Hata: Piston çok erken itti! Kutu sensörde ~2 sn beklemeliydi.'); if(b.wait>sc.waitRange[1]) return this.fail('Hata: Kutu sensörde çok uzun bekletildi!'); }
+      if(sc.divertIf&&!this.iv[sc.divertIf]) return this.fail(tx('Hata: Onay anahtarı kapalıyken kutu ayrıldı!','Error: Box diverted while the approval key was OFF!'));
+      if(sc.divertEvery&&b.id%sc.divertEvery!==0) return this.fail(tx('Hata: Yanlış kutu ayrıldı! Yalnızca her '+sc.divertEvery+'. kutu ayrılmalı.','Error: Wrong box diverted! Only every '+sc.divertEvery+'th box should be diverted.'));
+      if(sc.waitRange){ if(b.wait<sc.waitRange[0]) return this.fail(tx('Hata: Piston çok erken itti! Kutu sensörde beklemeliydi.','Error: Piston pushed too early! The box had to wait at the sensor.')); if(b.wait>sc.waitRange[1]) return this.fail(tx('Hata: Kutu sensörde çok uzun bekletildi!','Error: Box was held at the sensor too long!')); }
     } } } }
     for(const b of this.boxes){
       if(b.st==='pushed'){ const e=Math.max(...sc.pistons.map(p=>this.ext[p.a]),0); b.py=Math.min(1,Math.max(b.py+4*dt,e)); if(b.py>=1){ b.st='bin'; b.ft=0; this.diverted++; } }
@@ -103,18 +106,18 @@ class World{
     if(sc.waitSensor){ const s=sc.sensors.find(s=>s.a===sc.waitSensor); for(const b of this.boxes) if(b.st==='belt'&&Math.abs(b.x-s.x)<=BW) b.wait+=dt; }
     // bant sonu
     for(const b of this.boxes){ if(b.st==='belt'&&b.x>=100){
-      if(sc.divertEvery&&b.id%sc.divertEvery===0) return this.fail('Hata: '+b.id+'. kutu ayrılmadan bant sonuna ulaştı!');
-      if(sc.divertIf&&this.iv[sc.divertIf]) return this.fail('Hata: Onay anahtarı açıkken kutu ayrılmadı!');
+      if(sc.divertEvery&&b.id%sc.divertEvery===0) return this.fail(tx('Hata: '+b.id+'. kutu ayrılmadan bant sonuna ulaştı!','Error: Box #'+b.id+' reached the end of the belt without being diverted!'));
+      if(sc.divertIf&&this.iv[sc.divertIf]) return this.fail(tx('Hata: Onay anahtarı açıkken kutu ayrılmadı!','Error: Box was not diverted while the approval key was ON!'));
       if(sc.endDrop==='deliver'){ b.st='end'; b.ft=0; this.delivered++; if(b.fill>=0.95) this.filled++; }
-      else return this.fail(sc.endMsg||'Hata: Kutu ayrılmadan bant sonuna ulaştı!');
+      else return this.fail((sc.endMsg||tx('Hata: Kutu ayrılmadan bant sonuna ulaştı!','Error: Box reached the end of the belt without being diverted!')));
     } }
     // valfler
     for(const v of sc.valves){
       if(q[v.a]){ const tg=this.boxes.find(b=>b.st==='belt'&&Math.abs(b.x-v.x)<=6);
-        if(tg){ tg.fill+=dt/v.fillTime; this.spill=0; if(tg.fill>1.3) return this.fail(v.kind==='spray'?'Hata: Fazla boya sıkıldı!':'Hata: Şişe taştı! Valf çok uzun açık kaldı.'); }
-        else { this.spill+=dt; if(this.spill>0.6) return this.fail(v.kind==='spray'?'Hata: Boş kabine boya püskürtüldü!':'Hata: Valf boşta açıldı, sıvı döküldü!'); } }
+        if(tg){ tg.fill+=dt/v.fillTime; this.spill=0; if(tg.fill>1.3) return this.fail(v.kind==='spray'?tx('Hata: Fazla boya sıkıldı!','Error: Too much paint sprayed!'):tx('Hata: Şişe taştı! Valf çok uzun açık kaldı.','Error: Bottle overflowed! Valve stayed open too long.')); }
+        else { this.spill+=dt; if(this.spill>0.6) return this.fail(v.kind==='spray'?tx('Hata: Boş kabine boya püskürtüldü!','Error: Paint sprayed into an empty booth!'):tx('Hata: Valf boşta açıldı, sıvı döküldü!','Error: Valve opened with no bottle, liquid spilled!')); } }
       else this.spill=0;
-      for(const b of this.boxes) if(b.st==='belt'&&b.x>v.x+6&&b.fill<0.95&&!b.chk){ b.chk=true; return this.fail(v.kind==='spray'?'Hata: Kutu boyanmadan kabinden çıktı!':'Hata: Şişe dolmadan istasyondan geçti!'); }
+      for(const b of this.boxes) if(b.st==='belt'&&b.x>v.x+6&&b.fill<0.95&&!b.chk){ b.chk=true; return this.fail(v.kind==='spray'?tx('Hata: Kutu boyanmadan kabinden çıktı!','Error: Box left the booth unpainted!'):tx('Hata: Şişe dolmadan istasyondan geçti!','Error: Bottle passed the station without being filled!')); }
     }
     // spawn
     if(this.nid<sc.boxes){ this.spawnT+=dt; if(this.spawnT>=sc.gap&&!this.boxes.some(b=>b.st==='belt'&&b.x<14)){ this.boxes.push(this.mk(++this.nid)); this.spawnT=0; } }
@@ -124,8 +127,8 @@ class World{
     const gl=this.goalList(); gl.forEach((g,i)=>{ if(g.ok) this.gd[i]=true; });
     if(this.gd.every(Boolean)){ this.done=true; return; }
     const active=this.boxes.some(b=>b.st==='belt'||b.st==='pushed');
-    if(this.nid>=sc.boxes&&!active){ this.idleT+=dt; if(this.idleT>4.5) return this.fail('Hedefe ulaşılamadı: kutular bitti. Programı gözden geçir.'); } else this.idleT=0;
-    if(this.t>240) this.fail('Zaman aşımı: görev süresi doldu.');
+    if(this.nid>=sc.boxes&&!active){ this.idleT+=dt; if(this.idleT>4.5) return this.fail(tx('Hedefe ulaşılamadı: kutular bitti. Programı gözden geçir.','Goal not reached: out of boxes. Review your program.')); } else this.idleT=0;
+    if(this.t>240) this.fail(tx('Zaman aşımı: görev süresi doldu.','Timeout: task time is up.'));
   }
   checks(q,dt){
     const sc=this.sc, iv=this.iv||{}, goals=this.lv.goals;
@@ -134,7 +137,7 @@ class World{
       if(s&&!this.pS){ this.startPressed=true; this.startFall=null; this.stopPressT=null; this.startAt=this.t; this.sdLamp=0; }
       if(!s&&this.pS) this.startFall=this.t;
       this.pS=s;
-      if(sc.startFirst&&!this.startPressed&&this.motor){ this.noStart+=dt; if(this.noStart>0.4) return this.fail('Hata: START\'a basılmadan bant çalıştı!'); }
+      if(sc.startFirst&&!this.startPressed&&this.motor){ this.noStart+=dt; if(this.noStart>0.4) return this.fail(tx('Hata: START\'a basılmadan bant çalıştı!','Error: Belt ran before START was pressed!')); }
       if(this.startPressed&&!s&&this.startFall!==null&&this.t-this.startFall>=0.8&&this.motor) this.f.seal=true;
     }
     if(sc.stopA){
@@ -145,15 +148,15 @@ class World{
     }
     if(sc.stopDelay&&this.pm&&!this.motor&&this.stopPressT!==null){
       const td=sc.stopDelay===true?3:sc.stopDelay, d=this.t-this.stopPressT; this.stopPressT=null;
-      if(d>=td-0.4&&d<=td+0.6) this.f.stopDelay=true; else return this.fail('Hata: Bant STOP\'tan '+d.toFixed(1)+' sn sonra durdu. Gecikme ≈'+String(td).replace('.',',')+' sn olmalı!');
+      if(d>=td-0.4&&d<=td+0.6) this.f.stopDelay=true; else return this.fail(tx('Hata: Bant STOP\'tan '+fx(d.toFixed(1))+' sn sonra durdu. Gecikme ≈'+fx(td)+' sn olmalı!','Error: Belt stopped '+d.toFixed(1)+' s after STOP. Delay should be ≈'+td+' s!'));
     }
     if(sc.countSensor){
       if(this.motor&&!this.pm) this.cntRises=0;
       const on=this.sensorOn(sc.countSensor); if(on&&!this.pc) this.cntRises++; this.pc=on;
-      if(this.motor&&this.cntRises>sc.batchN) return this.fail('Hata: Bant '+sc.batchN+' kutudan sonra durmadı!');
+      if(this.motor&&this.cntRises>sc.batchN) return this.fail(tx('Hata: Bant '+sc.batchN+' kutudan sonra durmadı!','Error: Belt did not stop after '+sc.batchN+' boxes!'));
       if(!this.motor&&this.pm&&this.cntRises===sc.batchN) this.pendB=0.5;
     }
-    if(this.pendB!==null){ this.pendB-=dt; if(this.pendB<=0){ this.pendB=null; if(q[sc.lampA]) this.batches++; else return this.fail('Hata: Parti tamamlandı ama lamba yanmadı!'); } }
+    if(this.pendB!==null){ this.pendB-=dt; if(this.pendB<=0){ this.pendB=null; if(q[sc.lampA]) this.batches++; else return this.fail(tx('Hata: Parti tamamlandı ama lamba yanmadı!','Error: Batch finished but the lamp did not light!')); } }
     const pk=goals.find(g=>g.k==='park');
     if(pk){ if(!this.motor&&this.sensorOn(pk.s)) this.parkT+=dt; else this.parkT=0; }
     if(sc.lampA&&pk){ if(this.parkT>0&&q[sc.lampA]) this.lpT+=dt; if(this.lpT>=0.8) this.f.lampPark=true; }
@@ -173,45 +176,44 @@ class World{
     if(goals.some(g=>g.k==='lampPush')){ const e=Math.max(...sc.pistons.map(p=>this.ext[p.a]),0); if(q[sc.lampA]&&e>0.4) this.f.lampPush=true; }
     if(sc.fan){
       const sp=!!q[sc.fan.spray], fn=!!q[sc.fan.a];
-      if(sp&&!fn){ this.nofan+=dt; if(this.nofan>0.15) return this.fail('Hata: Egzoz fanı kapalıyken boya püskürtüldü!'); } else this.nofan=0;
+      if(sp&&!fn){ this.nofan+=dt; if(this.nofan>0.15) return this.fail(tx('Hata: Egzoz fanı kapalıyken boya püskürtüldü!','Error: Paint sprayed while the exhaust fan was off!')); } else this.nofan=0;
       if(this.prevSp&&!sp) this.sprayOffT=this.t;
       if(this.prevFan&&!fn&&this.sprayOffT!==null){ const d=this.t-this.sprayOffT;
-        const h=sc.fan.hold||3; if(d<h-0.4) return this.fail('Hata: Fan çok erken durdu! Buhar için '+String(h).replace('.',',')+' sn beklemeli.'); if(d<=h+0.6) this.f.fanHold=true; }
+        const h=sc.fan.hold||3; if(d<h-0.4) return this.fail(tx('Hata: Fan çok erken durdu! Buhar için '+fx(h)+' sn beklemeli.','Error: Fan stopped too early! It must run '+h+' s for the fumes.')); if(d<=h+0.6) this.f.fanHold=true; }
       this.prevSp=sp; this.prevFan=fn;
     }
-    if(sc.motorAnd){ if(this.motor&&!sc.motorAnd.every(a=>iv[a])){ this.andT+=dt; if(this.andT>0.3) return this.fail('Hata: Bant yalnızca iki şalter de açıkken çalışmalı!'); } else this.andT=0; }
+    if(sc.motorAnd){ if(this.motor&&!sc.motorAnd.every(a=>iv[a])){ this.andT+=dt; if(this.andT>0.3) return this.fail(tx('Hata: Bant yalnızca iki şalter de açıkken çalışmalı!','Error: Belt must run only when BOTH switches are ON!')); } else this.andT=0; }
     if(sc.motorAnd){ const on=sc.motorAnd.filter(a=>iv[a]).length; if(on===1&&!this.motor){ this.atT+=dt; if(this.atT>=0.8) this.f.andTest=true; } }
     if(sc.motorOr){ const [a,b]=sc.motorOr; if(this.motor&&iv[a]&&!iv[b]) this.oa+=dt; if(this.motor&&iv[b]&&!iv[a]) this.ob+=dt; if(this.oa>=0.5&&this.ob>=0.5) this.f.orTest=true; }
-    if(sc.motorOr){ const any=sc.motorOr.some(a=>iv[a]), sOn=sc.sensors.some(s=>this.sensorOn(s.a)); if(any&&!this.motor&&!sOn){ this.orT+=dt; if(this.orT>0.5) return this.fail('Hata: Şalterlerden herhangi biri açıkken bant çalışmalı!'); } else this.orT=0; }
+    if(sc.motorOr){ const any=sc.motorOr.some(a=>iv[a]), sOn=sc.sensors.some(s=>this.sensorOn(s.a)); if(any&&!this.motor&&!sOn){ this.orT+=dt; if(this.orT>0.5) return this.fail(tx('Hata: Şalterlerden herhangi biri açıkken bant çalışmalı!','Error: Belt must run when EITHER switch is ON!')); } else this.orT=0; }
     if(sc.lampDelay){ const par=!this.motor&&this.sensorOn(sc.lampDelay.s); if(par&&this.pkS===null) this.pkS=this.t; if(!par) this.pkS=null;
-      const lp=!!q[sc.lampA]; if(lp&&!this.pLd){ const T=sc.lampDelay.t; if(this.pkS===null) return this.fail('Hata: Lamba kutu sensörde beklerken yanmalı!'); const d=this.t-this.pkS;
-        if(d>=T-0.25&&d<=T+0.6) this.f.lampDelay=true; else return this.fail('Hata: Lamba '+d.toFixed(1)+' sn sonra yandı, '+String(T).replace('.',',')+' sn olmalı!'); } this.pLd=lp; }
+      const lp=!!q[sc.lampA]; if(lp&&!this.pLd){ const T=sc.lampDelay.t; if(this.pkS===null) return this.fail(tx('Hata: Lamba kutu sensörde beklerken yanmalı!','Error: Lamp must light while the box waits at the sensor!')); const d=this.t-this.pkS;
+        if(d>=T-0.25&&d<=T+0.6) this.f.lampDelay=true; else return this.fail(tx('Hata: Lamba '+fx(d.toFixed(1))+' sn sonra yandı, '+fx(T)+' sn olmalı!','Error: Lamp lit after '+d.toFixed(1)+' s, should be '+T+' s!')); } this.pLd=lp; }
     if(sc.lampTof){ const sv=sc.lampTof.src==='motor'?this.motor:!!q[sc.lampTof.src]; if(this.pSrc&&!sv) this.srcFall=this.t; this.pSrc=sv;
-      const lp=!!q[sc.lampA]; if(this.pLt&&!lp&&this.srcFall!==null){ const d=this.t-this.srcFall, T=sc.lampTof.t; if(d>=T-0.4&&d<=T+0.6) this.f.lampTof=true; else return this.fail('Hata: Lamba '+d.toFixed(1)+' sn sonra söndü, '+String(T).replace('.',',')+' sn olmalı!'); } this.pLt=lp; }
+      const lp=!!q[sc.lampA]; if(this.pLt&&!lp&&this.srcFall!==null){ const d=this.t-this.srcFall, T=sc.lampTof.t; if(d>=T-0.4&&d<=T+0.6) this.f.lampTof=true; else return this.fail(tx('Hata: Lamba '+fx(d.toFixed(1))+' sn sonra söndü, '+fx(T)+' sn olmalı!','Error: Lamp went off after '+d.toFixed(1)+' s, should be '+T+' s!')); } this.pLt=lp; }
     if(sc.startDelay){ if(this.startAt!==null&&!this.motor&&q[sc.lampA]) this.sdLamp+=dt;
       if(this.motor&&!this.pm&&this.startAt!==null){ const d=this.t-this.startAt, T=sc.startDelay; this.startAt=null;
-        if(d<T-0.3||d>T+0.8) return this.fail('Hata: Bant START\'tan '+d.toFixed(1)+' sn sonra kalktı, '+String(T).replace('.',',')+' sn olmalı!');
-        if(this.sdLamp<T-0.6) return this.fail('Hata: Bekleme süresince ikaz lambası yanmalı!'); this.f.startDelay=true; } }
-    if(sc.lampCount){ const lp=!!q[sc.lampA]; if(lp&&!this.pLc){ if(this.cntRises>=sc.lampCount.n) this.f.lampCount=true; else return this.fail('Hata: Lamba '+sc.lampCount.n+'. kutudan önce yandı!'); } this.pLc=lp; }
+        if(d<T-0.3||d>T+0.8) return this.fail(tx('Hata: Bant START\'tan '+fx(d.toFixed(1))+' sn sonra kalktı, '+fx(T)+' sn olmalı!','Error: Belt started '+d.toFixed(1)+' s after START, should be '+T+' s!'));
+        if(this.sdLamp<T-0.6) return this.fail(tx('Hata: Bekleme süresince ikaz lambası yanmalı!','Error: Warning lamp must be on during the wait!')); this.f.startDelay=true; } }
+    if(sc.lampCount){ const lp=!!q[sc.lampA]; if(lp&&!this.pLc){ if(this.cntRises>=sc.lampCount.n) this.f.lampCount=true; else return this.fail(tx('Hata: Lamba '+sc.lampCount.n+'. kutudan önce yandı!','Error: Lamp lit before box #'+sc.lampCount.n+'!')); } this.pLc=lp; }
     if(sc.restartAfter){ if(this.pm&&!this.motor) this.mFall=this.t;
       if(!this.pm&&this.motor&&this.mFall!==null){ const d=this.t-this.mFall, T=sc.restartAfter; this.mFall=null;
-        if(d>=T-0.3&&d<=T+0.8) this.f.restart=true; else return this.fail('Hata: Bant '+d.toFixed(1)+' sn sonra yeniden kalktı, '+String(T).replace('.',',')+' sn olmalı!'); } }
+        if(d>=T-0.3&&d<=T+0.8) this.f.restart=true; else return this.fail(tx('Hata: Bant '+fx(d.toFixed(1))+' sn sonra yeniden kalktı, '+fx(T)+' sn olmalı!','Error: Belt restarted after '+d.toFixed(1)+' s, should be '+T+' s!')); } }
     return true;
   }
   goalList(){
-    const LB={seal:'Mühürleme',stop:'STOP ile durdur',lampPark:'Arıza lambası',lampAck:'Onayla söndür',lampRun:'Çalışıyor lambası',lampPush:'Ayırma lambası',
-      lampDelay:'Gecikmeli lamba',lampTof:'Lamba gecikmeli söner',startDelay:'Gecikmeli kalkış',lampCount:'Sayaç lambası',restart:'Otomatik yeniden kalkış',andTest:'Tek şalter testi',orTest:'İki şalter ayrı ayrı'};
-    const tr=x=>String(x).replace('.',',');
+    const LB={seal:['Mühürleme','Seal-in'],stop:['STOP ile durdur','Stop with STOP'],lampPark:['Arıza lambası','Fault lamp'],lampAck:['Onayla söndür','Acknowledge'],lampRun:['Çalışıyor lambası','Running lamp'],lampPush:['Ayırma lambası','Divert lamp'],
+      lampDelay:['Gecikmeli lamba','Delayed lamp'],lampTof:['Lamba gecikmeli söner','Lamp off-delay'],startDelay:['Gecikmeli kalkış','Delayed start'],lampCount:['Sayaç lambası','Counter lamp'],restart:['Otomatik yeniden kalkış','Auto restart'],andTest:['Tek şalter testi','Single switch test'],orTest:['İki şalter ayrı ayrı','Each switch alone']};
     return this.lv.goals.map((g,i)=>{ let l,ok;
       switch(g.k){
-        case 'deliver': l='Teslim '+Math.min(this.delivered,g.n)+'/'+g.n; ok=this.delivered>=g.n; break;
-        case 'divert': l='Ayrılan '+Math.min(this.diverted,g.n)+'/'+g.n; ok=this.diverted>=g.n; break;
-        case 'fill': l=(g.lb||'Dolum')+' '+Math.min(this.filled,g.n)+'/'+g.n; ok=this.filled>=g.n; break;
-        case 'batch': l='Parti '+Math.min(this.batches,g.n)+'/'+g.n; ok=this.batches>=g.n; break;
-        case 'park': l='Sensörde dur'; ok=this.parkT>=g.hold; break;
-        case 'stopDelay': l=tr(g.t||3)+' sn gecikmeli dur'; ok=!!this.f.stopDelay; break;
-        case 'fanHold': l='Fan '+tr(g.t||3)+' sn nöbet'; ok=!!this.f.fanHold; break;
-        default: l=LB[g.k]||g.k; ok=!!this.f[g.k];
+        case 'deliver': l=tx('Teslim ','Delivered ')+Math.min(this.delivered,g.n)+'/'+g.n; ok=this.delivered>=g.n; break;
+        case 'divert': l=tx('Ayrılan ','Diverted ')+Math.min(this.diverted,g.n)+'/'+g.n; ok=this.diverted>=g.n; break;
+        case 'fill': l=(g.lb||tx('Dolum','Filled'))+' '+Math.min(this.filled,g.n)+'/'+g.n; ok=this.filled>=g.n; break;
+        case 'batch': l=tx('Parti ','Batch ')+Math.min(this.batches,g.n)+'/'+g.n; ok=this.batches>=g.n; break;
+        case 'park': l=tx('Sensörde dur','Stop at sensor'); ok=this.parkT>=g.hold; break;
+        case 'stopDelay': l=tx(fx(g.t||3)+' sn gecikmeli dur',(g.t||3)+' s delayed stop'); ok=!!this.f.stopDelay; break;
+        case 'fanHold': l=tx('Fan '+fx(g.t||3)+' sn nöbet','Fan '+(g.t||3)+' s run-on'); ok=!!this.f.fanHold; break;
+        default: l=LB[g.k]?tx(LB[g.k][0],LB[g.k][1]):g.k; ok=!!this.f[g.k];
       }
       if(this.gd[i]) ok=true; return {l,ok}; });
   }
