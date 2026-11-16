@@ -90,7 +90,7 @@ function showMenu(scr,cat,diff){
     ${L?`<button class="bigbtn" data-go="cont">${tx('⏵ Devam Et','⏵ Continue')} <small>${CATS[L.cat].n} · ${DIFFS[L.diff].n} ${L.n+1}</small></button>`:''}
     <div class="brow2"><button class="bigbtn" data-go="board">${tx('🏆 Liderlik','🏆 Leaderboard')}</button><button class="bigbtn" data-go="prog">${tx('📊 İlerleme','📊 Progress')}</button></div>
     <button class="bigbtn" data-go="how">${tx('❓ Nasıl Oynanır','❓ How to Play')}</button>
-    <button class="bigbtn" data-go="set">${tx('⚙ Ayarlar','⚙ Settings')}</button></div>`;
+    <button class="bigbtn" data-go="set">${tx('⚙ Ayarlar','⚙ Settings')}</button><div class="ver">Ladder Master ${VERSION}</div></div>`;
   } else if(scr==='cats'){
     h=`<div class="topbar">${back('main')}<h3>${tx('Kategori Seç','Choose Category')}</h3><span class="pp">⚡ ${points()}</span></div>`+
     CATS.map((c,i)=>{ const d=catDone(i); return `<button class="ccard" data-go="diffs" data-c="${i}" style="border-color:color-mix(in srgb,${c.c} 35%,transparent)"><div class="ic" style="color:${c.c}">${palSym(c.ic)}</div><div class="bd"><b>${c.n}</b><small>${c.s}</small>${BAR(d,300,c.c)}</div><div class="cnt">${d}<small>/300</small></div></button>`; }).join('');
@@ -115,7 +115,8 @@ function showMenu(scr,cat,diff){
     <div class="grp">${tx('DİL','LANGUAGE')}</div><div class="seg">${sg('lang','tr','🇹🇷 Türkçe')}${sg('lang','en','🇬🇧 English')}</div>
     <div class="grp">${tx('OYUN','GAME')}</div>
     <button class="mi" data-go="snd">${save.sound?tx('🔊 Ses: Açık','🔊 Sound: On'):tx('🔇 Ses: Kapalı','🔇 Sound: Off')}</button>
-    <button class="mi" data-go="rst" style="color:var(--redt)">${tx('↺ Tüm ilerlemeyi sıfırla','↺ Reset all progress')}</button>`;
+    <button class="mi" data-go="rst" style="color:var(--redt)">${tx('↺ Tüm ilerlemeyi sıfırla','↺ Reset all progress')}</button>
+    <div class="ver">Ladder Master ${VERSION}</div>`;
   } else if(scr==='acct'){
     if(me()) h=`<div class="topbar">${back('main')}<h3>${tx('Hesabım','My Account')}</h3></div>
       <div class="prof"><div class="av">${esc(me().username[0].toUpperCase())}</div><b>${esc(me().username)}</b><span>⚡ ${points()} ${tx('puan','points')}</span></div>

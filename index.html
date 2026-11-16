@@ -252,6 +252,7 @@ html[data-theme=light] #io{background:#1a222c}
 .sol{font:600 13px/1.6 ui-monospace,monospace;color:var(--tx);white-space:normal}
 .sol .rl2{display:block;padding:4px 0;border-bottom:1px dashed var(--ln)}
 .sol .rl2:last-child{border:0}
+.ver{text-align:center;font:600 11.5px ui-monospace,monospace;color:var(--dim);margin-top:6px;letter-spacing:.5px}
 </style></head><body>
 <div id="app">
  <div id="top"><button class="ib" id="bMenu" aria-label="Menu">☰</button><div id="title"></div><span id="pill">STOP</span><button class="ib" id="bSnd">🔊</button></div>
@@ -763,6 +764,7 @@ function getLevel(id){
 }
 /*==UI==*/
 const $=(s,r=document)=>r.querySelector(s);
+const VERSION='v1.0.3';
 const SKEY='ladderustasi_v2';
 let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1,theme:'auto',lang:null,seen:{}};
 try{const s=JSON.parse(localStorage.getItem(SKEY)||'null'); if(s) save=Object.assign(save,s);}catch(e){}
@@ -1293,7 +1295,7 @@ function showMenu(scr,cat,diff){
     ${L?`<button class="bigbtn" data-go="cont">${tx('⏵ Devam Et','⏵ Continue')} <small>${CATS[L.cat].n} · ${DIFFS[L.diff].n} ${L.n+1}</small></button>`:''}
     <div class="brow2"><button class="bigbtn" data-go="board">${tx('🏆 Liderlik','🏆 Leaderboard')}</button><button class="bigbtn" data-go="prog">${tx('📊 İlerleme','📊 Progress')}</button></div>
     <button class="bigbtn" data-go="how">${tx('❓ Nasıl Oynanır','❓ How to Play')}</button>
-    <button class="bigbtn" data-go="set">${tx('⚙ Ayarlar','⚙ Settings')}</button></div>`;
+    <button class="bigbtn" data-go="set">${tx('⚙ Ayarlar','⚙ Settings')}</button><div class="ver">Ladder Master ${VERSION}</div></div>`;
   } else if(scr==='cats'){
     h=`<div class="topbar">${back('main')}<h3>${tx('Kategori Seç','Choose Category')}</h3><span class="pp">⚡ ${points()}</span></div>`+
     CATS.map((c,i)=>{ const d=catDone(i); return `<button class="ccard" data-go="diffs" data-c="${i}" style="border-color:color-mix(in srgb,${c.c} 35%,transparent)"><div class="ic" style="color:${c.c}">${palSym(c.ic)}</div><div class="bd"><b>${c.n}</b><small>${c.s}</small>${BAR(d,300,c.c)}</div><div class="cnt">${d}<small>/300</small></div></button>`; }).join('');
@@ -1318,7 +1320,8 @@ function showMenu(scr,cat,diff){
     <div class="grp">${tx('DİL','LANGUAGE')}</div><div class="seg">${sg('lang','tr','🇹🇷 Türkçe')}${sg('lang','en','🇬🇧 English')}</div>
     <div class="grp">${tx('OYUN','GAME')}</div>
     <button class="mi" data-go="snd">${save.sound?tx('🔊 Ses: Açık','🔊 Sound: On'):tx('🔇 Ses: Kapalı','🔇 Sound: Off')}</button>
-    <button class="mi" data-go="rst" style="color:var(--redt)">${tx('↺ Tüm ilerlemeyi sıfırla','↺ Reset all progress')}</button>`;
+    <button class="mi" data-go="rst" style="color:var(--redt)">${tx('↺ Tüm ilerlemeyi sıfırla','↺ Reset all progress')}</button>
+    <div class="ver">Ladder Master ${VERSION}</div>`;
   } else if(scr==='acct'){
     if(me()) h=`<div class="topbar">${back('main')}<h3>${tx('Hesabım','My Account')}</h3></div>
       <div class="prof"><div class="av">${esc(me().username[0].toUpperCase())}</div><b>${esc(me().username)}</b><span>⚡ ${points()} ${tx('puan','points')}</span></div>

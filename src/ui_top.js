@@ -1,5 +1,6 @@
 /*==UI==*/
 const $=(s,r=document)=>r.querySelector(s);
+const VERSION='v1.0.3';
 const SKEY='ladderustasi_v2';
 let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1,theme:'auto',lang:null,seen:{}};
 try{const s=JSON.parse(localStorage.getItem(SKEY)||'null'); if(s) save=Object.assign(save,s);}catch(e){}
