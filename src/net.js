@@ -17,9 +17,38 @@ function errMsg(j,st){
   if(st===0) return tx('Bağlantı yok','No connection');
   return m||tx('Bir hata oluştu','Something went wrong');
 }
+// JWT'nin bitiş zamanı (sn)
+const jwtExp=t=>{ try{ return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).exp||0; }catch(e){ return 0; } };
+let refreshing=null;   // aynı anda tek yenileme (eşzamanlı yenilemeler refresh token'ı geçersiz kılıyordu)
+function refreshSess(){
+  if(!NET.sess||!NET.sess.refresh_token) return Promise.resolve(false);
+  if(refreshing) return refreshing;
+  const rt=NET.sess.refresh_token;
+  refreshing=(async()=>{
+    try{
+      const r=await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'apikey':SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:rt})});
+      if(r.ok){ const j=await r.json(); NET.sess=Object.assign({},NET.sess,{access_token:j.access_token,refresh_token:j.refresh_token}); saveSess(); return true; }
+      // yalnızca sunucu oturumu kesin olarak reddederse çık; ağ/5xx/429 hatalarında oturumu koru
+      if(r.status===400||r.status===401||r.status===403){
+        let j={}; try{ j=await r.json(); }catch(e){}
+        if(NET.sess&&NET.sess.refresh_token!==rt) return true;            // başka bir sekme/istek zaten yeniledi
+        if(/invalid|not found|revoked|expired|already used/i.test((j.error_description||j.msg||j.error||j.code||'')+'')){
+          NET.expiredUser=NET.sess.user&&NET.sess.user.username; NET.sess=null; saveSess();
+          toast(tx('Oturum süresi doldu — lütfen tekrar giriş yap','Session expired — please sign in again'));
+        }
+      }
+      return false;
+    }catch(e){ return false; }
+    finally{ setTimeout(()=>{ refreshing=null; },0); }
+  })();
+  return refreshing;
+}
+// süresi dolmak üzereyse istekten önce yenile
+async function ensureFresh(){ if(!NET.sess||!NET.sess.access_token) return; const exp=jwtExp(NET.sess.access_token); if(exp&&exp-Date.now()/1000<120) await refreshSess(); }
 async function sb(path,{method='GET',body,auth=true,headers={}}={}){
   if(!NET.ok) throw {msg:'offline'};
-  const h=Object.assign({'apikey':SB_KEY,'Content-Type':'application/json'},headers);
+  if(auth&&NET.sess) await ensureFresh();
+  const h=Object.assign({'apikey':SB_KEY,'Content-Type':'application/json'},headers); delete h._retry;
   h.Authorization='Bearer '+((auth&&NET.sess&&NET.sess.access_token)||SB_KEY);
   let r; try{ r=await fetch(SB_URL+path,{method,headers:h,body:body?JSON.stringify(body):undefined}); }catch(e){ throw {msg:errMsg(null,0)}; }
   if(r.status===401&&auth&&NET.sess&&!headers._retry){ if(await refreshSess()) return sb(path,{method,body,auth,headers:Object.assign({},headers,{_retry:1})}); }
@@ -27,12 +56,10 @@ async function sb(path,{method='GET',body,auth=true,headers={}}={}){
   if(!r.ok) throw {msg:errMsg(j,r.status),status:r.status};
   return {j,r};
 }
-async function refreshSess(){
-  try{ const r=await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'apikey':SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:NET.sess.refresh_token})});
-    if(!r.ok){ NET.sess=null; saveSess(); return false; }
-    const j=await r.json(); NET.sess={access_token:j.access_token,refresh_token:j.refresh_token,user:NET.sess.user}; saveSess(); return true;
-  }catch(e){ return false; }
-}
+// başka sekmede giriş/çıkış olursa senkronla
+window.addEventListener('storage',e=>{ if(e.key==='lm_sess'){ try{ NET.sess=JSON.parse(e.newValue||'null'); }catch(_){} } });
+// tarayıcıdan kalıcı depolama iste (iOS/Android verileri silmesin)
+try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){}
 function setSess(j,username){ NET.sess={access_token:j.access_token,refresh_token:j.refresh_token,user:{id:j.user.id,username}}; saveSess(); }
 async function register(u,p){
   if(!validUser(u)) throw {msg:tx('Kullanıcı adı 3-16 karakter: harf, rakam, _','Username: 3-16 chars, letters, digits, _')};

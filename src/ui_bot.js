@@ -19,11 +19,24 @@ $('#errEdit').onclick=()=>stopSim();
 $('#bSpd').onclick=()=>{ S.speed=S.speed===1?2:1; $('#bSpd').textContent=S.speed+'x'; Snd.click(); };
 function setSound(v){ save.sound=v; $('#bSnd').textContent=v?'🔊':'🔇'; persist(); }
 $('#bSnd').onclick=()=>{ setSound(!save.sound); Snd.init(); Snd.click(); };
-function solHTML(lv){
-  const nm=c=>c.t==='NO'?`-| |- ${c.a}`:c.t==='NC'?`-|/|- ${c.a}`:c.t==='COIL'?`( ) ${c.a}`:c.t==='SET'?`(S) ${c.a}`:c.t==='RST'?`(R) ${c.a}`:`${c.t} ${c.a}`+(c.pv!==undefined?` [${(c.t==='TON'||c.t==='TOF')?fx(c.pv)+' '+tx('sn','s'):c.pv}]`:'');
-  return lv.sol.rungs.map((rg,i)=>{ const sp=branchSpan(rg); const row=rg.c[0].slice(0,OUTC).map((c,k)=>({c,k}));
-    let parts=[]; for(let k=0;k<OUTC;k++){ const c=rg.c[0][k]; if(sp&&k===sp.from){ const up=rg.c[0].slice(sp.from,sp.to+1).filter(Boolean).map(nm).join(' · '), dn=rg.c[1].slice(sp.from,sp.to+1).filter(Boolean).map(nm).join(' · '); parts.push(`( ${up} ∥ ${dn} )`); k=sp.to; continue; } if(c) parts.push(nm(c)); }
-    const o=rg.c[0][OUTC]; return `<span class="rl2"><b style="color:var(--dim)">R${i+1}</b>  ${parts.join(' · ')} → ${o?nm(o):''}</span>`; }).join('');
+// çözümü editördekine benzer görsel ladder diyagramı olarak çiz
+function solLadder(lv){
+  const tags=defaultTags(lv), cw=60, x0=22, W=x0*2+cw*COLS, RH=62, BR=58;
+  const inner=t=>palSym(t).replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
+  const lbl=a=>(tags[a]||'').slice(0,11);
+  return lv.sol.rungs.map((rg,ri)=>{
+    const sp=branchSpan(rg), H=RH+(sp?BR:0), y=30;
+    let g=`<text class="rn" x="2" y="11">R${ri+1}</text><path class="rl" d="M${x0-4} 4V${H-4}M${W-x0+4} 4V${H-4}"/><path class="w" d="M${x0-4} ${y}H${W-x0+4}"/>`;
+    if(sp){ const xa=x0+sp.from*cw, xb=x0+(sp.to+1)*cw, yb=y+BR; g+=`<path class="w" d="M${xa} ${y}V${yb}H${xb}V${y}"/>`; }
+    const cell=(c,col,yy)=>{ if(!c) return ''; const cx=x0+col*cw+cw/2;
+      if(c.t==='TON'||c.t==='TOF'||c.t==='CTU'||c.t==='CTD'){
+        const v=(c.t==='TON'||c.t==='TOF')?`${fx(c.pv)} ${tx('sn','s')}`:`PV ${c.pv}`;
+        return `<rect class="bx" x="${cx-27}" y="${yy-17}" width="54" height="34" rx="4"/><text class="bt" x="${cx}" y="${yy-3}">${c.t} ${c.a}</text><text class="bv" x="${cx}" y="${yy+11}">${v}</text>`; }
+      return `<rect class="bg" x="${cx-19}" y="${yy-13}" width="38" height="26"/><svg x="${cx-17}" y="${yy-12}" width="34" height="24" viewBox="0 0 34 24" class="sy">${inner(c.t)}</svg><text class="ad" x="${cx}" y="${yy-17}">${c.a}</text><text class="tg" x="${cx}" y="${yy+24}">${lbl(c.a)}</text>`; };
+    for(let col=0;col<COLS;col++) g+=cell(rg.c[0][col],col,y);
+    if(sp) for(let col=sp.from;col<=sp.to;col++) g+=cell(rg.c[1][col],col,y+BR);
+    return `<svg class="sl" viewBox="0 0 ${W} ${H}" width="100%">${g}</svg>`;
+  }).join('');
 }
 function hintCard(open,reveal){
   const els=levelElems(S.lv), nR=S.lv.sol.rungs.length;
@@ -32,7 +45,7 @@ function hintCard(open,reveal){
     <div class="elist">${els.map(k=>`<button class="elb ${open===k?'on':''}" data-k="${k}">${elSym(k)}<span>${tx(ELEM[k].t[0],ELEM[k].t[1]).split('  ')[0].split(' — ')[0]}</span></button>`).join('')}</div>
     ${open?elemHTML(open,true):`<p class="t" style="margin:4px 0 0;font-size:12.5px">${tx(`Çözüm <b>${nR} satır</b> ve <b>${S.lv.opt} blok</b> ile yapılabilir. Bir elemana dokunarak ne işe yaradığını gör.`,`It can be solved with <b>${nR} rung(s)</b> and <b>${S.lv.opt} blocks</b>. Tap an element to see what it does.`)}</p>`}</div>
    <div class="hstep"><h4>2 · ${tx('Devre tarifi','Circuit recipe')}</h4>${reveal?`<p class="t" style="margin:0">${S.lv.hint}</p>`:`<button class="btn wide" id="rv1" style="width:100%">${tx('🔓 Tarifi göster','🔓 Show recipe')}</button>`}</div>
-   <div class="hstep"><h4>3 · ${tx('Tam çözüm','Full solution')}</h4>${reveal===2?`<div class="sol">${solHTML(S.lv)}</div>`:`<button class="btn wide" id="rv2" style="width:100%" ${reveal?'':'disabled style="opacity:.4;width:100%"'}>${tx('🔑 Çözümü göster','🔑 Show solution')}</button>`}</div>
+   <div class="hstep"><h4>3 · ${tx('Tam çözüm','Full solution')}</h4>${reveal===2?`<div class="solv">${solLadder(S.lv)}</div><p class="t" style="font-size:11.5px;color:var(--dim);margin:6px 0 0">${tx('Bu devreyi aşağıdaki editöre kur, sonra ▶ RUN.','Build this circuit in the editor below, then ▶ RUN.')}</p>`:`<button class="btn wide" id="rv2" style="width:100%" ${reveal?'':'disabled style="opacity:.4;width:100%"'}>${tx('🔑 Çözümü göster','🔑 Show solution')}</button>`}</div>
    <div class="brow"><button class="btn pri wide" id="ok">${tx('Tamam','OK')}</button></div>`,e=>{
     const b=e.target.closest('.elb'); if(b){ Snd.click(); hintCard(open===b.dataset.k?null:b.dataset.k,reveal); return; }
     if(e.target.id==='rv1'){ Snd.click(); hintCard(open,1); return; }
@@ -119,7 +132,7 @@ function showMenu(scr,cat,diff){
       <button class="mi" data-go="out" style="color:var(--redt)">${tx('⎋ Çıkış yap','⎋ Sign out')}</button>`;
     else h=`<div class="topbar">${back('main')}<h3>${S.mreg?tx('Kayıt Ol','Sign Up'):tx('Giriş Yap','Sign In')}</h3></div>
       ${NET.ok?'':`<p class="t" style="color:var(--amb)">${tx('Çevrimiçi hesaplar henüz yapılandırılmadı.','Online accounts are not configured yet.')}</p>`}
-      <div class="fld"><label>${tx('Kullanıcı adı','Username')}</label><input id="uN" maxlength="16" autocomplete="username" autocapitalize="off" placeholder="${tx('ör: tuna_plc','e.g. tuna_plc')}"></div>
+      <div class="fld"><label>${tx('Kullanıcı adı','Username')}</label><input id="uN" maxlength="16" autocomplete="username" autocapitalize="off" value="${esc(NET.expiredUser||'')}" placeholder="${tx('ör: tuna_plc','e.g. tuna_plc')}"></div>
       <div class="fld"><label>${tx('Şifre','Password')}</label><input id="uP" type="password" autocomplete="${S.mreg?'new-password':'current-password'}" placeholder="••••••"></div>
       <p class="t" id="uErr" style="color:var(--red);min-height:1.4em;margin:6px 0"></p>
       <button class="bigbtn play" data-go="${S.mreg?'doReg':'doLogin'}" style="min-height:52px;font-size:17px">${S.mreg?tx('Kayıt Ol','Sign Up'):tx('Giriş Yap','Sign In')}</button>
