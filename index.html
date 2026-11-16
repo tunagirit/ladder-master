@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Ladder Ustası — PLC Mantık Bulmacası</title>
+<style>
+:root{--bg:#0d1117;--p1:#151b23;--p2:#1c242e;--ln:#2a3542;--tx:#d7dee7;--dim:#7d8a99;--neon:#39ff6a;--amb:#ffb020;--red:#ff4d4d;--blu:#4da3ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+html,body{margin:0;height:100%;background:#06090d;color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+#app{position:relative;height:100dvh;max-width:480px;margin:0 auto;display:flex;flex-direction:column;background:var(--bg);box-shadow:0 0 40px #000}
+#sceneWrap{flex:0 0 38%;min-height:210px;position:relative;border-bottom:2px solid var(--ln)}
+#cv{width:100%;height:100%;display:block}
+#err{position:absolute;left:8px;right:8px;bottom:62px;background:rgba(120,15,15,.95);border:2px solid var(--red);border-radius:10px;padding:10px 12px;display:none;z-index:5;box-shadow:0 0 18px rgba(255,77,77,.5)}
+#err b{display:block;font-size:13.5px;line-height:1.35;margin-bottom:8px}
+#err .row{display:flex;gap:8px}
+#mid{background:var(--p1);padding:6px 8px 6px;border-bottom:1px solid var(--ln)}
+#mtop{display:flex;align-items:center;gap:6px}
+#title{flex:1;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#title small{color:var(--dim);font-weight:500;margin-right:6px}
+.ib{background:var(--p2);border:1px solid var(--ln);color:var(--tx);border-radius:8px;min-width:36px;height:34px;font-size:16px;padding:0 8px}
+.ib:active{background:#26323f}
+#task{font-size:11.5px;line-height:1.35;color:#aab6c3;margin:5px 0 6px;max-height:3.9em;overflow:hidden;cursor:pointer}
+#ctrl{display:flex;gap:6px;align-items:center}
+#run{flex:1;height:38px;border-radius:9px;border:0;font-weight:800;font-size:15px;letter-spacing:.5px;color:#06210f;background:var(--neon);box-shadow:0 0 12px rgba(57,255,106,.35)}
+#run.on{background:var(--red);color:#fff;box-shadow:0 0 12px rgba(255,77,77,.4)}
+#pill{font-size:10px;font-weight:800;padding:3px 7px;border-radius:99px;background:#222c37;color:var(--dim);border:1px solid var(--ln)}
+#pill.run{background:#0d3a1a;color:var(--neon);border-color:#1f7a37}
+#pill.bad{background:#4a1111;color:var(--red);border-color:#8a2222}
+#editor{flex:1;min-height:0;display:flex;flex-direction:column;background:#0f141b}
+#ehead{display:flex;align-items:center;gap:6px;padding:5px 8px;font-size:11px;color:var(--dim);border-bottom:1px solid #1b242e}
+#ehead .sp{flex:1;line-height:1.25}
+#ehead .sp b{color:var(--tx)}
+.sm{background:var(--p2);border:1px solid var(--ln);color:var(--tx);border-radius:7px;height:28px;padding:0 9px;font-size:12px}
+#rungs{flex:1;overflow-y:auto;overflow-x:hidden;padding:6px 6px 14px;-webkit-overflow-scrolling:touch}
+.rung{display:flex;align-items:flex-start;margin-bottom:5px}
+.gut{width:30px;flex:0 0 30px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:1px 0}
+.rn{font-size:10px;color:var(--dim);font-family:ui-monospace,monospace}
+.rm{background:#1a222c;border:1px solid #2a3542;color:var(--dim);border-radius:6px;width:24px;height:22px;font-size:13px;line-height:1;padding:0}
+.grid{position:relative;background:repeating-linear-gradient(0deg,transparent 0 43px,#131b24 43px 44px)}
+.rail{position:absolute;top:0;bottom:0;width:4px;background:#46576b;border-radius:2px}
+.grid.on .rail{background:var(--neon);box-shadow:0 0 8px var(--neon)}
+.cell{position:absolute;height:44px;border-radius:5px}
+.cell svg{display:block;overflow:visible}
+.cell svg *{fill:none;stroke-linecap:round}
+.cell .wl,.cell .wr{stroke:#3a4757;stroke-width:2.5}
+.cell .sym{stroke:#9fb0c2;stroke-width:2.5}
+.cell .ad{fill:#cfe0f2;stroke:none;font:600 9.5px ui-monospace,Menlo,monospace;text-anchor:middle}
+.cell .tg{fill:#7d8a99;stroke:none;font:8.5px system-ui;text-anchor:middle}
+.cell .ph{stroke:#2b3744;stroke-width:1.5;stroke-dasharray:3 3}
+.cell .plus{stroke:#2b3744;stroke-width:2}
+.cell .bx{fill:#141c25;stroke:#6d8097;stroke-width:2}
+.cell .bt{fill:#dfe8f2;stroke:none;font:700 10px ui-monospace,monospace;text-anchor:middle}
+.cell .bv{fill:#9fe8b3;stroke:none;font:600 9.5px ui-monospace,monospace;text-anchor:middle}
+.cell .cl{fill:#cfe0f2;stroke:none;font:700 11px ui-monospace,monospace;text-anchor:middle}
+.cell.lp .wl,.cell.rp .wr{stroke:var(--neon);filter:drop-shadow(0 0 3px var(--neon))}
+.cell.ps .sym{stroke:var(--neon);filter:drop-shadow(0 0 3px var(--neon))}
+.cell.ps .bx{stroke:var(--neon);fill:#0d2615}
+.cell.ps .cl{fill:var(--neon)}
+.cell.qq .bx{fill:#12461f}
+.vw{position:absolute;width:3px;background:#3a4757;border-radius:2px}
+.vw.on{background:var(--neon);box-shadow:0 0 6px var(--neon)}
+#rungs[data-tool="c"] .cell.ec,#rungs[data-tool="o"] .cell.eo{background:rgba(77,163,255,.12);outline:1.5px dashed #4da3ff;animation:pl 1s infinite}
+@keyframes pl{50%{background:rgba(77,163,255,.25)}}
+#addr{margin:2px 0 0 30px;width:calc(100% - 30px);height:34px;border:1.5px dashed #2f3d4c;background:transparent;color:var(--dim);border-radius:8px;font-size:12px}
+#palette{flex:0 0 66px;display:flex;gap:6px;padding:6px 6px calc(6px + env(safe-area-inset-bottom));overflow-x:auto;background:var(--p1);border-top:2px solid var(--ln)}
+.pal{flex:0 0 62px;border-radius:9px;background:var(--p2);border:1.5px solid var(--ln);color:var(--tx);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:2px;font-size:9px}
+.pal svg{display:block}
+.pal svg *{fill:none;stroke:#b6c4d3;stroke-width:2.2;stroke-linecap:round}
+.pal svg text{fill:#dfe8f2;stroke:none;font:700 11px ui-monospace,monospace;text-anchor:middle}
+.pal.sel{border-color:var(--blu);background:#14263a;box-shadow:0 0 10px rgba(77,163,255,.5)}
+.ov{position:absolute;inset:0;background:rgba(3,6,10,.82);z-index:20;display:none;align-items:flex-end;justify-content:center}
+.ov.show{display:flex}
+.ov.mid{align-items:center}
+#ovCard{z-index:30}
+.sheet{width:100%;max-height:88%;overflow-y:auto;background:#161d27;border:1px solid var(--ln);border-radius:16px 16px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom));animation:up .18s ease-out}
+.card{width:90%;max-height:90%;overflow-y:auto;background:#161d27;border:1px solid var(--ln);border-radius:16px;padding:16px;text-align:center}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.sheet h3,.card h3{margin:0 0 4px;font-size:16px}
+.grp{font-size:10px;color:var(--dim);margin:10px 0 4px;letter-spacing:.8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:#1d2733;border:1.5px solid var(--ln);color:var(--tx);border-radius:9px;padding:5px 9px;font:600 12px ui-monospace,monospace;text-align:left;min-width:62px}
+.chip small{display:block;font:9px system-ui;color:var(--dim)}
+.chip.sel{border-color:var(--neon);background:#0f2a18;box-shadow:0 0 8px rgba(57,255,106,.35)}
+.fld{display:flex;gap:8px;align-items:center;margin-top:10px}
+.fld label{font-size:11px;color:var(--dim);flex:0 0 70px}
+.fld input{flex:1;height:34px;background:#0e141b;border:1.5px solid var(--ln);border-radius:8px;color:var(--tx);padding:0 10px;font-size:14px;user-select:text;-webkit-user-select:text}
+.step{display:flex;align-items:center;gap:10px}
+.step b{font:700 16px ui-monospace,monospace;min-width:64px;text-align:center;color:var(--amb)}
+.btn{height:42px;border-radius:10px;border:1.5px solid var(--ln);background:#212c38;color:var(--tx);font-size:14px;font-weight:700;padding:0 14px}
+.btn.pri{background:var(--neon);color:#06210f;border-color:var(--neon)}
+.btn.dan{background:#3b1414;border-color:#7a2323;color:#ff9a9a}
+.btn.wide{flex:1}
+.brow{display:flex;gap:8px;margin-top:14px}
+.mi{display:block;width:100%;text-align:left;height:46px;margin-bottom:6px;background:#1d2733;border:1.5px solid var(--ln);border-radius:10px;color:var(--tx);font-size:14px;padding:0 14px}
+#menu{background:var(--bg)}
+#menu .sheet{height:100%;max-height:100%;border-radius:0;background:var(--bg);border:0}
+.cat{margin:14px 0 6px;font-size:11px;font-weight:800;letter-spacing:1px;color:var(--amb)}
+.cat small{display:block;color:var(--dim);font-weight:500;letter-spacing:0}
+.lvs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.lv{aspect-ratio:1;border-radius:12px;background:var(--p2);border:1.5px solid var(--ln);color:var(--tx);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:20px;font-weight:800}
+.lv small{font-size:10px;color:var(--amb);letter-spacing:1px;min-height:12px}
+.lv.lock{opacity:.4}
+.lv.cur{border-color:var(--neon)}
+.stars{font-size:30px;letter-spacing:6px;color:#3a4552;margin:6px 0}
+.stars .f{color:var(--amb);text-shadow:0 0 12px var(--amb)}
+#toast{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);background:#243242;border:1px solid #3a4b5f;color:#fff;font-size:12.5px;padding:8px 14px;border-radius:99px;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
+#toast.show{opacity:1}
+p.t{font-size:13px;line-height:1.5;color:#b9c5d2;text-align:left;margin:8px 0}
+
+.pal{touch-action:pan-x}
+#doneBar{flex:0 0 66px;display:none;align-items:center;gap:10px;padding:8px 10px;background:#0f2a18;border-top:2px solid #1f7a37;font-size:12.5px;line-height:1.3}
+#doneBar span{flex:1}
+#doneBar b{color:var(--neon)}
+#ghost{position:fixed;left:0;top:0;width:62px;height:54px;border-radius:10px;background:#14263a;border:1.5px solid var(--blu);box-shadow:0 6px 18px rgba(0,0,0,.6),0 0 14px rgba(77,163,255,.6);display:none;flex-direction:column;align-items:center;justify-content:center;font-size:9px;color:var(--tx);pointer-events:none;z-index:99;opacity:.95}
+#ghost svg *{fill:none;stroke:#cfe0f2;stroke-width:2.2;stroke-linecap:round}
+#ghost svg text{fill:#dfe8f2;stroke:none;font:700 11px ui-monospace,monospace;text-anchor:middle}
+.cell.dz{background:rgba(57,255,106,.25)!important;outline:2px solid var(--neon)!important;animation:none!important}
+.cell.dragsrc{opacity:.35}
+.cell.full{touch-action:none;cursor:grab}
+.cell.dz.sw{background:rgba(255,176,32,.25)!important;outline-color:var(--amb)!important}
+#palette.trash{background:#3b1414;border-top-color:var(--red)}
+#palette.trash>*{opacity:.15}
+#palette.trash::after{content:"🗑  Silmek için buraya bırak";position:absolute;left:0;right:0;text-align:center;line-height:54px;color:#ff9a9a;font-weight:800;font-size:14px}
+#palette.trash.hot{background:#5a1717;box-shadow:inset 0 0 20px rgba(255,77,77,.6)}
+#palette{position:relative}
+#menu{background:radial-gradient(120% 70% at 50% 0%,#132a1c 0%,#0d1117 55%)}
+#menu .sheet{background:transparent}
+.mm{display:flex;flex-direction:column;gap:10px;min-height:100%;padding-bottom:10px}
+#mcv{width:100%;height:150px;display:block}
+.mm-title{text-align:center;font-weight:900;font-size:40px;letter-spacing:3px;line-height:1;color:#eafff0;text-shadow:0 0 10px var(--neon),0 0 28px rgba(57,255,106,.55);margin-top:2px}
+.mm-title span{display:block;font-size:26px;letter-spacing:10px;color:var(--amb);text-shadow:0 0 12px rgba(255,176,32,.6);margin-top:4px}
+.mm-sub{text-align:center;font-size:10.5px;letter-spacing:2.5px;color:var(--dim);margin-bottom:6px}
+.pts{align-self:center;background:#0f2a18;border:1.5px solid #1f7a37;color:var(--neon);font-weight:800;border-radius:99px;padding:6px 16px;font-size:14px;margin-bottom:6px}
+.bigbtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:52px;border-radius:14px;border:1.5px solid var(--ln);background:#161e28;color:var(--tx);font-size:16px;font-weight:800}
+.bigbtn small{font-weight:500;color:var(--dim);font-size:11px}
+.bigbtn.play{min-height:62px;font-size:22px;letter-spacing:2px;color:#06210f;border:0;background:linear-gradient(90deg,#22d957,#39ff6a);box-shadow:0 0 24px rgba(57,255,106,.45)}
+.topbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.topbar h3{flex:1;margin:0;font-size:17px}
+.topbar .pp{color:var(--neon);font-weight:800;font-size:13px}
+.ccard{display:flex;gap:12px;align-items:center;width:100%;padding:14px;border-radius:14px;border:1.5px solid var(--ln);background:#141b24;text-align:left;color:var(--tx);margin-bottom:10px}
+.ccard .ic{flex:0 0 58px;height:58px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#0b1016;border:1.5px solid currentColor}
+.ccard .ic svg *{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+.ccard .ic svg text{fill:currentColor;stroke:none;font:700 11px ui-monospace,monospace;text-anchor:middle}
+.ccard .bd{flex:1;min-width:0}
+.ccard b{display:block;font-size:17px}
+.ccard small{display:block;color:var(--dim);font-size:11.5px;margin-top:2px}
+.ccard .cnt{font:800 13px ui-monospace,monospace;color:var(--tx)}
+.bar{height:6px;border-radius:3px;background:#222c37;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;border-radius:3px}
+.lvs5{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.lv5{aspect-ratio:1;border-radius:10px;background:var(--p2);border:1.5px solid var(--ln);color:var(--tx);font:800 15px ui-monospace,monospace;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0}
+.lv5 small{font-size:10px;line-height:1}
+.lv5.dn{background:#0f2a18;border-color:#1f7a37;color:var(--neon)}
+.lv5.lock{opacity:.35}
+.lv5.cur{box-shadow:0 0 0 2px var(--blu)}
+.gain{font-size:28px;font-weight:900;color:var(--amb);text-shadow:0 0 14px rgba(255,176,32,.6);margin:8px 0}
+.prow{display:flex;align-items:center;gap:8px;font-size:12px;margin:6px 0}
+.prow span{flex:0 0 46px;color:var(--dim)}
+.prow .bar{flex:1;margin:0}
+.prow b{flex:0 0 54px;text-align:right;font-family:ui-monospace,monospace}
+</style></head><body>
+<div id="app">
+ <div id="sceneWrap"><canvas id="cv"></canvas><div id="err"><b id="errT"></b><div class="row"><button class="btn pri wide" id="errRetry">↻ Tekrar Dene</button><button class="btn wide" id="errEdit">✎ Düzenle</button></div></div></div>
+ <div id="mid">
+  <div id="mtop"><button class="ib" id="bMenu" title="Bölümler">☰</button><div id="title"></div><span id="pill">STOP</span><button class="ib" id="bSnd">🔊</button></div>
+  <div id="task"></div>
+  <div id="ctrl"><button id="run">▶ RUN</button><button class="ib" id="bSpd">1x</button><button class="ib" id="bHint">?</button></div>
+ </div>
+ <div id="editor"><div id="ehead"><div class="sp" id="einfo"></div><button class="sm" id="bClear">🗑 Temizle</button></div><div id="rungs"></div></div>
+ <div id="palette"></div>
+ <div id="doneBar"><span><b>✔ Bu bölüm tamamlandı.</b><br>Sıfırlamak ister misiniz?</span><button class="btn dan" id="bReset">↺ Sıfırla</button></div>
+ <div class="ov" id="ovSheet"><div class="sheet" id="sheet"></div></div>
+ <div class="ov mid" id="ovCard"><div class="card" id="card"></div></div>
+ <div class="ov" id="menu"><div class="sheet" id="menuIn"></div></div>
+ <div id="toast"></div>
+ <div id="ghost"></div>
+</div>
+<script>
+'use strict';
+/* ===== PLC LADDER BULMACA — MANTIK ÇEKİRDEĞİ ===== */
+const COLS=5, OUTC=4, SCAN=0.02, BW=4, PIST_V=3;
+const OUTT=['COIL','SET','RST','TON','TOF','CTU','CTD'];
+const isOut=t=>OUTT.indexOf(t)>=0;
+function parseCell(s){ if(!s) return null; const p=s.split(' '); const o={t:p[0],a:p[1]}; if(p[2]!==undefined) o.pv=parseFloat(p[2]); return o; }
+function mkRung(){ return {br:false,c:[Array(COLS).fill(null),Array(COLS).fill(null)]}; }
+function R(row0,row1){ const rg=mkRung(); rg.br=!!row1; row0.forEach((s,i)=>{rg.c[0][i]=parseCell(s);}); if(row1) row1.forEach((s,i)=>{rg.c[1][i]=parseCell(s);}); return rg; }
+function countBlocks(p){ let n=0; for(const rg of p.rungs) for(const row of rg.c) for(const c of row) if(c) n++; return n; }
+function branchSpan(rg){ let f=-1,t=-1; if(rg.br) for(let c=0;c<OUTC;c++) if(rg.c[1][c]){ if(f<0) f=c; t=c; } return f<0?null:{from:f,to:t}; }
+
+/* ---------- PLC (sanal scan cycle) ---------- */
+class PLC{
+  constructor(){ this.reset(); }
+  reset(){ this.b={}; this.T={}; this.C={}; this.res=[]; }
+  rd(a){ const k=a[0]; if(k==='T') return !!(this.T[a]&&this.T[a].q); if(k==='C') return !!(this.C[a]&&this.C[a].q); return !!this.b[a]; }
+  scan(prog,dt){ this.res=[]; for(const rg of prog.rungs) this.res.push(this.rung(rg,dt)); }
+  rung(rg,dt){
+    const Rs={in:[[],[]],out:[[],[]],outIn:false};
+    const pass=(r,c)=>{ const x=rg.c[r][c]; if(!x||isOut(x.t)) return true; const v=this.rd(x.a); return x.t==='NC'?!v:v; };
+    const sp=branchSpan(rg); let p=true,c=0;
+    while(c<OUTC){
+      if(sp&&c===sp.from){
+        let pa=p,pb=p;
+        for(let k=sp.from;k<=sp.to;k++){ Rs.in[0][k]=pa; pa=pa&&pass(0,k); Rs.out[0][k]=pa; Rs.in[1][k]=pb; pb=pb&&pass(1,k); Rs.out[1][k]=pb; }
+        p=pa||pb; c=sp.to+1;
+      } else { Rs.in[0][c]=p; p=p&&pass(0,c); Rs.out[0][c]=p; c++; }
+    }
+    Rs.outIn=p;
+    const o=rg.c[0][OUTC]; if(o&&isOut(o.t)) this.exec(o,p,dt);
+    return Rs;
+  }
+  exec(o,p,dt){
+    const a=o.a;
+    switch(o.t){
+      case 'COIL': this.b[a]=p; break;
+      case 'SET': if(p) this.b[a]=true; break;
+      case 'RST': if(p){
+        if(a[0]==='T'){ const t=this.T[a]; if(t){ t.et=0; t.q=false; } }
+        else if(a[0]==='C'){ const c=this.C[a]; if(c){ c.cv=c.type==='CTD'?c.pv:0; c.q=c.type==='CTD'?c.cv<=0:c.cv>=c.pv; } }
+        else this.b[a]=false; } break;
+      case 'TON': { let t=this.T[a]; if(!t||t.type!=='TON') t=this.T[a]={type:'TON',et:0,q:false,pv:0};
+        t.pv=(o.pv||2)*1000; if(p){ t.et=Math.min(t.et+dt,t.pv); t.q=t.et>=t.pv; } else { t.et=0; t.q=false; } break; }
+      case 'TOF': { let t=this.T[a]; if(!t||t.type!=='TOF') t=this.T[a]={type:'TOF',et:0,q:false,pv:0};
+        t.pv=(o.pv||2)*1000; if(p){ t.q=true; t.et=0; } else if(t.q){ t.et+=dt; if(t.et>=t.pv){ t.et=t.pv; t.q=false; } } break; }
+      case 'CTU': case 'CTD': { let c=this.C[a]; const pv=o.pv||3;
+        if(!c||c.type!==o.t) c=this.C[a]={type:o.t,cv:o.t==='CTD'?pv:0,pv:pv,q:false,pi:false};
+        c.pv=pv; if(p&&!c.pi){ if(o.t==='CTU') c.cv=Math.min(c.cv+1,999); else c.cv=Math.max(c.cv-1,-99); } c.pi=p;
+        c.q=o.t==='CTU'?c.cv>=c.pv:c.cv<=0; break; }
+    }
+  }
+}
+
+/* ---------- FABRİKA DÜNYASI ---------- */
+class World{
+  constructor(lv){ this.lv=lv; const s=lv.scene;
+    this.sc=Object.assign({speed:20,gap:1.2,sensors:[],pistons:[],valves:[],lamps:[],endDrop:'err'},s); this.reset(); }
+  mk(id){ return {id,x:0,st:'belt',py:0,fill:0,wait:0,ft:0,chk:false}; }
+  reset(){
+    this.t=0; this.boxes=[this.mk(1)]; this.nid=1; this.spawnT=0; this.err=null; this.done=false;
+    this.delivered=0; this.diverted=0; this.filled=0; this.cntRises=0; this.batches=0;
+    this.sw={}; this.pulse={}; this.ext={}; this.f={}; this.gd=this.lv.goals.map(()=>false); this.iv={};
+    this.sc.pistons.forEach(p=>{this.ext[p.a]=0;});
+    this.motor=false; this.pm=false; this.beltOff=0; this.fanAng=0; this.idleT=0; this.spill=0; this.nofan=0;
+    this.startPressed=false; this.startFall=null; this.pS=false; this.noStart=0; this.pP=false; this.stopWatch=0; this.stopPressT=null;
+    this.pc=false; this.pendB=null; this.parkT=0; this.lpT=0; this.pA=false; this.ackSeen=false; this.pl=false;
+    this.lrT=0; this.loT=0; this.andT=0; this.orT=0; this.atT=0; this.oa=0; this.ob=0; this.pkS=null; this.pLd=false; this.pSrc=false; this.srcFall=null; this.pLt=false; this.pLc=false; this.startAt=null; this.sdLamp=0; this.mFall=null; this.prevSp=false; this.prevFan=false; this.sprayOffT=null; this.q={}; this.shake=0;
+  }
+  fail(m){ if(!this.err&&!this.done) this.err=m; return false; }
+  press(a){ const d=this.lv.io.I.find(x=>x.a===a); if(!d) return; if(d.k==='btn') this.pulse[a]=0.3; else if(d.k==='sw') this.sw[a]=!this.sw[a]; }
+  sensorOn(a){ const s=this.sc.sensors.find(s=>s.a===a); if(!s) return false; return this.boxes.some(b=>b.st==='belt'&&Math.abs(b.x-s.x)<=BW); }
+  sense(){
+    const iv={};
+    for(const d of this.lv.io.I){
+      if(d.k==='btn') iv[d.a]=(this.pulse[d.a]||0)>0;
+      else if(d.k==='sw') iv[d.a]=!!this.sw[d.a];
+      else if(d.k==='sensor') iv[d.a]=this.sensorOn(d.a);
+      else if(d.k==='limit'){ const p=this.sc.pistons.find(p=>p.lim===d.a); iv[d.a]=!!p&&this.ext[p.a]>=0.98; }
+    }
+    this.iv=iv; return iv;
+  }
+  advance(q,dt){
+    if(this.err||this.done) return;
+    const sc=this.sc; this.q=q; this.t+=dt;
+    for(const k in this.pulse) if(this.pulse[k]>0) this.pulse[k]=Math.max(0,this.pulse[k]-dt);
+    this.motor=!!q[sc.motor];
+    for(const p of sc.pistons){ const tg=q[p.a]?1:0, e=this.ext[p.a], d=tg-e, st=PIST_V*dt; this.ext[p.a]=Math.abs(d)<=st?tg:e+Math.sign(d)*st; }
+    if(this.motor){ this.beltOff=(this.beltOff+sc.speed*dt)%1000; for(const b of this.boxes) if(b.st==='belt') b.x+=sc.speed*dt; }
+    if(sc.fan&&q[sc.fan.a]) this.fanAng+=dt*14;
+    // piston itme
+    for(const p of sc.pistons){ if(this.ext[p.a]>0.3){ for(const b of this.boxes){ if(b.st==='belt'&&Math.abs(b.x-p.x)<=6){
+      b.st='pushed'; b.py=0;
+      if(sc.divertIf&&!this.iv[sc.divertIf]) return this.fail('Hata: Onay anahtarı kapalıyken kutu ayrıldı!');
+      if(sc.divertEvery&&b.id%sc.divertEvery!==0) return this.fail('Hata: Yanlış kutu ayrıldı! Yalnızca her '+sc.divertEvery+'. kutu ayrılmalı.');
+      if(sc.waitRange){ if(b.wait<sc.waitRange[0]) return this.fail('Hata: Piston çok erken itti! Kutu sensörde ~2 sn beklemeliydi.'); if(b.wait>sc.waitRange[1]) return this.fail('Hata: Kutu sensörde çok uzun bekletildi!'); }
+    } } } }
+    for(const b of this.boxes){
+      if(b.st==='pushed'){ const e=Math.max(...sc.pistons.map(p=>this.ext[p.a]),0); b.py=Math.min(1,Math.max(b.py+4*dt,e)); if(b.py>=1){ b.st='bin'; b.ft=0; this.diverted++; } }
+      else if(b.st==='bin'||b.st==='end'||b.st==='removed') b.ft+=dt;
+    }
+    this.boxes=this.boxes.filter(b=>!((b.st==='end'&&b.ft>0.8)||(b.st==='removed'&&b.ft>0.6)||(b.st==='bin'&&b.ft>1.8)));
+    // bekleme süresi
+    if(sc.waitSensor){ const s=sc.sensors.find(s=>s.a===sc.waitSensor); for(const b of this.boxes) if(b.st==='belt'&&Math.abs(b.x-s.x)<=BW) b.wait+=dt; }
+    // bant sonu
+    for(const b of this.boxes){ if(b.st==='belt'&&b.x>=100){
+      if(sc.divertEvery&&b.id%sc.divertEvery===0) return this.fail('Hata: '+b.id+'. kutu ayrılmadan bant sonuna ulaştı!');
+      if(sc.divertIf&&this.iv[sc.divertIf]) return this.fail('Hata: Onay anahtarı açıkken kutu ayrılmadı!');
+      if(sc.endDrop==='deliver'){ b.st='end'; b.ft=0; this.delivered++; if(b.fill>=0.95) this.filled++; }
+      else return this.fail(sc.endMsg||'Hata: Kutu ayrılmadan bant sonuna ulaştı!');
+    } }
+    // valfler
+    for(const v of sc.valves){
+      if(q[v.a]){ const tg=this.boxes.find(b=>b.st==='belt'&&Math.abs(b.x-v.x)<=6);
+        if(tg){ tg.fill+=dt/v.fillTime; this.spill=0; if(tg.fill>1.3) return this.fail(v.kind==='spray'?'Hata: Fazla boya sıkıldı!':'Hata: Şişe taştı! Valf çok uzun açık kaldı.'); }
+        else { this.spill+=dt; if(this.spill>0.6) return this.fail(v.kind==='spray'?'Hata: Boş kabine boya püskürtüldü!':'Hata: Valf boşta açıldı, sıvı döküldü!'); } }
+      else this.spill=0;
+      for(const b of this.boxes) if(b.st==='belt'&&b.x>v.x+6&&b.fill<0.95&&!b.chk){ b.chk=true; return this.fail(v.kind==='spray'?'Hata: Kutu boyanmadan kabinden çıktı!':'Hata: Şişe dolmadan istasyondan geçti!'); }
+    }
+    // spawn
+    if(this.nid<sc.boxes){ this.spawnT+=dt; if(this.spawnT>=sc.gap&&!this.boxes.some(b=>b.st==='belt'&&b.x<14)){ this.boxes.push(this.mk(++this.nid)); this.spawnT=0; } }
+    if(!this.checks(q,dt)) return;
+    this.pm=this.motor;
+    // hedefler
+    const gl=this.goalList(); gl.forEach((g,i)=>{ if(g.ok) this.gd[i]=true; });
+    if(this.gd.every(Boolean)){ this.done=true; return; }
+    const active=this.boxes.some(b=>b.st==='belt'||b.st==='pushed');
+    if(this.nid>=sc.boxes&&!active){ this.idleT+=dt; if(this.idleT>4.5) return this.fail('Hedefe ulaşılamadı: kutular bitti. Programı gözden geçir.'); } else this.idleT=0;
+    if(this.t>240) this.fail('Zaman aşımı: görev süresi doldu.');
+  }
+  checks(q,dt){
+    const sc=this.sc, iv=this.iv||{}, goals=this.lv.goals;
+    if(sc.startA){
+      const s=!!iv[sc.startA];
+      if(s&&!this.pS){ this.startPressed=true; this.startFall=null; this.stopPressT=null; this.startAt=this.t; this.sdLamp=0; }
+      if(!s&&this.pS) this.startFall=this.t;
+      this.pS=s;
+      if(sc.startFirst&&!this.startPressed&&this.motor){ this.noStart+=dt; if(this.noStart>0.4) return this.fail('Hata: START\'a basılmadan bant çalıştı!'); }
+      if(this.startPressed&&!s&&this.startFall!==null&&this.t-this.startFall>=0.8&&this.motor) this.f.seal=true;
+    }
+    if(sc.stopA){
+      const s=!!iv[sc.stopA];
+      if(s&&!this.pP){ this.stopWatch=this.pm?0.6:0; this.stopPressT=this.pm?this.t:null; }
+      this.pP=s;
+      if(this.stopWatch>0){ this.stopWatch-=dt; if(!this.motor){ this.f.stop=true; this.stopWatch=0; } }
+    }
+    if(sc.stopDelay&&this.pm&&!this.motor&&this.stopPressT!==null){
+      const td=sc.stopDelay===true?3:sc.stopDelay, d=this.t-this.stopPressT; this.stopPressT=null;
+      if(d>=td-0.4&&d<=td+0.6) this.f.stopDelay=true; else return this.fail('Hata: Bant STOP\'tan '+d.toFixed(1)+' sn sonra durdu. Gecikme ≈'+String(td).replace('.',',')+' sn olmalı!');
+    }
+    if(sc.countSensor){
+      if(this.motor&&!this.pm) this.cntRises=0;
+      const on=this.sensorOn(sc.countSensor); if(on&&!this.pc) this.cntRises++; this.pc=on;
+      if(this.motor&&this.cntRises>sc.batchN) return this.fail('Hata: Bant '+sc.batchN+' kutudan sonra durmadı!');
+      if(!this.motor&&this.pm&&this.cntRises===sc.batchN) this.pendB=0.5;
+    }
+    if(this.pendB!==null){ this.pendB-=dt; if(this.pendB<=0){ this.pendB=null; if(q[sc.lampA]) this.batches++; else return this.fail('Hata: Parti tamamlandı ama lamba yanmadı!'); } }
+    const pk=goals.find(g=>g.k==='park');
+    if(pk){ if(!this.motor&&this.sensorOn(pk.s)) this.parkT+=dt; else this.parkT=0; }
+    if(sc.lampA&&pk){ if(this.parkT>0&&q[sc.lampA]) this.lpT+=dt; if(this.lpT>=0.8) this.f.lampPark=true; }
+    if(sc.ackA){
+      const a=!!iv[sc.ackA];
+      if(a&&!this.pA){ if(this.pl) this.ackSeen=true;
+        const s=sc.sensors[0]; if(!this.motor) for(const b of this.boxes) if(b.st==='belt'&&Math.abs(b.x-s.x)<=BW){ b.st='removed'; b.ft=0; } }
+      this.pA=a;
+      if(this.pl&&!q[sc.lampA]&&this.ackSeen&&this.f.lampPark) this.f.lampAck=true;
+      this.pl=!!q[sc.lampA];
+    }
+    if(goals.some(g=>g.k==='lampRun')){
+      if(this.motor&&q[sc.lampA]) this.lrT+=dt;
+      if(!this.motor&&this.parkT>0.2&&!q[sc.lampA]) this.loT+=dt;
+      if(this.lrT>=1&&this.loT>=0.5) this.f.lampRun=true;
+    }
+    if(goals.some(g=>g.k==='lampPush')){ const e=Math.max(...sc.pistons.map(p=>this.ext[p.a]),0); if(q[sc.lampA]&&e>0.4) this.f.lampPush=true; }
+    if(sc.fan){
+      const sp=!!q[sc.fan.spray], fn=!!q[sc.fan.a];
+      if(sp&&!fn){ this.nofan+=dt; if(this.nofan>0.15) return this.fail('Hata: Egzoz fanı kapalıyken boya püskürtüldü!'); } else this.nofan=0;
+      if(this.prevSp&&!sp) this.sprayOffT=this.t;
+      if(this.prevFan&&!fn&&this.sprayOffT!==null){ const d=this.t-this.sprayOffT;
+        const h=sc.fan.hold||3; if(d<h-0.4) return this.fail('Hata: Fan çok erken durdu! Buhar için '+String(h).replace('.',',')+' sn beklemeli.'); if(d<=h+0.6) this.f.fanHold=true; }
+      this.prevSp=sp; this.prevFan=fn;
+    }
+    if(sc.motorAnd){ if(this.motor&&!sc.motorAnd.every(a=>iv[a])){ this.andT+=dt; if(this.andT>0.3) return this.fail('Hata: Bant yalnızca iki şalter de açıkken çalışmalı!'); } else this.andT=0; }
+    if(sc.motorAnd){ const on=sc.motorAnd.filter(a=>iv[a]).length; if(on===1&&!this.motor){ this.atT+=dt; if(this.atT>=0.8) this.f.andTest=true; } }
+    if(sc.motorOr){ const [a,b]=sc.motorOr; if(this.motor&&iv[a]&&!iv[b]) this.oa+=dt; if(this.motor&&iv[b]&&!iv[a]) this.ob+=dt; if(this.oa>=0.5&&this.ob>=0.5) this.f.orTest=true; }
+    if(sc.motorOr){ const any=sc.motorOr.some(a=>iv[a]), sOn=sc.sensors.some(s=>this.sensorOn(s.a)); if(any&&!this.motor&&!sOn){ this.orT+=dt; if(this.orT>0.5) return this.fail('Hata: Şalterlerden herhangi biri açıkken bant çalışmalı!'); } else this.orT=0; }
+    if(sc.lampDelay){ const par=!this.motor&&this.sensorOn(sc.lampDelay.s); if(par&&this.pkS===null) this.pkS=this.t; if(!par) this.pkS=null;
+      const lp=!!q[sc.lampA]; if(lp&&!this.pLd){ const T=sc.lampDelay.t; if(this.pkS===null) return this.fail('Hata: Lamba kutu sensörde beklerken yanmalı!'); const d=this.t-this.pkS;
+        if(d>=T-0.25&&d<=T+0.6) this.f.lampDelay=true; else return this.fail('Hata: Lamba '+d.toFixed(1)+' sn sonra yandı, '+String(T).replace('.',',')+' sn olmalı!'); } this.pLd=lp; }
+    if(sc.lampTof){ const sv=sc.lampTof.src==='motor'?this.motor:!!q[sc.lampTof.src]; if(this.pSrc&&!sv) this.srcFall=this.t; this.pSrc=sv;
+      const lp=!!q[sc.lampA]; if(this.pLt&&!lp&&this.srcFall!==null){ const d=this.t-this.srcFall, T=sc.lampTof.t; if(d>=T-0.4&&d<=T+0.6) this.f.lampTof=true; else return this.fail('Hata: Lamba '+d.toFixed(1)+' sn sonra söndü, '+String(T).replace('.',',')+' sn olmalı!'); } this.pLt=lp; }
+    if(sc.startDelay){ if(this.startAt!==null&&!this.motor&&q[sc.lampA]) this.sdLamp+=dt;
+      if(this.motor&&!this.pm&&this.startAt!==null){ const d=this.t-this.startAt, T=sc.startDelay; this.startAt=null;
+        if(d<T-0.3||d>T+0.8) return this.fail('Hata: Bant START\'tan '+d.toFixed(1)+' sn sonra kalktı, '+String(T).replace('.',',')+' sn olmalı!');
+        if(this.sdLamp<T-0.6) return this.fail('Hata: Bekleme süresince ikaz lambası yanmalı!'); this.f.startDelay=true; } }
+    if(sc.lampCount){ const lp=!!q[sc.lampA]; if(lp&&!this.pLc){ if(this.cntRises>=sc.lampCount.n) this.f.lampCount=true; else return this.fail('Hata: Lamba '+sc.lampCount.n+'. kutudan önce yandı!'); } this.pLc=lp; }
+    if(sc.restartAfter){ if(this.pm&&!this.motor) this.mFall=this.t;
+      if(!this.pm&&this.motor&&this.mFall!==null){ const d=this.t-this.mFall, T=sc.restartAfter; this.mFall=null;
+        if(d>=T-0.3&&d<=T+0.8) this.f.restart=true; else return this.fail('Hata: Bant '+d.toFixed(1)+' sn sonra yeniden kalktı, '+String(T).replace('.',',')+' sn olmalı!'); } }
+    return true;
+  }
+  goalList(){
+    const LB={seal:'Mühürleme',stop:'STOP ile durdur',lampPark:'Arıza lambası',lampAck:'Onayla söndür',lampRun:'Çalışıyor lambası',lampPush:'Ayırma lambası',
+      lampDelay:'Gecikmeli lamba',lampTof:'Lamba gecikmeli söner',startDelay:'Gecikmeli kalkış',lampCount:'Sayaç lambası',restart:'Otomatik yeniden kalkış',andTest:'Tek şalter testi',orTest:'İki şalter ayrı ayrı'};
+    const tr=x=>String(x).replace('.',',');
+    return this.lv.goals.map((g,i)=>{ let l,ok;
+      switch(g.k){
+        case 'deliver': l='Teslim '+Math.min(this.delivered,g.n)+'/'+g.n; ok=this.delivered>=g.n; break;
+        case 'divert': l='Ayrılan '+Math.min(this.diverted,g.n)+'/'+g.n; ok=this.diverted>=g.n; break;
+        case 'fill': l=(g.lb||'Dolum')+' '+Math.min(this.filled,g.n)+'/'+g.n; ok=this.filled>=g.n; break;
+        case 'batch': l='Parti '+Math.min(this.batches,g.n)+'/'+g.n; ok=this.batches>=g.n; break;
+        case 'park': l='Sensörde dur'; ok=this.parkT>=g.hold; break;
+        case 'stopDelay': l=tr(g.t||3)+' sn gecikmeli dur'; ok=!!this.f.stopDelay; break;
+        case 'fanHold': l='Fan '+tr(g.t||3)+' sn nöbet'; ok=!!this.f.fanHold; break;
+        default: l=LB[g.k]||g.k; ok=!!this.f[g.k];
+      }
+      if(this.gd[i]) ok=true; return {l,ok}; });
+  }
+}
+
+/* ===== BÖLÜM ÜRETİCİ: 3 kategori × 3 zorluk × 100 bölüm ===== */
+const IN=(a,n,k)=>({a,n,k}), O=(a,n)=>({a,n});
+const PAL_A=['NO','NC','COIL'], PAL_B=PAL_A.concat(['SET','RST']), PAL_C=PAL_B.concat(['TON','TOF']), PAL_D=PAL_C.concat(['CTU','CTD']);
+const CATS=[
+  {n:'Temel Mantık',s:'Kontak · Bobin · Mühürleme · Set/Reset',ic:'NO',c:'#4da3ff'},
+  {n:'Zamanlayıcılar',s:'TON · TOF gecikmeleri',ic:'TON',c:'#ffb020'},
+  {n:'Sayıcılar',s:'CTU · CTD sayma',ic:'CTU',c:'#c77dff'}];
+const DIFFS=[
+  {n:'Kolay',c:'#39ff6a',s:'Temel devreler, yavaş bant'},
+  {n:'Orta',c:'#ffb020',s:'Mühürleme ve kombinasyonlar'},
+  {n:'Zor',c:'#ff4d4d',s:'Çok satırlı, hızlı hat'}];
+const PER=100, TOTAL=CATS.length*DIFFS.length*PER;
+
+function mkRng(seed){ let s=(Math.imul(seed+1,2654435761))>>>0||1; return ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; }; }
+const ri=(r,a,b)=>a+Math.floor(r()*(b-a+1));
+const pick=(r,a)=>a[Math.floor(r()*a.length)];
+function shuf(a,r){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(r()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+const spd=(r,k)=>Math.round(18+k*9+ri(r,0,3));
+const gp=k=>+(1.4-k*0.22).toFixed(2);
+const tr=x=>String(x).replace('.',',');
+const INDEF={start:['START','btn'],stop:['STOP','btn'],sw:['ŞALTER','sw'],sw2:['ŞALTER_2','sw'],gate:['ONAY_ANAH','sw'],ack:['ONAY','btn'],sen:['SENSÖR','sensor'],lim:['PİSTON_İLERİ','limit']};
+const QDEF={motor:'BANT_MOTOR',pist:'PİSTON',lamp:'LAMBA',fan:'EGZOZ_FAN',valve:'VALF'};
+function mkCtx(r,n,iN,qN,qt){
+  const I=['I0.0','I0.1','I0.2','I0.3','I0.4','I0.5','I0.6','I0.7'], Q=['Q0.0','Q0.1','Q0.2','Q0.3','Q0.4','Q0.5'];
+  if(n>=6){ shuf(I,r); shuf(Q,r); }
+  const A={}; iN.forEach((k,i)=>A[k]=I[i]); qN.forEach((k,i)=>A[k]=Q[i]);
+  const srt=(x,y)=>x.a<y.a?-1:1;
+  const io={I:iN.map(k=>IN(A[k],INDEF[k][0],INDEF[k][1])).sort(srt),Q:qN.map(k=>O(A[k],(qt&&qt[k])||QDEF[k])).sort(srt)};
+  return {A,io};
+}
+const once=(fn)=>()=>{ const st={}; return (w,P,t)=>fn(w,P,t,st); };
+const at=(list)=>once((w,P,t,st)=>{ list.forEach((x,i)=>{ if(!st[i]&&t>=x[0]){ st[i]=1; P(x[1]); } }); });
+
+/* ---------- TEMEL MANTIK ---------- */
+const easyLogic=(mode,sm)=>(r,k,n)=>{
+  const iN=mode==='direct'?['sw']:['sw','sw2']; if(sm) iN.push('sen');
+  const qN=['motor']; if(sm===2) qN.push('lamp');
+  const {A,io}=mkCtx(r,n,iN,qN,{lamp:'ÇALIŞIYOR'});
+  const sp=spd(r,k), sx=ri(r,50,85), nb=ri(r,2,5)+(k>0.6?1:0);
+  const row0=[null,null,null,null,'COIL '+A.motor]; let row1=null, c=1;
+  row0[0]='NO '+A.sw;
+  if(mode==='and'){ row0[1]='NO '+A.sw2; c=2; } else if(mode==='or') row1=['NO '+A.sw2];
+  if(sm) row0[c]='NC '+A.sen;
+  const sol={rungs:[R(row0,row1)]}; if(sm===2) sol.rungs.push(R(['NO '+A.motor,null,null,null,'COIL '+A.lamp]));
+  const sc={motor:A.motor,speed:sp,gap:gp(k),boxes:sm?3:nb+1};
+  if(sm){ sc.sensors=[{a:A.sen,x:sx}]; sc.endMsg='Hata: Kutu sensörde durmadı, bant sonuna ulaştı!'; } else sc.endDrop='deliver';
+  if(mode==='and') sc.motorAnd=[A.sw,A.sw2]; if(mode==='or') sc.motorOr=[A.sw,A.sw2];
+  if(sm===2){ sc.lampA=A.lamp; sc.lamps=[{a:A.lamp,c:'green',n:'ÇALIŞIYOR'}]; }
+  const goals=sm?(sm===2?[{k:'lampRun'},{k:'park',s:A.sen,hold:1.5}]:[{k:'park',s:A.sen,hold:1.5}]):[{k:'deliver',n:nb}];
+  if(mode==='and') goals.unshift({k:'andTest'}); if(mode==='or') goals.unshift({k:'orTest'});
+  const T0={direct:'Şalter → Motor',and:'Çift Şalter (VE)',or:'Çift Şalter (VEYA)'}[mode]+(sm===1?' + Sensör':sm===2?' + Lamba':'');
+  let task={direct:`Şalter (${A.sw}) açılınca bant motoru (${A.motor}) çalışsın.`,and:`İki şalter (${A.sw} ve ${A.sw2}) AYNI ANDA açıkken bant (${A.motor}) çalışsın.`,or:`Şalterlerden (${A.sw} veya ${A.sw2}) herhangi biri açıkken bant (${A.motor}) çalışsın.`}[mode];
+  task+=sm?` Kutu sensöre (${A.sen}) gelince bant dursun.`:` ${nb} kutuyu depoya ulaştır.`;
+  if(sm===2) task+=` Bant çalışırken lamba (${A.lamp}) yansın.`;
+  if(mode==='and') task+=' Test: önce tek şalteri aç, bandın DURDUĞUNU göster.'; if(mode==='or') task+=' Test: her şalterin TEK BAŞINA bandı çalıştırdığını göster.';
+  const hint={direct:`Açık kontak ${A.sw} → bobin ${A.motor}.`,and:`VE = seri bağlantı: iki açık kontağı yan yana koy.`,or:`VEYA = paralel bağlantı: ⋮ menüsünden paralel kol ekle, ${A.sw2} kontağını alt kola koy.`}[mode]
+    +(sm?` Seriye KAPALI kontak ${A.sen} ekle.`:'')+(sm===2?` 2. satır: açık kontak ${A.motor} → bobin ${A.lamp}.`:'');
+  const bot=mode==='and'?at([[0.5,A.sw],[1.6,A.sw2]]):mode==='or'?at([[0.5,A.sw],[1.2,A.sw],[1.2,A.sw2]]):at([[0.5,A.sw]]);
+  return {title:T0,task,hint,io,M:0,T:0,C:0,pal:PAL_A,scene:sc,goals,sol,bot};
+};
+const mSeal=sm=>(r,k,n)=>{
+  const iN=['start','stop']; if(sm) iN.push('sen'); const qN=['motor']; if(sm===2) qN.push('lamp');
+  const {A,io}=mkCtx(r,n,iN,qN,{lamp:'ÇALIŞIYOR'}); const sp=spd(r,k), sx=ri(r,55,85), nb=ri(r,3,5);
+  const sol={rungs:[R(['NO '+A.start,'NC '+A.stop,sm?'NC '+A.sen:null,null,'COIL '+A.motor],['NO '+A.motor])]};
+  if(sm===2) sol.rungs.push(R(['NO '+A.motor,null,null,null,'COIL '+A.lamp]));
+  const sc={motor:A.motor,speed:sp,gap:gp(k),boxes:sm?3:nb+3,startA:A.start,stopA:A.stop,startFirst:true};
+  if(sm){ sc.sensors=[{a:A.sen,x:sx}]; sc.endMsg='Hata: Kutu sensörde durmadı, bant sonuna ulaştı!'; } else sc.endDrop='deliver';
+  if(sm===2){ sc.lampA=A.lamp; sc.lamps=[{a:A.lamp,c:'green',n:'ÇALIŞIYOR'}]; }
+  const goals=sm===0?[{k:'seal'},{k:'stop'},{k:'deliver',n:nb}]:sm===1?[{k:'seal'},{k:'park',s:A.sen,hold:1.5}]:[{k:'seal'},{k:'lampRun'},{k:'park',s:A.sen,hold:1.5}];
+  let task=`START (${A.start}) kısa basınca bant (${A.motor}) çalışmaya devam etsin (mühür), STOP (${A.stop}) durdursun.`;
+  task+=sm===0?` START → STOP → START ile ${nb} kutu teslim et.`:` Kutu sensöre (${A.sen}) gelince bant dursun.`; if(sm===2) task+=` Çalışırken lamba (${A.lamp}) yansın.`;
+  const hint=`START ile paralel ${A.motor} kontağı (⋮ → Paralel kol), seriye KAPALI ${A.stop}`+(sm?` ve KAPALI ${A.sen}`:'')+'.'+(sm===2?` 2. satır: ${A.motor} → ${A.lamp}.`:'');
+  const bot=sm===0?at([[0.5,A.start],[3,A.stop],[5,A.start]]):at([[0.5,A.start]]);
+  return {title:['Start/Stop Mühürleme','Mühür + Sensör','Mühür + Sensör + Lamba'][sm],task,hint,io,M:2,T:0,C:0,pal:PAL_A,scene:sc,goals,sol,bot};
+};
+const mSR=sm=>(r,k,n)=>{
+  const iN=sm?['start','sen']:['start','stop']; const {A,io}=mkCtx(r,n,iN,['motor']); const sp=spd(r,k), sx=ri(r,55,85), nb=ri(r,3,5);
+  const sol={rungs:[R(['NO '+A.start,null,null,null,'SET '+A.motor]),R(['NO '+(sm?A.sen:A.stop),null,null,null,'RST '+A.motor])]};
+  const sc={motor:A.motor,speed:sp,gap:gp(k),boxes:sm?3:nb+3,startA:A.start,startFirst:true};
+  if(sm){ sc.sensors=[{a:A.sen,x:sx}]; sc.endMsg='Hata: Kutu hedef sensörde durmadı!'; } else { sc.stopA=A.stop; sc.endDrop='deliver'; }
+  const goals=sm?[{k:'seal'},{k:'park',s:A.sen,hold:1.5}]:[{k:'seal'},{k:'stop'},{k:'deliver',n:nb}];
+  const task=sm?`START (${A.start}) bandı Set etsin; kutu hedef sensöre (${A.sen}) gelince bant Reset ile dursun.`:`START (${A.start}) bandı kalıcı çalıştırsın (Set), STOP (${A.stop}) durdursun (Reset). START → STOP → START ile ${nb} kutu teslim et.`;
+  const hint=`Satır 1: ${A.start} → (S) ${A.motor}. Satır 2: ${sm?A.sen:A.stop} → (R) ${A.motor}.`;
+  return {title:sm?'Set/Reset: Hedefte Dur':'Set/Reset ile Çalıştır',task,hint,io,M:2,T:0,C:0,pal:PAL_B,scene:sc,goals,sol,bot:sm?at([[0.5,A.start]]):at([[0.5,A.start],[3,A.stop],[5,A.start]])};
+};
+const pistBot=(A,sp,sx)=>once((w,P,t,st)=>{ st.n=st.n||0; const per=sx/sp+1.6; if(t>=0.5+st.n*per){ st.n++; P(A.start); } });
+const mPist=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['start','sen','lim'],['motor','pist']); const sp=spd(r,k), sx=ri(r,45,75), nd=ri(r,2,3);
+  const sol={rungs:[R(['NO '+A.start,null,null,null,'SET '+A.motor]),R(['NO '+A.sen,null,null,null,'RST '+A.motor]),R(['NO '+A.sen,null,null,null,'SET '+A.pist]),R(['NO '+A.lim,null,null,null,'RST '+A.pist])]};
+  const sc={motor:A.motor,speed:sp,gap:Math.max(1.15,gp(k)),boxes:nd+2,sensors:[{a:A.sen,x:sx}],pistons:[{a:A.pist,x:sx,lim:A.lim}],startA:A.start,startFirst:true};
+  return {title:'Pistonla Ayır (S/R)',task:`START (${A.start}) bandı başlatsın. Kutu sensöre (${A.sen}) gelince bant dursun, piston (${A.pist}) itsin; tam ilerleyince (${A.lim}) geri dönsün. ${nd} kutu ayır.`,
+    hint:`${A.start}→(S)${A.motor} · ${A.sen}→(R)${A.motor} · ${A.sen}→(S)${A.pist} · ${A.lim}→(R)${A.pist}. Her kutu için START'a bas.`,io,M:2,T:0,C:0,pal:PAL_B,scene:sc,goals:[{k:'divert',n:nd}],sol,bot:pistBot(A,sp,sx)};
+};
+const hArriza=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['start','ack','sen'],['motor','lamp'],{lamp:'ARIZA'}); const sp=spd(r,k), sx=ri(r,60,85);
+  const sol={rungs:[R(['NO '+A.start,null,null,null,'SET '+A.motor]),R(['NO '+A.sen,null,null,null,'RST '+A.motor]),R(['NO '+A.sen,null,null,null,'SET '+A.lamp]),R(['NO '+A.ack,null,null,null,'RST '+A.lamp])]};
+  const sc={motor:A.motor,speed:sp,gap:gp(k),boxes:3,sensors:[{a:A.sen,x:sx}],startA:A.start,startFirst:true,ackA:A.ack,lampA:A.lamp,lamps:[{a:A.lamp,c:'red',n:'ARIZA'}],endMsg:'Hata: Kutu uç sensörde durmadı!'};
+  return {title:'Arıza Lambası',task:`START (${A.start}) ile başlat. Kutu uç sensöre (${A.sen}) gelince bant dursun ve ARIZA lambası (${A.lamp}) kalıcı yansın. ONAY (${A.ack}) lambayı söndürsün.`,
+    hint:`4 satır: ${A.start}→(S)${A.motor} · ${A.sen}→(R)${A.motor} · ${A.sen}→(S)${A.lamp} · ${A.ack}→(R)${A.lamp}.`,io,M:2,T:0,C:0,pal:PAL_B,scene:sc,
+    goals:[{k:'park',s:A.sen,hold:1},{k:'lampPark'},{k:'lampAck'}],sol,bot:at([[0.5,A.start],[0.5+sx/sp+3,A.ack]])};
+};
+const hPistLamp=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['start','sen','lim'],['motor','pist','lamp'],{lamp:'AYIRMA'}); const sp=spd(r,k), sx=ri(r,50,75), nd=ri(r,2,3);
+  const sol={rungs:[R(['NO '+A.start,null,null,null,'SET '+A.motor]),R(['NO '+A.sen,null,null,null,'RST '+A.motor]),R(['NO '+A.sen,null,null,null,'SET '+A.pist]),R(['NO '+A.lim,null,null,null,'RST '+A.pist]),R(['NO '+A.pist,null,null,null,'COIL '+A.lamp])]};
+  const sc={motor:A.motor,speed:sp,gap:Math.max(1.15,gp(k)),boxes:nd+2,sensors:[{a:A.sen,x:sx}],pistons:[{a:A.pist,x:sx,lim:A.lim}],startA:A.start,startFirst:true,lampA:A.lamp,lamps:[{a:A.lamp,c:'amber',n:'AYIRMA'}]};
+  return {title:'Ayırıcı + İkaz Lambası',task:`START (${A.start}) bandı Set etsin. Kutu sensörde (${A.sen}) bant dursun, piston (${A.pist}) itsin, ${A.lim} ile geri dönsün. Piston çalışırken sarı lamba (${A.lamp}) yansın. ${nd} kutu ayır.`,
+    hint:`Pistonla Ayır devresine 5. satır ekle: ${A.pist} → ${A.lamp}.`,io,M:2,T:0,C:0,pal:PAL_B,scene:sc,goals:[{k:'seal'},{k:'divert',n:nd},{k:'lampPush'}],sol,bot:pistBot(A,sp,sx)};
+};
+const hAckLatch=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['start','stop','ack','sen'],['motor','lamp'],{lamp:'ARIZA'}); const sp=spd(r,k), sx=ri(r,60,85);
+  const sol={rungs:[R(['NO '+A.start,'NC '+A.stop,'NC '+A.sen,null,'COIL '+A.motor],['NO '+A.motor]),R(['NO '+A.sen,null,null,null,'SET '+A.lamp]),R(['NO '+A.ack,null,null,null,'RST '+A.lamp])]};
+  const sc={motor:A.motor,speed:sp,gap:gp(k),boxes:3,sensors:[{a:A.sen,x:sx}],startA:A.start,stopA:A.stop,startFirst:true,ackA:A.ack,lampA:A.lamp,lamps:[{a:A.lamp,c:'red',n:'ARIZA'}],endMsg:'Hata: Kutu sensörde durmadı!'};
+  return {title:'Mühür + Arıza Kilidi',task:`Mühürlü START (${A.start}) / STOP (${A.stop}) devresi kur. Kutu sensöre (${A.sen}) gelince bant dursun ve ARIZA (${A.lamp}) kilitlensin (Set). ONAY (${A.ack}) lambayı söndürsün.`,
+    hint:`Satır 1: (START ∥ ${A.motor}) · KAPALI ${A.stop} · KAPALI ${A.sen} → ${A.motor}. Satır 2: ${A.sen} → (S) ${A.lamp}. Satır 3: ${A.ack} → (R) ${A.lamp}.`,io,M:2,T:0,C:0,pal:PAL_B,scene:sc,
+    goals:[{k:'seal'},{k:'park',s:A.sen,hold:1},{k:'lampPark'},{k:'lampAck'}],sol,bot:at([[0.5,A.start],[0.5+sx/sp+3,A.ack]])};
+};
+const hGate=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['sw','gate','sen'],['motor','pist']); const sp=spd(r,k), sx=ri(r,45,70);
+  const sol={rungs:[R(['NO '+A.sw,null,null,null,'COIL '+A.motor]),R(['NO '+A.sen,'NO '+A.gate,null,null,'COIL '+A.pist])]};
+  const sc={motor:A.motor,speed:sp,gap:Math.max(1.15,gp(k)),boxes:6,endDrop:'deliver',sensors:[{a:A.sen,x:sx}],pistons:[{a:A.pist,x:sx}],divertIf:A.gate};
+  return {title:'Onaylı Ayırıcı (VE)',task:`Bant şalterle (${A.sw}) çalışsın. ONAY anahtarı (${A.gate}) AÇIKKEN sensördeki (${A.sen}) kutuyu piston (${A.pist}) itsin; KAPALIYKEN kutular geçsin. 2 kutu ayır, sonra anahtarı kapatıp 2 kutu teslim et.`,
+    hint:`Satır 2: açık ${A.sen} ile açık ${A.gate} seri → ${A.pist}.`,io,M:2,T:0,C:0,pal:PAL_B,scene:sc,goals:[{k:'divert',n:2},{k:'deliver',n:2}],sol,
+    bot:once((w,P,t,st)=>{ if(!st.a&&t>0.5){ st.a=1; P(A.sw); P(A.gate); } if(st.a===1&&w.diverted>=2){ st.a=2; P(A.gate); } })};
+};
+
+/* ---------- ZAMANLAYICILAR ---------- */
+const tPush=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['sw','sen'],['motor','pist']); const sp=spd(r,k), sx=ri(r,45,75), t=pick(r,[1,1.5,2,2.5,3,4]), nd=ri(r,2,4);
+  const sol={rungs:[R(['NO '+A.sw,'NC '+A.sen,null,null,'COIL '+A.motor]),R(['NO '+A.sen,null,null,null,'TON T1 '+t]),R(['NO T1',null,null,null,'COIL '+A.pist])]};
+  const sc={motor:A.motor,speed:sp,gap:Math.max(1.15,gp(k)),boxes:nd+2,sensors:[{a:A.sen,x:sx}],pistons:[{a:A.pist,x:sx}],waitSensor:A.sen,waitRange:[t-0.2,t+0.8]};
+  return {title:`TON: ${tr(t)} sn Gecikmeli İtme`,task:`Şalter (${A.sw}) açık: bant çalışsın. Kutu sensörde (${A.sen}) durunca ${tr(t)} sn bekle (TON), sonra piston (${A.pist}) itsin. ${nd} kutu ayır.`,
+    hint:`Satır 1: ${A.sw} · KAPALI ${A.sen} → ${A.motor}. Satır 2: ${A.sen} → TON T1 (${tr(t)} sn). Satır 3: T1 → ${A.pist}.`,io,M:2,T:1,C:0,pal:PAL_C,scene:sc,goals:[{k:'divert',n:nd}],sol,bot:at([[0.5,A.sw]])};
+};
+const tLampDelay=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['sw','sen'],['motor','lamp'],{lamp:'HAZIR'}); const sp=spd(r,k), sx=ri(r,50,85), t=pick(r,[1,1.5,2,2.5,3,4,5]);
+  const sol={rungs:[R(['NO '+A.sw,'NC '+A.sen,null,null,'COIL '+A.motor]),R(['NO '+A.sen,null,null,null,'TON T1 '+t]),R(['NO T1',null,null,null,'COIL '+A.lamp])]};
+  const sc={motor:A.motor,speed:sp,gap:gp(k),boxes:3,sensors:[{a:A.sen,x:sx}],lampA:A.lamp,lamps:[{a:A.lamp,c:'green',n:'HAZIR'}],lampDelay:{t,s:A.sen},endMsg:'Hata: Kutu sensörde durmadı!'};
+  return {title:`TON: ${tr(t)} sn Sonra Lamba`,task:`Şalter (${A.sw}) açık: bant çalışsın, kutu sensörde (${A.sen}) dursun. Kutu durduktan ${tr(t)} sn sonra HAZIR lambası (${A.lamp}) yansın.`,
+    hint:`Satır 2: ${A.sen} → TON T1 (${tr(t)} sn). Satır 3: T1 → ${A.lamp}.`,io,M:2,T:1,C:0,pal:PAL_C,scene:sc,goals:[{k:'park',s:A.sen,hold:1},{k:'lampDelay'}],sol,bot:at([[0.5,A.sw]])};
+};
+const tLampTof=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['sw'],['motor','lamp'],{lamp:'UYARI'}); const sp=spd(r,k), t=pick(r,[1,1.5,2,2.5,3,4]);
+  const sol={rungs:[R(['NO '+A.sw,null,null,null,'COIL '+A.motor]),R(['NO '+A.motor,null,null,null,'TOF T1 '+t]),R(['NO T1',null,null,null,'COIL '+A.lamp])]};
+  const sc={motor:A.motor,speed:sp,gap:gp(k),boxes:4,endDrop:'deliver',lampA:A.lamp,lamps:[{a:A.lamp,c:'amber',n:'UYARI'}],lampTof:{src:'motor',t}};
+  return {title:`TOF: ${tr(t)} sn Uyarı`,task:`Şalter (${A.sw}) bandı (${A.motor}) çalıştırsın. UYARI lambası (${A.lamp}) bant çalışırken yansın ve bant durduktan ${tr(t)} sn sonra sönsün. Şalteri açıp kapat.`,
+    hint:`Satır 2: ${A.motor} → TOF T1 (${tr(t)} sn). Satır 3: T1 → ${A.lamp}.`,io,M:2,T:1,C:0,pal:PAL_C,scene:sc,goals:[{k:'lampTof'}],sol,bot:at([[0.5,A.sw],[3.5,A.sw]])};
+};
+const sealM=A=>R(['NO '+A.start,'NC '+A.stop,null,null,'COIL M0.0'],['NO M0.0']);
+const tStopDelay=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['start','stop'],['motor']); const sp=spd(r,k), t=pick(r,[1.5,2,2.5,3,4,5]);
+  const sol={rungs:[sealM(A),R(['NO M0.0',null,null,null,'TOF T1 '+t]),R(['NO T1',null,null,null,'COIL '+A.motor])]};
+  const sc={motor:A.motor,speed:sp,gap:gp(k),boxes:6,endDrop:'deliver',startA:A.start,stopA:A.stop,startFirst:true,stopDelay:t};
+  return {title:`TOF: ${tr(t)} sn Gecikmeli Durdurma`,task:`START (${A.start}) / STOP (${A.stop}) ile mühür biti M0.0 kur. Bant (${A.motor}) STOP'tan ${tr(t)} sn SONRA dursun (TOF).`,
+    hint:`Satır 1: mühürlü devre → M0.0. Satır 2: M0.0 → TOF T1 (${tr(t)} sn). Satır 3: T1 → ${A.motor}.`,io,M:2,T:1,C:0,pal:PAL_C,scene:sc,goals:[{k:'seal'},{k:'stopDelay',t}],sol,bot:at([[0.5,A.start],[4,A.stop]])};
+};
+const tFill=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['sw','sen'],['motor','valve'],{valve:'DOLUM_VALF'}); const sp=spd(r,k), sx=ri(r,40,65), t=pick(r,[1.5,2,2.5,3,4]), nf=ri(r,2,4);
+  const sol={rungs:[R(['NO '+A.sw,'NC '+A.sen,null,null,'COIL '+A.motor],[null,'NO T1']),R(['NO '+A.sen,null,null,null,'TON T1 '+t]),R(['NO '+A.sen,'NC T1',null,null,'COIL '+A.valve])]};
+  const sc={motor:A.motor,speed:sp,gap:gp(k),boxes:nf+1,endDrop:'deliver',sensors:[{a:A.sen,x:sx}],valves:[{a:A.valve,x:sx,fillTime:t,kind:'fill'}]};
+  return {title:`Dolum İstasyonu (${tr(t)} sn)`,task:`Şişe sensörde (${A.sen}) dursun, valf (${A.valve}) ${tr(t)} sn dolum yapsın, sonra bant devam etsin. Dolum tam ${tr(t)} sn sürer. ${nf} şişe doldur.`,
+    hint:`Bant: ${A.sw} · (KAPALI ${A.sen} ∥ AÇIK T1) → ${A.motor}. ${A.sen} → TON T1 (${tr(t)} sn). Valf: ${A.sen} · KAPALI T1 → ${A.valve}.`,io,M:2,T:1,C:0,pal:PAL_C,scene:sc,goals:[{k:'fill',n:nf,lb:'Dolu'}],sol,bot:at([[0.5,A.sw]])};
+};
+const tStartDelay=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['start','stop'],['motor','lamp'],{lamp:'KALKIŞ_İKAZ'}); const sp=spd(r,k), t=pick(r,[1.5,2,2.5,3,4]);
+  const sol={rungs:[sealM(A),R(['NO M0.0',null,null,null,'TON T1 '+t]),R(['NO M0.0','NC T1',null,null,'COIL '+A.lamp]),R(['NO T1',null,null,null,'COIL '+A.motor])]};
+  const sc={motor:A.motor,speed:sp,gap:gp(k),boxes:4,endDrop:'deliver',startA:A.start,stopA:A.stop,startFirst:true,startDelay:t,lampA:A.lamp,lamps:[{a:A.lamp,c:'amber',n:'İKAZ'}]};
+  return {title:`Gecikmeli Kalkış (${tr(t)} sn)`,task:`START (${A.start}) basılınca önce ikaz lambası (${A.lamp}) ${tr(t)} sn yansın, sonra lamba sönüp bant (${A.motor}) kalksın. STOP (${A.stop}) her şeyi durdursun.`,
+    hint:`M0.0 mühür · M0.0 → TON T1 (${tr(t)} sn) · M0.0 · KAPALI T1 → ${A.lamp} · T1 → ${A.motor}.`,io,M:2,T:1,C:0,pal:PAL_C,scene:sc,goals:[{k:'seal'},{k:'startDelay'}],sol,bot:at([[0.5,A.start]])};
+};
+const hBooth=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['sw','sen'],['motor','fan','valve'],{valve:'BOYA_VALF'}); const sp=spd(r,k), sx=ri(r,38,58), t1=pick(r,[1.5,2,2.5,3]), h=pick(r,[2,2.5,3,3.5]);
+  const sol={rungs:[R(['NO '+A.sw,'NC '+A.sen,null,null,'COIL '+A.motor],[null,'NO T1']),R(['NO '+A.sen,null,null,null,'TON T1 '+t1]),R(['NO '+A.sen,'NC T1',null,null,'COIL '+A.valve]),R(['NO '+A.valve,null,null,null,'TOF T2 '+h]),R(['NO T2',null,null,null,'COIL '+A.fan])]};
+  const sc={motor:A.motor,speed:sp,gap:gp(k),boxes:3,endDrop:'deliver',sensors:[{a:A.sen,x:sx}],valves:[{a:A.valve,x:sx,fillTime:t1,kind:'spray'}],fan:{a:A.fan,spray:A.valve,hold:h}};
+  return {title:'Boya Kabini (TON + TOF)',task:`Kutu kabinde (${A.sen}) durunca boya (${A.valve}) ${tr(t1)} sn püskürsün. Fan (${A.fan}) boya sırasında çalışsın ve püskürtme bittikten ${tr(h)} sn sonra dursun. 3 kutu boya.`,
+    hint:`Dolum devresi (TON ${tr(t1)} sn) + ${A.valve} → TOF T2 (${tr(h)} sn) + T2 → ${A.fan}.`,io,M:2,T:2,C:0,pal:PAL_C,scene:sc,goals:[{k:'fill',n:3,lb:'Boyalı'},{k:'fanHold',t:h}],sol,bot:at([[0.5,A.sw]])};
+};
+const hDelays=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['start','stop'],['motor','lamp'],{lamp:'KALKIŞ_İKAZ'}); const sp=spd(r,k), t1=pick(r,[1.5,2,2.5,3]), t2=pick(r,[1.5,2,2.5,3,4]);
+  const sol={rungs:[sealM(A),R(['NO M0.0',null,null,null,'TON T1 '+t1]),R(['NO M0.0','NC T1',null,null,'COIL '+A.lamp]),R(['NO T1',null,null,null,'TOF T2 '+t2]),R(['NO T2',null,null,null,'COIL '+A.motor])]};
+  const sc={motor:A.motor,speed:sp,gap:gp(k),boxes:8,endDrop:'deliver',startA:A.start,stopA:A.stop,startFirst:true,startDelay:t1,stopDelay:t2,lampA:A.lamp,lamps:[{a:A.lamp,c:'amber',n:'İKAZ'}]};
+  return {title:'Gecikmeli Kalkış + Duruş',task:`START (${A.start}): ikaz lambası (${A.lamp}) ${tr(t1)} sn yansın, sonra bant (${A.motor}) kalksın. STOP (${A.stop}): bant ${tr(t2)} sn sonra dursun.`,
+    hint:`M0.0 mühür · M0.0→TON T1 (${tr(t1)}) · M0.0·KAPALI T1→${A.lamp} · T1→TOF T2 (${tr(t2)}) · T2→${A.motor}.`,io,M:2,T:2,C:0,pal:PAL_C,scene:sc,
+    goals:[{k:'seal'},{k:'startDelay'},{k:'stopDelay',t:t2}],sol,bot:at([[0.5,A.start],[0.5+t1+3,A.stop]])};
+};
+const hTonTof=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['sw','sen'],['motor','pist','lamp'],{lamp:'AYIRMA'}); const sp=spd(r,k), sx=ri(r,45,70), t=pick(r,[1,1.5,2,2.5]), h=pick(r,[1.5,2,2.5,3]);
+  const sol={rungs:[R(['NO '+A.sw,'NC '+A.sen,null,null,'COIL '+A.motor]),R(['NO '+A.sen,null,null,null,'TON T1 '+t]),R(['NO T1',null,null,null,'COIL '+A.pist]),R(['NO '+A.pist,null,null,null,'TOF T2 '+h]),R(['NO T2',null,null,null,'COIL '+A.lamp])]};
+  const sc={motor:A.motor,speed:sp,gap:Math.max(1.15,gp(k)),boxes:3,sensors:[{a:A.sen,x:sx}],pistons:[{a:A.pist,x:sx}],waitSensor:A.sen,waitRange:[t-0.2,t+0.8],lampA:A.lamp,lamps:[{a:A.lamp,c:'amber',n:'AYIRMA'}],lampTof:{src:A.pist,t:h}};
+  return {title:'TON İtme + TOF Lamba',task:`Kutu sensörde (${A.sen}) dursun, ${tr(t)} sn sonra piston (${A.pist}) itsin. Sarı lamba (${A.lamp}) piston iterken yansın ve piston geri çekildikten ${tr(h)} sn sonra sönsün. 3 kutu ayır.`,
+    hint:`TON itme devresi + ${A.pist} → TOF T2 (${tr(h)} sn) + T2 → ${A.lamp}.`,io,M:2,T:2,C:0,pal:PAL_C,scene:sc,goals:[{k:'divert',n:3},{k:'lampTof'}],sol,bot:at([[0.5,A.sw]])};
+};
+
+/* ---------- SAYICILAR ---------- */
+const cBatch=ctd=>(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['sw','sen'],['motor','lamp'],{lamp:'PARTİ_TAMAM'}); const sp=spd(r,k), sx=ri(r,40,70), N=ri(r,2,4)+Math.round(k*4);
+  const typ=ctd?'CTD':'CTU';
+  const sol={rungs:[R(['NO '+A.sen,null,null,null,typ+' C1 '+N]),R(['NO '+A.sw,'NC C1',null,null,'COIL '+A.motor]),R(['NO C1',null,null,null,'COIL '+A.lamp])]};
+  const sc={motor:A.motor,speed:sp,gap:gp(k),boxes:N+3,endDrop:'deliver',sensors:[{a:A.sen,x:sx}],countSensor:A.sen,batchN:N,lampA:A.lamp,lamps:[{a:A.lamp,c:'green',n:'PARTİ'}]};
+  return {title:`${typ}: ${N} Kutu Say`,task:ctd?`Şalter (${A.sw}) açık: bant çalışsın. ${typ} sayıcı ${N}'den geri saysın; sensörden (${A.sen}) ${N} kutu geçince (0) bant dursun ve PARTİ lambası (${A.lamp}) yansın.`
+      :`Şalter (${A.sw}) açık: bant çalışsın. Sensörden (${A.sen}) ${N} kutu geçince (CTU) bant dursun ve PARTİ lambası (${A.lamp}) yansın.`,
+    hint:`Satır 1: ${A.sen} → ${typ} C1 (${N}). Satır 2: ${A.sw} · KAPALI C1 → ${A.motor}. Satır 3: C1 → ${A.lamp}.`,io,M:2,T:0,C:1,pal:PAL_D,scene:sc,goals:[{k:'batch',n:1}],sol,bot:at([[0.5,A.sw]])};
+};
+const cLampCount=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['sw','sen'],['motor','lamp'],{lamp:'SAYAÇ_DOLU'}); const sp=spd(r,k), sx=ri(r,30,60), N=ri(r,2,4)+Math.round(k*4);
+  const sol={rungs:[R(['NO '+A.sen,null,null,null,'CTU C1 '+N]),R(['NO '+A.sw,null,null,null,'COIL '+A.motor]),R(['NO C1',null,null,null,'COIL '+A.lamp])]};
+  const sc={motor:A.motor,speed:sp,gap:gp(k),boxes:N+3,endDrop:'deliver',sensors:[{a:A.sen,x:sx}],countSensor:A.sen,lampCount:{n:N},lampA:A.lamp,lamps:[{a:A.lamp,c:'green',n:'SAYAÇ'}]};
+  return {title:`CTU: ${N}. Kutuda Lamba`,task:`Şalter (${A.sw}) bandı çalıştırsın (bant durmasın). Sensörden (${A.sen}) ${N} kutu geçince SAYAÇ lambası (${A.lamp}) yansın. ${N+1} kutuyu teslim et.`,
+    hint:`${A.sen} → CTU C1 (${N}) · ${A.sw} → ${A.motor} · C1 → ${A.lamp}.`,io,M:2,T:0,C:1,pal:PAL_D,scene:sc,goals:[{k:'lampCount'},{k:'deliver',n:N+1}],sol,bot:at([[0.5,A.sw]])};
+};
+const mDivert=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['sw','sen','lim'],['motor','pist']); const sp=spd(r,k), sx=ri(r,45,70), N=ri(r,2,3)+Math.round(k*2);
+  const sol={rungs:[R(['NO '+A.sw,null,null,null,'COIL '+A.motor]),R(['NO '+A.sen,null,null,null,'CTU C1 '+N]),R(['NO C1',null,null,null,'COIL '+A.pist]),R(['NO '+A.lim,null,null,null,'RST C1'])]};
+  const sc={motor:A.motor,speed:sp,gap:Math.max(1.15,gp(k)),boxes:2*N+1,endDrop:'deliver',sensors:[{a:A.sen,x:sx}],pistons:[{a:A.pist,x:sx,lim:A.lim}],divertEvery:N};
+  return {title:`CTU: Her ${N}. Kutuyu Ayır`,task:`Bant şalterle (${A.sw}) çalışsın. Her ${N}. kutuyu piston (${A.pist}) ayırsın; piston tam ilerleyince (${A.lim}) sayıcıyı Reset et. 2 kutu ayır.`,
+    hint:`${A.sw}→${A.motor} · ${A.sen}→CTU C1 (${N}) · C1→${A.pist} · ${A.lim}→(R) C1.`,io,M:2,T:0,C:1,pal:PAL_D,scene:sc,goals:[{k:'divert',n:2},{k:'deliver',n:2*(N-1)}],sol,bot:at([[0.5,A.sw]])};
+};
+const twoBatchBot=A=>once((w,P,t,st)=>{ if(!st.a&&t>0.5){ st.a=1; P(A.start); } if(st.a===1&&w.batches>=1&&!w.motor){ st.a=2; st.t=t; } if(st.a===2&&t>st.t+0.6){ st.a=3; P(A.start); } });
+const mCtdTwo=stop=>(r,k,n)=>{
+  const iN=stop?['start','stop','sen']:['start','sen'];
+  const {A,io}=mkCtx(r,n,iN,['motor','lamp'],{lamp:'PALET_DOLU'}); const sp=spd(r,k), sx=ri(r,40,65), N=ri(r,2,3)+Math.round(k*3);
+  const row0=['NO '+A.start,'NC C1',null,null,'COIL '+A.motor]; if(stop){ row0[1]='NC '+A.stop; row0[2]='NC C1'; }
+  const sol={rungs:[R(['NO '+A.sen,null,null,null,'CTD C1 '+N]),R(row0,['NO '+A.motor]),R(['NO C1',null,null,null,'COIL '+A.lamp]),R(['NO '+A.start,null,null,null,'RST C1'])]};
+  const sc={motor:A.motor,speed:sp,gap:gp(k),boxes:2*N+2,endDrop:'deliver',sensors:[{a:A.sen,x:sx}],startA:A.start,startFirst:true,countSensor:A.sen,batchN:N,lampA:A.lamp,lamps:[{a:A.lamp,c:'amber',n:'PALET'}]};
+  if(stop) sc.stopA=A.stop;
+  return {title:stop?`CTD: Mühürlü Palet (${N})`:`CTD: Palet Geri Sayımı (${N})`,task:`START (${A.start}) bandı mühürlü başlatsın${stop?`, STOP (${A.stop}) durdursun`:''}. Palet ${N} kutu alınca (CTD sıfıra iner) bant dursun, PALET lambası (${A.lamp}) yansın. START sayacı yeniden yüklesin. 2 parti tamamla.`,
+    hint:`${A.sen}→CTD C1 (${N}) · (START ∥ ${A.motor})${stop?` · KAPALI ${A.stop}`:''} · KAPALI C1 → ${A.motor} · C1→${A.lamp} · ${A.start}→(R) C1.`,io,M:2,T:0,C:1,pal:PAL_D,scene:sc,
+    goals:stop?[{k:'seal'},{k:'batch',n:2}]:[{k:'batch',n:2}],sol,bot:twoBatchBot(A)};
+};
+const mRestart=seal=>(r,k,n)=>{
+  const iN=seal?['start','stop','sen']:['sw','sen'];
+  const {A,io}=mkCtx(r,n,iN,['motor','lamp'],{lamp:'PARTİ'}); const sp=spd(r,k), sx=ri(r,40,65), N=ri(r,2,3)+Math.round(k*3), t=pick(r,[1.5,2,2.5,3]);
+  const run=seal?'M0.0':A.sw;
+  const rs=[]; if(seal) rs.push(sealM(A));
+  rs.push(R(['NO '+A.sen,null,null,null,'CTU C1 '+N]),R(['NO '+run,'NC C1',null,null,'COIL '+A.motor]),R(['NO C1',null,null,null,'TON T1 '+t]),R(['NO T1',null,null,null,'RST C1']),R(['NO C1',null,null,null,'COIL '+A.lamp]));
+  const sc={motor:A.motor,speed:sp,gap:gp(k),boxes:2*N+2,endDrop:'deliver',sensors:[{a:A.sen,x:sx}],countSensor:A.sen,batchN:N,restartAfter:t,lampA:A.lamp,lamps:[{a:A.lamp,c:'green',n:'PARTİ'}]};
+  if(seal){ sc.startA=A.start; sc.stopA=A.stop; sc.startFirst=true; }
+  return {title:seal?'Mühürlü Otomatik Parti Hattı':`Otomatik Parti (${N} kutu / ${tr(t)} sn)`,
+    task:(seal?`START (${A.start}) / STOP (${A.stop}) mühürlü hat (M0.0). `:`Şalter (${A.sw}) açık. `)+`${N} kutu sayılınca bant dursun, PARTİ lambası (${A.lamp}) yansın; ${tr(t)} sn bekleyip sayıcı kendini sıfırlasın ve bant yeniden kalksın. 2 parti tamamla.`,
+    hint:(seal?'M0.0 mühür · ':'')+`${A.sen}→CTU C1 (${N}) · ${run} · KAPALI C1 → ${A.motor} · C1→TON T1 (${tr(t)}) · T1→(R) C1 · C1→${A.lamp}.`,io,M:2,T:1,C:1,pal:PAL_D,scene:sc,
+    goals:seal?[{k:'seal'},{k:'batch',n:2},{k:'restart'}]:[{k:'batch',n:2},{k:'restart'}],sol:{rungs:rs},bot:at([[0.5,seal?A.start:A.sw]])};
+};
+const hFinal=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['start','stop','sen','lim'],['motor','pist','lamp'],{lamp:'AYIRMA'}); const sp=spd(r,k), sx=ri(r,45,70), N=ri(r,3,4)+Math.round(k*3);
+  const sol={rungs:[R(['NO '+A.start,'NC '+A.stop,null,null,'COIL '+A.motor],['NO '+A.motor]),R(['NO '+A.sen,null,null,null,'CTU C1 '+N]),R(['NO C1',null,null,null,'COIL '+A.pist]),R(['NO '+A.lim,null,null,null,'RST C1']),R(['NO '+A.pist,null,null,null,'COIL '+A.lamp])]};
+  const sc={motor:A.motor,speed:sp,gap:Math.max(1.15,gp(k)),boxes:2*N+2,endDrop:'deliver',sensors:[{a:A.sen,x:sx}],pistons:[{a:A.pist,x:sx,lim:A.lim}],divertEvery:N,startA:A.start,stopA:A.stop,startFirst:true,lampA:A.lamp,lamps:[{a:A.lamp,c:'amber',n:'AYIRMA'}]};
+  return {title:`Otomatik Hat: Her ${N}. Kutu`,task:`Mühürlü START (${A.start}) / STOP (${A.stop}) ile bant çalışsın. Her ${N}. kutuyu piston (${A.pist}) ayırsın, ${A.lim} ile sayıcı sıfırlansın, ayırma sırasında lamba (${A.lamp}) yansın. 2 kutu ayır.`,
+    hint:`Mühürlü motor · ${A.sen}→CTU C1 (${N}) · C1→${A.pist} · ${A.lim}→(R) C1 · ${A.pist}→${A.lamp}.`,io,M:2,T:0,C:1,pal:PAL_D,scene:sc,goals:[{k:'seal'},{k:'divert',n:2},{k:'lampPush'}],sol,bot:at([[0.5,A.start]])};
+};
+
+const TPL=[
+  [ [easyLogic('direct',0),easyLogic('direct',1),easyLogic('and',0),easyLogic('or',0),easyLogic('direct',2),easyLogic('and',1),easyLogic('or',1),easyLogic('and',2),easyLogic('or',2)],
+    [mSeal(0),mSR(0),mSeal(1),mSR(1),mSeal(2),mPist],
+    [hArriza,hPistLamp,hAckLatch,hGate] ],
+  [ [tPush,tLampDelay,tLampTof],
+    [tStopDelay,tFill,tStartDelay],
+    [hBooth,hDelays,hTonTof] ],
+  [ [cBatch(false),cLampCount,cBatch(true)],
+    [mDivert,mCtdTwo(false),mRestart(false)],
+    [hFinal,mCtdTwo(true),mRestart(true)] ]];
+const LV_CACHE={};
+function getLevel(id){
+  if(LV_CACHE[id]) return LV_CACHE[id];
+  const cat=Math.floor(id/300), diff=Math.floor(id/100)%3, n=id%100;
+  const r=mkRng(id*7919+13), k=n/99, list=TPL[cat][diff];
+  const lv=list[n%list.length](r,k,n);
+  Object.assign(lv,{id,cat,diff,n}); lv.opt=countBlocks(lv.sol);
+  return LV_CACHE[id]=lv;
+}
+/*==UI==*/
+const $=(s,r=document)=>r.querySelector(s);
+const SKEY='ladderustasi_v2';
+let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1};
+try{const s=JSON.parse(localStorage.getItem(SKEY)||'null'); if(s) save=Object.assign(save,s);}catch(e){}
+const persist=()=>{try{localStorage.setItem(SKEY,JSON.stringify(save));}catch(e){}};
+const S={id:0,lv:null,prog:null,tags:{},tool:null,running:false,speed:1,cw:70,view:false,redo:false,mscr:null};
+let world=null,plc=new PLC(),LIVE=[];
+const clone=o=>JSON.parse(JSON.stringify(o));
+const points=()=>Object.keys(save.done).length;
+const tierDone=(c,d)=>{ let k=0; for(let i=0;i<PER;i++) if(save.done[c*300+d*100+i]) k++; return k; };
+const catDone=c=>tierDone(c,0)+tierDone(c,1)+tierDone(c,2);
+const unlocked=id=>save.unlock||id%PER===0||!!save.done[id-1]||!!save.done[id];
+/* ---------- SES (Web Audio) ---------- */
+const Snd={ctx:null,nb:null,
+  init(){ if(!this.ctx){ try{ this.ctx=new (window.AudioContext||window.webkitAudioContext)(); const n=this.ctx.sampleRate; this.nb=this.ctx.createBuffer(1,n,n); const d=this.nb.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; }catch(e){} } if(this.ctx&&this.ctx.state==='suspended') this.ctx.resume(); },
+  tone(f,d,type,v,delay,f2){ if(!save.sound||!this.ctx) return; const c=this.ctx,t=c.currentTime+(delay||0),o=c.createOscillator(),g=c.createGain(); o.type=type||'square'; o.frequency.setValueAtTime(f,t); if(f2) o.frequency.exponentialRampToValueAtTime(f2,t+d); g.gain.setValueAtTime(v||0.05,t); g.gain.exponentialRampToValueAtTime(0.0001,t+d); o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+d+0.02); },
+  noise(d,fq,v,type){ if(!save.sound||!this.ctx||!this.nb) return; const c=this.ctx,t=c.currentTime,s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain(); s.buffer=this.nb; f.type=type||'highpass'; f.frequency.value=fq; g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(0.0001,t+d); s.connect(f); f.connect(g); g.connect(c.destination); s.start(t); s.stop(t+d); },
+  click(){ this.tone(900,0.04,'square',0.04); },
+  relay(){ this.tone(2400,0.012,'square',0.04); this.tone(140,0.04,'triangle',0.07,0.008); },
+  hiss(){ this.noise(0.28,3500,0.12); },
+  err(){ this.tone(190,0.4,'sawtooth',0.07,0,70); this.tone(150,0.4,'sawtooth',0.06,0.12,60); },
+  win(){ [523,659,784,1047,1319].forEach((f,i)=>this.tone(f,0.22,'triangle',0.07,i*0.11)); },
+  place(){ this.tone(520,0.05,'square',0.04); this.tone(780,0.06,'square',0.04,0.05); }
+};
+
+/* ---------- Yardımcılar ---------- */
+let toastT; function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+const BN={NO:'Açık Kontak',NC:'Kapalı Kontak',COIL:'Bobin',SET:'Set Bobini',RST:'Reset Bobini',TON:'TON Zamanlayıcı',TOF:'TOF Zamanlayıcı',CTU:'CTU Yukarı Sayıcı',CTD:'CTD Aşağı Sayıcı'};
+const BS={NO:'Açık',NC:'Kapalı',COIL:'Bobin',SET:'Set',RST:'Reset',TON:'TON',TOF:'TOF',CTU:'CTU',CTD:'CTD'};
+function palSym(t){
+  const m=17,y=12; let s='<svg width="34" height="24" viewBox="0 0 34 24">';
+  if(t==='NO'||t==='NC'){ s+=`<path d="M0 ${y}H${m-6}M${m+6} ${y}H34M${m-6} 3V21M${m+6} 3V21"/>`; if(t==='NC') s+=`<path d="M${m-8} 20L${m+8} 4"/>`; }
+  else if(t==='COIL'||t==='SET'||t==='RST'){ s+=`<path d="M0 ${y}H${m-9}M${m+9} ${y}H34M${m-4} 3Q${m-11} ${y} ${m-4} 21M${m+4} 3Q${m+11} ${y} ${m+4} 21"/>`; if(t!=='COIL') s+=`<text x="${m}" y="16">${t==='SET'?'S':'R'}</text>`; }
+  else s+=`<rect x="4" y="2" width="26" height="20" rx="3"/><text x="17" y="16">${t}</text>`;
+  return s+'</svg>';
+}
+const defPV=t=>(t==='TON'||t==='TOF')?2:3;
+function defaultTags(lv){ const o={}; lv.io.I.concat(lv.io.Q).forEach(d=>o[d.a]=d.n); return o; }
+
+/* ---------- Bölüm yükleme / mod ---------- */
+function loadLevel(id){
+  S.id=id; const lv=S.lv=getLevel(id); save.last=id; persist();
+  const dn=save.done[id]; S.redo=false; S.tool=null;
+  if(dn){ S.view=true; S.prog=clone(dn.prog); S.tags=Object.assign(defaultTags(lv),dn.tags||{}); }
+  else { S.view=false; const d=save.draft[id]; S.prog=d&&d.rungs&&d.rungs.length?{rungs:clone(d.rungs)}:{rungs:[mkRung(),mkRung()]}; S.tags=Object.assign(defaultTags(lv),(d&&d.tags)||{}); }
+  world=new World(lv); plc.reset(); stopSim(true);
+  const D=DIFFS[lv.diff];
+  $('#title').innerHTML=`<small style="color:${D.c}">${D.n[0]}${lv.n+1}</small>${lv.title}`;
+  $('#task').textContent=lv.task;
+  buildPalette(); refreshMode(); renderLadder(); closeAll();
+}
+function refreshMode(){
+  $('#palette').style.display=S.view?'none':'flex'; $('#doneBar').style.display=S.view?'flex':'none';
+  $('#bClear').style.visibility=S.view?'hidden':'visible'; updInfo();
+}
+function saveDraft(){ if(S.view||S.redo) return; save.draft[S.id]={rungs:S.prog.rungs,tags:S.tags}; persist(); }
+const saveProg=saveDraft;
+function guard(){ if(S.view){ toast('Tamamlanmış bölüm — düzenlemek için alttaki Sıfırla\'ya bas'); return true; } return false; }
+$('#bReset').onclick=()=>{ Snd.init(); Snd.click(); S.view=false; S.redo=true; S.prog={rungs:[mkRung(),mkRung()]}; S.tags=defaultTags(S.lv); S.tool=null;
+  stopSim(true); refreshMode(); renderLadder(); toast('Sıfırlandı — çözmeden çıkarsan eski çözümün korunur'); };
+
+/* ---------- Palet ---------- */
+function buildPalette(){
+  const p=$('#palette'); p.innerHTML='';
+  S.lv.pal.forEach(t=>{ const b=document.createElement('button'); b.className='pal'; b.dataset.t=t; b.innerHTML=palSym(t)+'<span>'+BS[t]+'</span>'; p.appendChild(b); });
+}
+let justDragged=false;
+$('#palette').addEventListener('click',e=>{ if(justDragged) return; const b=e.target.closest('.pal'); if(!b) return; Snd.init(); Snd.click(); S.tool=S.tool===b.dataset.t?null:b.dataset.t; refreshTool(); });
+function refreshTool(){
+  document.querySelectorAll('.pal').forEach(b=>b.classList.toggle('sel',b.dataset.t===S.tool));
+  $('#rungs').dataset.tool=S.tool?(isOut(S.tool)?'o':'c'):''; updInfo();
+}
+function updInfo(){
+  const n=countBlocks(S.prog);
+  const msg=S.view?'<span style="color:#39ff6a">✔ Kayıtlı çözümün</span> — ▶ RUN ile çalıştırıp izle'
+    :S.redo?'<span style="color:#ffb020">Yeniden çözüyorsun</span> — yeni çözüm bulana kadar eskisi korunur'
+    :S.tool?`Seçili: <b style="color:#4da3ff">${BN[S.tool]}</b> — ${isOut(S.tool)?'son sütuna':'sol sütunlara'} dokun`:'Bloğu yukarı <b>sürükle-bırak</b> ya da seç &amp; dokun';
+  $('#einfo').innerHTML=`Blok <b>${n}</b> · referans çözüm ${S.lv.opt} blok<br>${msg}`;
+}
+function canPlace(t,i,r,c){
+  const rg=S.prog.rungs[i]; if(!rg||rg.c[r][c]) return 'dolu'; if(r===1&&!rg.br) return 'x';
+  if(isOut(t)){ if(c!==OUTC||r!==0) return r===1?'Paralel kolda yalnızca kontak olur':'Bobin / zamanlayıcı / sayıcı en sağ sütuna konur'; }
+  else if(c===OUTC) return 'Kontaklar sol sütunlara konur';
+  return '';
+}
+
+/* ---------- Ladder etkileşimi ---------- */
+$('#rungs').addEventListener('click',e=>{
+  if(justDragged) return; Snd.init();
+  if(e.target.closest('#addr')){ if(guard()) return; S.prog.rungs.push(mkRung()); saveDraft(); renderLadder(); Snd.click(); const r=$('#rungs'); r.scrollTop=r.scrollHeight; return; }
+  const rm=e.target.closest('.rm'); if(rm){ if(guard()) return; rungMenu(+rm.closest('.rung').dataset.i); return; }
+  const ce=e.target.closest('.cell'); if(!ce) return; if(guard()) return;
+  const i=+ce.closest('.rung').dataset.i, r=+ce.dataset.r, c=+ce.dataset.c, cell=S.prog.rungs[i].c[r][c];
+  if(cell){ openEditor(i,r,c,cell,false); return; }
+  if(!S.tool){ toast('Paletten bir bloğu buraya sürükle ya da önce seç'); return; }
+  const m=canPlace(S.tool,i,r,c); if(m){ toast(m); return; }
+  openEditor(i,r,c,{t:S.tool,a:null,pv:defPV(S.tool)},true);
+});
+
+/* ---------- Sürükle-bırak ---------- */
+let drag=null;
+function cellAt(x,y){ const el=document.elementFromPoint(x,y); return el&&el.closest?el.closest('#rungs .cell'):null; }
+function inPalette(x,y){ const el=document.elementFromPoint(x,y); return !!(el&&el.closest&&el.closest('#palette')); }
+function dragClean(){ document.querySelectorAll('.cell.dz,.dragsrc').forEach(x=>x.classList.remove('dz','sw','dragsrc')); $('#ghost').style.display='none'; $('#palette').classList.remove('trash','hot'); refreshTool(); }
+// hedef hücre için eylem: 'move' | 'swap' | hata mesajı
+function dropAction(d,i,r,c){
+  if(!d.from) return canPlace(d.t,i,r,c)||'new';
+  const f=d.from; if(f.i===i&&f.r===r&&f.c===c) return 'x';
+  const rs=S.prog.rungs, src=rs[f.i].c[f.r][f.c], dst=rs[i].c[r][c];
+  if(r===1&&!rs[i].br) return 'x';
+  rs[f.i].c[f.r][f.c]=null;
+  let res;
+  if(!dst) res=canPlace(src.t,i,r,c)||'move';
+  else { rs[i].c[r][c]=null; const a=canPlace(src.t,i,r,c), b=canPlace(dst.t,f.i,f.r,f.c); rs[i].c[r][c]=dst; res=a||b?(a||b):'swap'; }
+  rs[f.i].c[f.r][f.c]=src; return res;
+}
+$('#palette').addEventListener('pointerdown',e=>{ const b=e.target.closest('.pal'); if(!b||S.view) return; drag={t:b.dataset.t,x:e.clientX,y:e.clientY,pid:e.pointerId,on:false}; });
+$('#rungs').addEventListener('pointerdown',e=>{
+  const ce=e.target.closest('.cell'); if(!ce||S.view) return;
+  const i=+ce.closest('.rung').dataset.i, r=+ce.dataset.r, c=+ce.dataset.c, cell=S.prog.rungs[i].c[r][c]; if(!cell) return;
+  drag={t:cell.t,x:e.clientX,y:e.clientY,pid:e.pointerId,on:false,from:{i,r,c,el:ce}};
+});
+window.addEventListener('pointermove',e=>{
+  if(!drag||e.pointerId!==drag.pid) return;
+  if(!drag.on){
+    const dx=e.clientX-drag.x, dy=e.clientY-drag.y, dist=Math.hypot(dx,dy);
+    if(drag.from){ if(dist<7) return; drag.from.el.classList.add('dragsrc'); $('#palette').classList.add('trash'); }
+    else { if(dist<10) return; if(e.pointerType!=='mouse'&&Math.abs(dy)<Math.abs(dx)){ drag=null; return; } }
+    drag.on=true; const g=$('#ghost'); g.innerHTML=palSym(drag.t)+'<span>'+(drag.from?drag.from.el.querySelector('.ad,.bt')?.textContent||BS[drag.t]:BS[drag.t])+'</span>'; g.style.display='flex';
+    $('#rungs').dataset.tool=isOut(drag.t)?'o':'c'; Snd.init(); Snd.click();
+  }
+  e.preventDefault();
+  $('#ghost').style.transform=`translate(${e.clientX-31}px,${e.clientY-64}px)`;
+  const rb=$('#rungs').getBoundingClientRect();
+  if(e.clientY<rb.top+28&&e.clientY>rb.top-40) $('#rungs').scrollTop-=7; else if(e.clientY>rb.bottom-28&&e.clientY<rb.bottom+4) $('#rungs').scrollTop+=7;
+  if(drag.from) $('#palette').classList.toggle('hot',inPalette(e.clientX,e.clientY));
+  const ce=cellAt(e.clientX,e.clientY);
+  document.querySelectorAll('.cell.dz').forEach(x=>{ if(x!==ce) x.classList.remove('dz','sw'); });
+  if(ce){ const a=dropAction(drag,+ce.closest('.rung').dataset.i,+ce.dataset.r,+ce.dataset.c);
+    if(a==='new'||a==='move'||a==='swap'){ ce.classList.add('dz'); ce.classList.toggle('sw',a==='swap'); } }
+},{passive:false});
+document.addEventListener('touchmove',e=>{ if(drag&&drag.on) e.preventDefault(); },{passive:false});
+window.addEventListener('pointerup',e=>{
+  if(!drag||e.pointerId!==drag.pid) return; const d=drag; drag=null; dragClean();
+  if(!d.on) return; justDragged=true; setTimeout(()=>justDragged=false,60); Snd.init();
+  const rs=S.prog.rungs;
+  if(d.from&&inPalette(e.clientX,e.clientY)){ rs[d.from.i].c[d.from.r][d.from.c]=null; saveDraft(); renderLadder(); Snd.click(); toast('Blok silindi'); return; }
+  const ce=cellAt(e.clientX,e.clientY); if(!ce) return;
+  const i=+ce.closest('.rung').dataset.i, r=+ce.dataset.r, c=+ce.dataset.c, a=dropAction(d,i,r,c);
+  if(a==='new') openEditor(i,r,c,{t:d.t,a:null,pv:defPV(d.t)},true);
+  else if(a==='move'){ rs[i].c[r][c]=rs[d.from.i].c[d.from.r][d.from.c]; rs[d.from.i].c[d.from.r][d.from.c]=null; saveDraft(); renderLadder(); Snd.place(); }
+  else if(a==='swap'){ const t=rs[i].c[r][c]; rs[i].c[r][c]=rs[d.from.i].c[d.from.r][d.from.c]; rs[d.from.i].c[d.from.r][d.from.c]=t; saveDraft(); renderLadder(); Snd.place(); toast('Bloklar yer değiştirdi'); }
+  else if(a!=='dolu'&&a!=='x') toast(a);
+});
+window.addEventListener('pointercancel',e=>{ if(drag&&e.pointerId===drag.pid){ drag=null; dragClean(); } });
+/* ---------- Ladder çizimi ---------- */
+function calcCW(){ const w=$('#rungs').clientWidth-12-30-10; return Math.max(54,Math.min(84,Math.floor(w/COLS))); }
+function cellSVG(cell,r,c,cw,inSpan,brEmpty){
+  const m=cw/2,y=22; let s=`<svg width="${cw}" height="44" viewBox="0 0 ${cw} 44">`;
+  const tag=cell&&S.tags[cell.a]?S.tags[cell.a]:'';
+  if(!cell){
+    if(c<OUTC){
+      if(r===0||inSpan) s+=`<path class="wl" d="M0 ${y}H${m}"/><path class="wr" d="M${m} ${y}H${cw}"/>`;
+      s+=`<path class="plus" d="M${m-4} ${y}H${m+4}M${m} ${y-4}V${y+4}"/>`;
+    } else s+=`<path class="wl" d="M0 ${y}H${m-14}"/><path class="ph" d="M${m-5} 10Q${m-13} ${y} ${m-5} 34M${m+5} 10Q${m+13} ${y} ${m+5} 34"/>`;
+    return s+'</svg>';
+  }
+  const t=cell.t;
+  if(t==='NO'||t==='NC'){
+    s+=`<path class="wl" d="M0 ${y}H${m-8}"/><path class="wr" d="M${m+8} ${y}H${cw}"/><path class="sym" d="M${m-8} 11V33M${m+8} 11V33"/>`;
+    if(t==='NC') s+=`<path class="sym" d="M${m-10} 31L${m+10} 13"/>`;
+    s+=`<text class="ad" x="${m}" y="9">${cell.a}</text><text class="tg" x="${m}" y="43">${tag.slice(0,12)}</text>`;
+  } else if(t==='COIL'||t==='SET'||t==='RST'){
+    s+=`<path class="wl" d="M0 ${y}H${m-13}"/><path class="wr" d="M${m+13} ${y}H${cw}"/><path class="sym" d="M${m-5} 10Q${m-14} ${y} ${m-5} 34M${m+5} 10Q${m+14} ${y} ${m+5} 34"/>`;
+    if(t!=='COIL') s+=`<text class="cl" x="${m}" y="26">${t==='SET'?'S':'R'}</text>`;
+    s+=`<text class="ad" x="${m}" y="9">${cell.a}</text><text class="tg" x="${m}" y="43">${tag.slice(0,12)}</text>`;
+  } else {
+    s+=`<path class="wl" d="M0 ${y}H${m-26}"/><path class="wr" d="M${m+26} ${y}H${cw}"/><rect class="bx" x="${m-26}" y="3" width="52" height="38" rx="4"/>`;
+    s+=`<text class="bt" x="${m}" y="17">${t} ${cell.a}</text><text class="bv" x="${m}" y="33"></text>`;
+  }
+  return s+'</svg>';
+}
+function tvStatic(o){ return (o.t==='TON'||o.t==='TOF')?`PT ${o.pv.toFixed(1)}s`:`PV ${o.pv}`; }
+function renderLadder(){
+  const box=$('#rungs'); const sc=box.scrollTop; box.innerHTML=''; LIVE=[];
+  const cw=S.cw=calcCW();
+  S.prog.rungs.forEach((rg,i)=>{
+    const rows=rg.br?2:1, sp=branchSpan(rg);
+    const el=document.createElement('div'); el.className='rung'; el.dataset.i=i;
+    el.innerHTML=`<div class="gut"><span class="rn">R${i+1}</span><button class="rm">⋮</button></div><div class="grid" style="width:${cw*COLS+8}px;height:${rows*44}px"><div class="rail" style="left:0"></div><div class="rail" style="left:${cw*COLS+4}px"></div></div>`;
+    const g=el.querySelector('.grid'); const L={cells:[[],[]],vl:null,vr:null,grid:g};
+    for(let r=0;r<rows;r++) for(let c=0;c<COLS;c++){
+      if(r===1&&c===OUTC) continue;
+      const cell=rg.c[r][c]; const inSp=!!sp&&c>=sp.from&&c<=sp.to;
+      const d=document.createElement('div'); d.dataset.r=r; d.dataset.c=c;
+      d.style.cssText=`left:${4+c*cw}px;top:${r*44}px;width:${cw}px`;
+      d._b='cell'+(cell?' full':(c===OUTC?' eo':' ec')); d.className=d._b;
+      d.innerHTML=cellSVG(cell,r,c,cw,inSp); d._cell=cell; d._tv=d.querySelector('.bv'); if(d._tv) d._tv.textContent=tvStatic(cell);
+      g.appendChild(d); L.cells[r][c]=d;
+    }
+    if(sp){ for(const [k,x] of [['vl',sp.from*cw+4],['vr',(sp.to+1)*cw+4]]){ const v=document.createElement('div'); v.className='vw'; v.style.cssText=`left:${x-1.5}px;top:22px;height:44px`; g.appendChild(v); L[k]=v; } }
+    box.appendChild(el); LIVE.push(L);
+  });
+  if(S.prog.rungs.length<8&&!S.view){ const b=document.createElement('button'); b.id='addr'; b.textContent='＋ Satır Ekle'; box.appendChild(b); }
+  box.scrollTop=sc; refreshTool();
+}
+function updateLive(){
+  const res=plc.res, live=res.length===S.prog.rungs.length&&(S.running||world.err||world.done);
+  S.prog.rungs.forEach((rg,i)=>{ const L=LIVE[i]; if(!L) return; const R=res[i], rows=rg.br?2:1, sp=branchSpan(rg);
+    L.grid.classList.toggle('on',!!live);
+    for(let r=0;r<rows;r++) for(let c=0;c<COLS;c++){
+      const el=L.cells[r][c]; if(!el) continue; let k=el._b;
+      if(live&&R){ let lp,rp,ps=false;
+        if(c<OUTC){ lp=!!(R.in[r]&&R.in[r][c]); rp=!!(R.out[r]&&R.out[r][c]); ps=!!el._cell&&rp; }
+        else { lp=rp=R.outIn; ps=R.outIn&&!!el._cell; }
+        if(lp) k+=' lp'; if(rp) k+=' rp'; if(ps) k+=' ps';
+        const o=el._cell; if(o&&el._tv){ const st=(o.t==='TON'||o.t==='TOF')?plc.T[o.a]:plc.C[o.a];
+          if(st&&st.q) k+=' qq';
+          el._tv.textContent=(o.t==='TON'||o.t==='TOF')?`${(st?st.et/1000:0).toFixed(1)}/${o.pv.toFixed(1)}s`:`${st?st.cv:(o.t==='CTD'?o.pv:0)}/${o.pv}`; }
+      } else if(el._tv&&el._cell) el._tv.textContent=tvStatic(el._cell);
+      if(el.className!==k) el.className=k;
+    }
+    if(sp&&L.vl){ const on=live&&R&&(R.in[0][sp.from]); const on2=live&&R&&(R.out[0][sp.to]||R.out[1][sp.to]);
+      L.vl.classList.toggle('on',!!on); L.vr.classList.toggle('on',!!on2); }
+  });
+}
+
+function rungMenu(i){
+  const rg=S.prog.rungs[i], n=S.prog.rungs.length;
+  const sh=$('#sheet'); sh.innerHTML=`<h3>Satır ${i+1}</h3><p class="t" style="margin-top:0">PLC satırları yukarıdan aşağıya taranır.</p>
+  <button class="mi" data-a="br">${rg.br?'⑂ Paralel kolu kaldır':'⑂ Paralel kol ekle (OR)'}</button>
+  <button class="mi" data-a="up" ${i===0?'disabled style="opacity:.4"':''}>▲ Yukarı taşı</button>
+  <button class="mi" data-a="dn" ${i===n-1?'disabled style="opacity:.4"':''}>▼ Aşağı taşı</button>
+  <button class="mi" data-a="del" style="color:#ff9a9a">🗑 Satırı sil</button>
+  <button class="mi" data-a="x">Kapat</button>`;
+  openSheet();
+  sh.onclick=e=>{ const b=e.target.closest('.mi'); if(!b||b.disabled) return; const a=b.dataset.a; const rs=S.prog.rungs;
+    if(a==='br'){ rg.br=!rg.br; if(!rg.br) rg.c[1]=Array(COLS).fill(null); }
+    else if(a==='up'&&i>0){ [rs[i-1],rs[i]]=[rs[i],rs[i-1]]; }
+    else if(a==='dn'&&i<n-1){ [rs[i+1],rs[i]]=[rs[i],rs[i+1]]; }
+    else if(a==='del'){ rs.splice(i,1); if(!rs.length) rs.push(mkRung()); }
+    Snd.click(); saveProg(); renderLadder(); closeAll(); };
+}
+function allowed(t){
+  const lv=S.lv, g=[]; const I=lv.io.I.map(d=>d.a), Q=lv.io.Q.map(d=>d.a);
+  const M=[...Array(lv.M)].map((_,i)=>'M0.'+i), T=[...Array(lv.T)].map((_,i)=>'T'+(i+1)), C=[...Array(lv.C)].map((_,i)=>'C'+(i+1));
+  const add=(n,l)=>{ if(l.length) g.push([n,l]); };
+  if(t==='NO'||t==='NC'){ add('GİRİŞLER (I)',I); add('ÇIKIŞLAR (Q)',Q); add('HAFIZA (M)',M); add('ZAMANLAYICI (T)',T); add('SAYICI (C)',C); }
+  else if(t==='COIL'||t==='SET'){ add('ÇIKIŞLAR (Q)',Q); add('HAFIZA (M)',M); }
+  else if(t==='RST'){ add('ÇIKIŞLAR (Q)',Q); add('HAFIZA (M)',M); add('ZAMANLAYICI (T)',T); add('SAYICI (C)',C); }
+  else if(t==='TON'||t==='TOF') add('ZAMANLAYICI (T)',T);
+  else add('SAYICI (C)',C);
+  return g;
+}
+function openEditor(i,r,c,cell,isNew){
+  const t=cell.t, groups=allowed(t); let sel=cell.a||(groups[0]&&groups[0][1][0]); let pv=cell.pv;
+  const tm=(t==='TON'||t==='TOF'), ct=(t==='CTU'||t==='CTD');
+  const sh=$('#sheet');
+  const draw=()=>{
+    sh.innerHTML=`<div style="display:flex;align-items:center;gap:10px"><div class="pal sel" style="flex:0 0 62px;height:46px">${palSym(t)}</div><div><h3>${BN[t]}</h3><div style="font-size:11px;color:var(--dim)">Adres seç ve istersen etiket yaz</div></div></div>`+
+    groups.map(([n,l])=>`<div class="grp">${n}</div><div class="chips">${l.map(a=>`<button class="chip ${a===sel?'sel':''}" data-a="${a}">${a}<small>${S.tags[a]||'—'}</small></button>`).join('')}</div>`).join('')+
+    `<div class="fld"><label>Etiket (Tag)</label><input id="tgIn" maxlength="14" placeholder="örn: Bant_Motor" value="${(S.tags[sel]||'').replace(/"/g,'')}"></div>`+
+    (tm?`<div class="fld"><label>Süre</label><div class="step"><button class="btn" data-s="-">−</button><b>${pv.toFixed(1)} sn</b><button class="btn" data-s="+">＋</button></div></div>`:'')+
+    (ct?`<div class="fld"><label>Hedef (PV)</label><div class="step"><button class="btn" data-s="-">−</button><b>${pv}</b><button class="btn" data-s="+">＋</button></div></div>`:'')+
+    `<div class="brow">${isNew?'':'<button class="btn dan" id="mDel">🗑 Sil</button>'}<button class="btn wide" id="mCan">İptal</button><button class="btn pri wide" id="mOk">✓ Tamam</button></div>`;
+  };
+  draw(); openSheet();
+  sh.onclick=e=>{
+    const ch=e.target.closest('.chip'); if(ch){ const tg=$('#tgIn'); if(tg) S.tags[sel]=tg.value.trim()||S.tags[sel]||''; sel=ch.dataset.a; Snd.click(); draw(); return; }
+    const st=e.target.closest('[data-s]'); if(st){ const up=st.dataset.s==='+'; if(tm) pv=Math.max(0.5,Math.min(30,pv+(up?0.5:-0.5))); else pv=Math.max(1,Math.min(20,pv+(up?1:-1))); const tg=$('#tgIn'); if(tg) S.tags[sel]=tg.value.trim(); Snd.click(); draw(); return; }
+    if(e.target.id==='mCan'){ closeAll(); return; }
+    if(e.target.id==='mDel'){ S.prog.rungs[i].c[r][c]=null; saveProg(); renderLadder(); Snd.click(); closeAll(); return; }
+    if(e.target.id==='mOk'){ if(!sel){ toast('Bu blok için kullanılabilir adres yok'); return; }
+      const tg=$('#tgIn'); if(tg) S.tags[sel]=tg.value.trim();
+      const nc={t:t,a:sel}; if(tm||ct) nc.pv=pv; S.prog.rungs[i].c[r][c]=nc; saveProg(); renderLadder(); Snd.place(); closeAll(); }
+  };
+}
+function openSheet(){ $('#ovSheet').classList.add('show'); }
+function closeAll(){ ['#ovSheet','#ovCard','#menu'].forEach(s=>$(s).classList.remove('show')); }
+$('#ovSheet').addEventListener('click',e=>{ if(e.target.id==='ovSheet') closeAll(); });
+function card(html,fn){ $('#card').innerHTML=html; $('#ovCard').classList.add('show'); $('#card').onclick=fn||null; }
+$('#bClear').onclick=()=>{ if(guard()) return; if(!countBlocks(S.prog)){ toast('Program zaten boş'); return; }
+  card(`<h3>Programı temizle?</h3><p class="t" style="text-align:center">Tüm satırlar silinecek.</p><div class="brow"><button class="btn wide" id="n">İptal</button><button class="btn dan wide" id="y">Temizle</button></div>`,e=>{
+    if(e.target.id==='y'){ S.prog={rungs:[mkRung(),mkRung()]}; saveDraft(); renderLadder(); closeAll(); } else if(e.target.id==='n') closeAll(); }); };
+
+/* ---------- Simülasyon kontrolü ---------- */
+function setPill(){ const p=$('#pill'); if(world.err){p.textContent='HATA';p.className='bad';} else if(S.running){p.textContent='RUN';p.className='run';} else {p.textContent=world.done?'TAMAM':'STOP';p.className='';} }
+function startSim(){
+  if(!countBlocks(S.prog)){ toast('Program boş — önce ladder satırlarını doldur'); return; }
+  Snd.init(); $('#err').style.display='none'; closeAll();
+  world.reset(); plc.reset(); S.running=true; $('#run').textContent='■ STOP'; $('#run').classList.add('on'); setPill(); Snd.click();
+}
+function stopSim(silent){
+  S.running=false; if(world) world.reset(); plc.reset(); $('#err').style.display='none';
+  $('#run').textContent='▶ RUN'; $('#run').classList.remove('on'); if(world) setPill(); if(!silent) Snd.click(); if(LIVE.length) updateLive();
+}
+$('#run').onclick=()=>{ if(S.running||world.err) stopSim(); else startSim(); };
+$('#errRetry').onclick=()=>{ stopSim(true); startSim(); };
+$('#errEdit').onclick=()=>stopSim();
+$('#bSpd').onclick=()=>{ S.speed=S.speed===1?2:1; $('#bSpd').textContent=S.speed+'x'; Snd.click(); };
+function setSound(v){ save.sound=v; $('#bSnd').textContent=v?'🔊':'🔇'; persist(); }
+$('#bSnd').onclick=()=>{ setSound(!save.sound); Snd.init(); Snd.click(); };
+$('#bHint').onclick=()=>{ card(`<h3>💡 İpucu</h3><p class="t">${S.lv.hint}</p><div class="brow"><button class="btn pri wide" id="ok">Tamam</button></div>`,e=>{ if(e.target.id==='ok') closeAll(); }); };
+$('#task').onclick=()=>{ card(`<h3>${S.lv.title}</h3><p class="t">${S.lv.task}</p><div class="brow"><button class="btn pri wide" id="ok">Tamam</button></div>`,e=>{ if(e.target.id==='ok') closeAll(); }); };
+$('#bMenu').onclick=()=>{ Snd.init(); Snd.click(); showMenu('grid',S.lv.cat,S.lv.diff); };
+
+function onFail(){
+  S.running=false; $('#errT').textContent='⚠ '+world.err; $('#err').style.display='block';
+  $('#run').textContent='▶ RUN'; $('#run').classList.remove('on'); Snd.err(); setPill();
+}
+function onWin(){
+  S.running=false; $('#run').textContent='▶ RUN'; $('#run').classList.remove('on'); setPill();
+  const wasView=S.view, first=!save.done[S.id], n=countBlocks(S.prog), lv=S.lv;
+  save.done[S.id]={prog:{rungs:clone(S.prog.rungs)},tags:clone(S.tags)}; delete save.draft[S.id]; persist();
+  S.redo=false; S.view=true; refreshMode(); Snd.win();
+  setTimeout(()=>{ if(!world.done) return;
+    const nx=lv.n<PER-1?S.id+1:null;
+    card(`<h3 style="color:var(--neon);font-size:21px">BÖLÜM TAMAM!</h3><div class="gain">${first?'+1 PUAN':wasView?'✔ Çözüm çalışıyor':'✔ Çözüm güncellendi'}</div>
+    <p class="t" style="text-align:center">Toplam <b style="color:#39ff6a">${points()}</b> / ${TOTAL} puan<br>Kullanılan blok: <b>${n}</b> · referans ${lv.opt}</p>
+    ${nx!==null?'<div class="brow"><button class="btn pri wide" id="nx">Sonraki Bölüm ▶</button></div>':''}
+    <div class="brow"><button class="btn wide" id="rt">👁 Çözümü Gör</button><button class="btn wide" id="mn">☰ Bölümler</button></div>`,e=>{
+      if(e.target.id==='nx') loadLevel(nx); else if(e.target.id==='rt'){ stopSim(true); closeAll(); renderLadder(); } else if(e.target.id==='mn'){ stopSim(true); closeAll(); showMenu('grid',lv.cat,lv.diff); } }); },700);
+}
+
+/* ---------- MENÜLER ---------- */
+const BAR=(v,max,c)=>`<div class="bar"><i style="width:${(100*v/max).toFixed(1)}%;background:${c}"></i></div>`;
+function showMenu(scr,cat,diff){
+  if(S.running) stopSim(true);
+  S.mscr=scr; if(cat!==undefined){ S.mcat=cat; } if(diff!==undefined) S.mdiff=diff; cat=S.mcat; diff=S.mdiff;
+  const back=t=>`<button class="ib" data-go="${t}">‹</button>`; let h='';
+  if(scr==='main'){
+    const L=save.last>=0?getLevel(save.last):null;
+    h=`<div class="mm"><canvas id="mcv"></canvas><div class="mm-title">LADDER<span>USTASI</span></div><div class="mm-sub">PLC MERDİVEN MANTIĞI BULMACASI</div>
+    <div class="pts">⚡ ${points()} / ${TOTAL} puan</div>
+    <button class="bigbtn play" data-go="cats">▶ OYNA</button>
+    ${L?`<button class="bigbtn" data-go="cont">⏵ Devam Et <small>${CATS[L.cat].n} · ${DIFFS[L.diff].n} ${L.n+1}</small></button>`:''}
+    <button class="bigbtn" data-go="prog">🏆 İlerleme</button>
+    <button class="bigbtn" data-go="how">❓ Nasıl Oynanır</button>
+    <button class="bigbtn" data-go="set">⚙ Ayarlar</button></div>`;
+  } else if(scr==='cats'){
+    h=`<div class="topbar">${back('main')}<h3>Kategori Seç</h3><span class="pp">⚡ ${points()}</span></div>`+
+    CATS.map((c,i)=>{ const d=catDone(i); return `<button class="ccard" data-go="diffs" data-c="${i}" style="border-color:${c.c}55"><div class="ic" style="color:${c.c}">${palSym(c.ic)}</div><div class="bd"><b>${c.n}</b><small>${c.s}</small>${BAR(d,300,c.c)}</div><div class="cnt">${d}<small>/300</small></div></button>`; }).join('');
+  } else if(scr==='diffs'){
+    const C=CATS[cat];
+    h=`<div class="topbar">${back('cats')}<h3 style="color:${C.c}">${C.n}</h3><span class="pp">${catDone(cat)}/300</span></div>`+
+    DIFFS.map((d,i)=>{ const k=tierDone(cat,i); return `<button class="ccard" data-go="grid" data-c="${cat}" data-d="${i}" style="border-color:${d.c}66"><div class="ic" style="color:${d.c};font:900 22px system-ui">${'●'.repeat(i+1)}</div><div class="bd"><b style="color:${d.c}">${d.n}</b><small>${d.s} · 100 bölüm</small>${BAR(k,100,d.c)}</div><div class="cnt">${k}<small>/100</small></div></button>`; }).join('');
+  } else if(scr==='grid'){
+    const C=CATS[cat], D=DIFFS[diff], base=cat*300+diff*100;
+    h=`<div class="topbar">${back('diffs')}<h3><span style="color:${C.c}">${C.n}</span> · <span style="color:${D.c}">${D.n}</span></h3><button class="ib" data-go="main">🏠</button></div>
+    <div class="prow"><span>İlerleme</span>${BAR(tierDone(cat,diff),100,D.c)}<b>${tierDone(cat,diff)}/100</b></div><div class="lvs5" style="margin-top:10px">`;
+    for(let i=0;i<PER;i++){ const id=base+i, dn=!!save.done[id], ok=unlocked(id);
+      h+=`<button class="lv5 ${dn?'dn':''} ${ok?'':'lock'} ${id===S.id?'cur':''}" data-go="lvl" data-id="${id}">${ok?i+1:'🔒'}<small>${dn?'✔':''}</small></button>`; }
+    h+='</div>';
+  } else if(scr==='prog'){
+    h=`<div class="topbar">${back('main')}<h3>İlerleme</h3><span class="pp">⚡ ${points()} / ${TOTAL}</span></div><p class="t">Her tamamlanan bölüm <b>1 puan</b>. Toplam ${TOTAL} bölüm.</p>`+
+    CATS.map((c,ci)=>`<div class="cat" style="color:${c.c}">${c.n} · ${catDone(ci)}/300</div>`+DIFFS.map((d,di)=>`<div class="prow"><span style="color:${d.c}">${d.n}</span>${BAR(tierDone(ci,di),100,d.c)}<b>${tierDone(ci,di)}/100</b></div>`).join('')).join('');
+  } else if(scr==='set'){
+    h=`<div class="topbar">${back('main')}<h3>Ayarlar</h3></div>
+    <button class="mi" data-go="snd">${save.sound?'🔊 Ses: Açık':'🔇 Ses: Kapalı'}</button>
+    <button class="mi" data-go="unl">${save.unlock?'☑':'☐'} Tüm bölüm kilitlerini aç</button>
+    <button class="mi" data-go="rst" style="color:#ff9a9a">↺ Tüm ilerlemeyi sıfırla</button>`;
+  } else if(scr==='how'){
+    h=`<div class="topbar">${back('main')}<h3>Nasıl Oynanır?</h3></div>${HOW}<button class="bigbtn play" data-go="cats" style="margin-top:12px">▶ OYNA</button>`;
+  }
+  $('#menuIn').innerHTML=h; $('#menuIn').scrollTop=0; $('#menu').classList.add('show');
+  if(scr==='grid'){ const cur=$('#menuIn .lv5.cur'); if(cur) cur.scrollIntoView({block:'center'}); }
+}
+const HOW=`<p class="t"><b>Amaç:</b> Görevdeki fabrika makinesini ladder (merdiven) diyagramı ile programla.</p>
+<p class="t"><b>1.</b> Alttaki paletten bir bloğu tutup ızgaradaki boş kutuya <b>sürükle-bırak</b> (ya da bloğa dokunup sonra kutuya dokun).<br>
+<b>2.</b> Açılan pencerede adresi seç: <b>I</b> giriş, <b>Q</b> çıkış, <b>M</b> hafıza, <b>T</b> zamanlayıcı, <b>C</b> sayıcı. İstersen etiket yaz, süre/adet ayarla.<br>
+<b>3.</b> Kontaklar sol 4 sütuna, bobin/TON/TOF/CTU/CTD en sağ sütuna gider. VEYA bağlantısı için satırın <b>⋮</b> menüsünden paralel kol ekle.<br>
+<b>4.</b> Yerleştirdiğin bir bloğu tutup sürükleyerek <b>taşı</b>; dolu kutuya bırakırsan iki blok <b>yer değiştirir</b>, alttaki palete bırakırsan <b>silinir</b>.<br>
+<b>5.</b> <b style="color:#39ff6a">▶ RUN</b> ile çalıştır, sahnedeki START / STOP / şalterlere dokun. Yeşil hatlar enerjili.<br>
+<b>6.</b> Görevi tamamlayınca <b>+1 puan</b>. Tamamlanan bölümü açınca kayıtlı çözümün görünür; Sıfırla ile yeniden çözebilirsin — çözmeden çıkarsan eski çözüm silinmez.</p>`;
+$('#menuIn').onclick=e=>{
+  const b=e.target.closest('[data-go]'); if(!b) return; Snd.init(); Snd.click(); const g=b.dataset.go;
+  if(g==='main'||g==='cats'||g==='prog'||g==='set'||g==='how') showMenu(g);
+  else if(g==='diffs') showMenu('diffs',b.dataset.c!==undefined?+b.dataset.c:S.mcat);
+  else if(g==='grid') showMenu('grid',+b.dataset.c,+b.dataset.d);
+  else if(g==='cont') loadLevel(save.last);
+  else if(g==='lvl'){ const id=+b.dataset.id; if(!unlocked(id)){ toast('Önce önceki bölümü tamamla (Ayarlar → kilitleri aç)'); return; } loadLevel(id); }
+  else if(g==='snd'){ setSound(!save.sound); showMenu('set'); }
+  else if(g==='unl'){ save.unlock=!save.unlock; persist(); showMenu('set'); }
+  else if(g==='rst'){ card(`<h3>Tüm ilerleme silinsin mi?</h3><p class="t" style="text-align:center">Puanlar ve kayıtlı çözümler silinecek.</p><div class="brow"><button class="btn wide" id="n">İptal</button><button class="btn dan wide" id="y">Sıfırla</button></div>`,ev=>{
+      if(ev.target.id==='y'){ save.done={}; save.draft={}; save.last=-1; persist(); loadLevel(0); showMenu('main'); } else if(ev.target.id==='n') $('#ovCard').classList.remove('show'); }); }
+};
+function drawMenuAnim(now){
+  const c=document.getElementById('mcv'); if(!c) return; const r=c.getBoundingClientRect(); if(!r.width) return;
+  const D=Math.min(2,window.devicePixelRatio||1); if(c.width!==Math.round(r.width*D)){ c.width=Math.round(r.width*D); c.height=Math.round(r.height*D); }
+  const x=c.getContext('2d'); x.setTransform(D,0,0,D,0,0); const w=r.width,h=r.height,t=now/1000; x.clearRect(0,0,w,h);
+  const L=18,Rr=w-18;
+  x.shadowColor='#39ff6a'; x.shadowBlur=10; x.strokeStyle='#39ff6a'; x.lineWidth=3.5; x.beginPath(); x.moveTo(L,6); x.lineTo(L,h*0.58); x.moveTo(Rr,6); x.lineTo(Rr,h*0.58); x.stroke();
+  [0,1].forEach(i=>{ const y=22+i*36, ph=(t*0.5+i*0.45)%1.4, p=Math.min(1,ph);
+    x.shadowBlur=0; x.strokeStyle='#26323f'; x.lineWidth=3; x.beginPath(); x.moveTo(L,y); x.lineTo(Rr,y); x.stroke();
+    x.shadowBlur=10; x.strokeStyle='#39ff6a'; x.beginPath(); x.moveTo(L,y); x.lineTo(L+(Rr-L)*p,y); x.stroke();
+    const cx=L+(Rr-L)*(0.25+i*0.15), qx=L+(Rr-L)*0.8, lit=p>0.8;
+    x.fillStyle='#0d1117'; x.fillRect(cx-9,y-12,18,24); x.fillRect(qx-12,y-14,24,28);
+    x.strokeStyle=p>0.3?'#39ff6a':'#9fb0c2'; x.lineWidth=3; x.beginPath(); x.moveTo(cx-7,y-11); x.lineTo(cx-7,y+11); x.moveTo(cx+7,y-11); x.lineTo(cx+7,y+11); x.stroke();
+    x.strokeStyle=lit?'#39ff6a':'#9fb0c2'; x.beginPath(); x.arc(qx+12,y,14,Math.PI*0.75,Math.PI*1.25); x.stroke(); x.beginPath(); x.arc(qx-12,y,14,-Math.PI*0.25,Math.PI*0.25); x.stroke();
+    if(lit){ x.fillStyle='rgba(57,255,106,.25)'; x.beginPath(); x.arc(qx,y,8,0,7); x.fill(); } });
+  x.shadowBlur=0; const by=h*0.82, bh=26;
+  x.fillStyle='#0b0f14'; x.fillRect(0,by-bh/2-4,w,bh+8); x.fillStyle='#252e38'; x.fillRect(0,by-bh/2,w,bh);
+  x.strokeStyle='#323e4b'; x.lineWidth=2; const off=(t*40)%16; for(let X=-16+off;X<w;X+=16){ x.beginPath(); x.moveTo(X,by-bh/2); x.lineTo(X,by+bh/2); x.stroke(); }
+  for(let i=0;i<6;i++){ const X=((t*40+i*90)%(w+60))-30; x.fillStyle='#b9822f'; x.strokeStyle='#6b4a14'; x.lineWidth=1.5; rr(X-10,by-10,20,20,3); x.fill(); x.stroke(); x.fillStyle='rgba(255,230,160,.5)'; x.fillRect(X-8,by-1.5,16,3); }
+  const sx=w*0.62, on=[0,1,2,3,4,5].some(i=>Math.abs(((t*40+i*90)%(w+60))-30-sx)<10);
+  x.strokeStyle=on?'#ffb020':'rgba(255,77,77,.7)'; x.setLineDash([3,3]); x.beginPath(); x.moveTo(sx,by-bh/2-6); x.lineTo(sx,by+bh/2+6); x.stroke(); x.setLineDash([]);
+}
+/* ---------- Canvas sahnesi ---------- */
+const cv=$('#cv'),ctx=cv.getContext('2d'); let W=300,H=300,hits=[],flash={};
+function resizeCanvas(){ const r=$('#sceneWrap').getBoundingClientRect(); const D=Math.min(2,window.devicePixelRatio||1); W=r.width;H=r.height; cv.width=Math.round(W*D);cv.height=Math.round(H*D); ctx.setTransform(D,0,0,D,0,0); }
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+const LC={green:['#39ff6a','#0e3a1b'],amber:['#ffb020','#3d2a07'],red:['#ff4d4d','#3d1010']};
+function drawScene(){
+  const w=world, sc=w.sc, lv=w.lv; ctx.clearRect(0,0,W,H);
+  const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#10161d'); g.addColorStop(1,'#182029'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(255,255,255,.035)'; ctx.lineWidth=1; for(let x=0;x<W;x+=24){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();} for(let y=0;y<H;y+=24){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  const x0=16, us=(W-16-50)/100, X=u=>x0+u*us, BWp=8*us, bh=Math.max(34,BWp+10), panelH=58;
+  const by=Math.max(44+48+bh/2+Math.max(0,(H-250)*0.3),sc.pistons.length?0:(H-panelH)*0.52); const push=Math.max(24,Math.min(46,(H-panelH)-by-bh/2-BWp/2-16));
+  // zemin ve tepsiler
+  sc.pistons.forEach(p=>{ ctx.fillStyle='#10171e'; ctx.strokeStyle='#3a4757'; ctx.lineWidth=2; rr(X(p.x)-26,by+bh/2+4,52,push+BWp/2+10,6); ctx.fill(); ctx.stroke(); ctx.fillStyle='#4a5b6e'; ctx.font='700 8px system-ui'; ctx.textAlign='center'; ctx.fillText('AYRILAN',X(p.x),by+bh/2+push+BWp/2+11); });
+  // bant
+  ctx.fillStyle='#0b0f14'; rr(x0-8,by-bh/2-6,100*us+16,bh+12,8); ctx.fill();
+  ctx.fillStyle='#252e38'; ctx.fillRect(x0,by-bh/2,100*us,bh);
+  ctx.save(); ctx.beginPath(); ctx.rect(x0,by-bh/2,100*us,bh); ctx.clip(); ctx.strokeStyle='#323e4b'; ctx.lineWidth=2; const sp=16, off=(w.beltOff*us)%sp;
+  for(let x=x0-sp+off;x<x0+100*us;x+=sp){ ctx.beginPath(); ctx.moveTo(x,by-bh/2); ctx.lineTo(x,by+bh/2); ctx.stroke(); } ctx.restore();
+  ctx.strokeStyle='#5d6e80'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(x0,by-bh/2); ctx.lineTo(x0+100*us,by-bh/2); ctx.moveTo(x0,by+bh/2); ctx.lineTo(x0+100*us,by+bh/2); ctx.stroke();
+  ctx.fillStyle=w.motor?'#39ff6a':'#46576b'; [x0,x0+100*us].forEach(x=>{ctx.beginPath();ctx.arc(x,by,5,0,7);ctx.fill();});
+  ctx.fillStyle='#6b7c8f'; ctx.font='700 14px system-ui'; ctx.textAlign='center'; ctx.fillText(w.motor?'▶▶':'▷▷',x0+10,by-bh/2-8);
+  // depo
+  const dx=X(100)+8; ctx.fillStyle='#14202b'; ctx.strokeStyle='#4da3ff'; ctx.lineWidth=2; rr(dx,by-bh/2-4,W-dx-4,bh+8,6); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#4da3ff'; ctx.font='800 8px system-ui'; ctx.fillText('DEPO',dx+(W-dx-4)/2,by-3); ctx.font='800 13px ui-monospace,monospace'; ctx.fillStyle='#dfe8f2'; ctx.fillText(w.delivered,dx+(W-dx-4)/2,by+12);
+  // istasyonlar / kabin
+  sc.valves.forEach(v=>{ const vx=X(v.x), on=!!w.q[v.a], spray=v.kind==='spray';
+    if(spray){ ctx.fillStyle='rgba(120,140,160,.10)'; ctx.strokeStyle='#5d6e80'; ctx.lineWidth=2; rr(X(v.x-13),by-bh/2-34,26*us,bh+44,6); ctx.fill(); ctx.stroke(); ctx.fillStyle='#7d8a99'; ctx.font='700 8px system-ui'; ctx.fillText('BOYA KABİNİ',vx,by-bh/2-38); }
+    ctx.fillStyle='#2b3744'; ctx.fillRect(vx-3,by-bh/2-30,6,20); ctx.fillStyle=on?(spray?'#ff8c2a':'#4da3ff'):'#59697b'; ctx.beginPath(); ctx.moveTo(vx-7,by-bh/2-10); ctx.lineTo(vx+7,by-bh/2-10); ctx.lineTo(vx,by-bh/2-2); ctx.fill();
+    if(on){ ctx.strokeStyle=spray?'rgba(255,140,42,.8)':'rgba(77,163,255,.85)'; ctx.lineWidth=spray?10:3; ctx.setLineDash([4,3]); ctx.lineDashOffset=-w.t*40; ctx.beginPath(); ctx.moveTo(vx,by-bh/2-2); ctx.lineTo(vx,by); ctx.stroke(); ctx.setLineDash([]); }
+    ctx.fillStyle='#7d8a99'; ctx.font='700 8px system-ui'; ctx.fillText(v.a,vx,spray?by+bh/2+14:by-bh/2-32); });
+  if(sc.fan){ const fx=X(sc.valves[0].x)+14*us-8, fy=by-bh/2-24, on=!!w.q[sc.fan.a]; ctx.save(); ctx.translate(fx,fy); ctx.rotate(w.fanAng); ctx.fillStyle=on?'#39ff6a':'#59697b'; for(let i=0;i<3;i++){ ctx.rotate(Math.PI*2/3); ctx.beginPath(); ctx.ellipse(0,-6,3,6,0,0,7); ctx.fill(); } ctx.restore(); ctx.fillStyle='#7d8a99'; ctx.font='700 8px system-ui'; ctx.fillText('FAN '+sc.fan.a,fx,fy+17); }
+  // kutular
+  for(const b of w.boxes){ let x=X(b.x),y=by,a=1,k=1;
+    if(b.st==='pushed'||b.st==='bin'){ y=by+b.py*push; if(b.st==='bin') a=Math.max(0,1-Math.max(0,b.ft-1.2)/0.6); }
+    if(b.st==='end'){ x=X(100)+4+b.ft*30; a=Math.max(0,1-b.ft/0.8); }
+    if(b.st==='removed'){ y=by-b.ft*34; a=Math.max(0,1-b.ft/0.6); k=1+b.ft*.5; }
+    const s=BWp*k; ctx.globalAlpha=a; ctx.fillStyle='#b9822f'; ctx.strokeStyle='#6b4a14'; ctx.lineWidth=1.5; rr(x-s/2,y-s/2,s,s,3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='rgba(255,230,160,.5)'; ctx.fillRect(x-s/2+2,y-1.5,s-4,3);
+    if(b.fill>0){ const col=sc.valves.some(v=>v.kind==='spray')?'255,120,30':'60,150,255'; ctx.fillStyle=`rgba(${col},${Math.min(.85,b.fill*.85)})`; rr(x-s/2+2,y-s/2+2,s-4,s-4,2); ctx.fill(); }
+    if(sc.divertEvery){ ctx.fillStyle='#1d1304'; ctx.font='800 10px system-ui'; ctx.textAlign='center'; ctx.fillText(b.id,x,y+3.5); }
+    ctx.globalAlpha=1; }
+  // sensörler
+  sc.sensors.forEach(s=>{ const sx=X(s.x), on=w.sensorOn(s.a); const t=by-bh/2-10, bt=by+bh/2+2;
+    ctx.strokeStyle=on?'#ffb020':'rgba(255,77,77,.65)'; ctx.lineWidth=on?2.5:1.5; ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(sx,t+8); ctx.lineTo(sx,bt); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#3a4757'; ctx.fillRect(sx-7,t,14,8); ctx.fillRect(sx-7,bt,14,8);
+    ctx.fillStyle=on?'#ffb020':'#ff4d4d'; ctx.beginPath(); ctx.arc(sx,t+4,2.5,0,7); ctx.fill(); ctx.beginPath(); ctx.arc(sx,bt+4,2.5,0,7); ctx.fill();
+    if(on){ ctx.shadowColor='#ffb020'; ctx.shadowBlur=10; ctx.beginPath(); ctx.arc(sx,bt+4,3,0,7); ctx.fill(); ctx.shadowBlur=0; }
+    ctx.fillStyle='#8da0b4'; ctx.font='700 8px ui-monospace,monospace'; ctx.textAlign='center'; ctx.fillText(s.a,sx,bt+19); });
+  // pistonlar
+  sc.pistons.forEach(p=>{ const px=X(p.x), e=w.ext[p.a]; const hy=by-bh/2-46, front=by-BWp/2-2+e*push;
+    ctx.fillStyle='#4a5b6e'; rr(px-11,hy,22,26,3); ctx.fill(); ctx.strokeStyle='#8da0b4'; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle=w.q[p.a]?'#39ff6a':'#2b3744'; ctx.fillRect(px-4,hy+4,8,4);
+    ctx.fillStyle='#a9b8c8'; ctx.fillRect(px-3,hy+26,6,Math.max(2,front-6-(hy+26))); ctx.fillStyle='#d4dde7'; rr(px-13,front-6,26,6,2); ctx.fill();
+    ctx.fillStyle='#7d8a99'; ctx.font='700 8px ui-monospace,monospace'; ctx.textAlign='center'; ctx.fillText(p.a,px,hy-3); });
+  // lambalar
+  sc.lamps.forEach((l,i)=>{ const lx=W-24-i*38, ly=by-bh/2-52, on=!!w.q[l.a], c=LC[l.c]; ctx.fillStyle='#2b3744'; ctx.fillRect(lx-3,ly+10,6,12);
+    ctx.fillStyle=on?c[0]:c[1]; ctx.strokeStyle='#59697b'; ctx.lineWidth=2; if(on){ctx.shadowColor=c[0];ctx.shadowBlur=16;} ctx.beginPath(); ctx.arc(lx,ly,10,0,7); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+    ctx.fillStyle='#8da0b4'; ctx.font='700 7.5px system-ui'; ctx.textAlign='center'; ctx.fillText(l.n,lx,ly+31); });
+  // panel
+  ctx.fillStyle='#0c1117'; ctx.fillRect(0,H-panelH,W,panelH); ctx.strokeStyle='#2a3542'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,H-panelH); ctx.lineTo(W,H-panelH); ctx.stroke();
+  const ops=lv.io.I.filter(d=>d.k==='btn'||d.k==='sw'); hits=[];
+  ops.forEach((d,i)=>{ const cx=(i+1)*W/(ops.length+1), cy=H-panelH+24, on=!!w.iv[d.a]||(flash[d.a]>0);
+    const col=d.n==='START'?'#39ff6a':d.n==='STOP'?'#ff4d4d':d.k==='sw'?'#ffb020':'#4da3ff';
+    ctx.fillStyle='#1a222b'; ctx.beginPath(); ctx.arc(cx,cy,21,0,7); ctx.fill();
+    if(d.k==='sw'){ ctx.fillStyle=on?'#3d2a07':'#10161d'; ctx.strokeStyle=col; ctx.lineWidth=2; rr(cx-17,cy-9,34,18,9); ctx.fill(); ctx.stroke(); ctx.fillStyle=on?col:'#59697b'; ctx.beginPath(); ctx.arc(on?cx+8:cx-8,cy,7,0,7); ctx.fill(); }
+    else { ctx.fillStyle=on?col:'#10161d'; ctx.strokeStyle=col; ctx.lineWidth=3; if(on){ctx.shadowColor=col;ctx.shadowBlur=14;} ctx.beginPath(); ctx.arc(cx,cy,15,0,7); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0; }
+    ctx.fillStyle='#cfe0f2'; ctx.font='800 9px system-ui'; ctx.textAlign='center'; ctx.fillText(d.n,cx,H-panelH+51); 
+    hits.push({a:d.a,x:cx,y:cy,r:28}); });
+  // HUD
+  ctx.font='700 10px system-ui'; let cx=6,cy=6; w.goalList().forEach(gl=>{ const tx=(gl.ok?'✔ ':'○ ')+gl.l, tw=ctx.measureText(tx).width+12; if(cx+tw>W-6){cx=6;cy+=19;}
+    ctx.fillStyle=gl.ok?'rgba(14,58,27,.9)':'rgba(0,0,0,.5)'; ctx.strokeStyle=gl.ok?'#39ff6a':'#3a4757'; ctx.lineWidth=1; rr(cx,cy,tw,16,8); ctx.fill(); ctx.stroke(); ctx.fillStyle=gl.ok?'#39ff6a':'#aab6c3'; ctx.textAlign='left'; ctx.fillText(tx,cx+6,cy+11.5); cx+=tw+5; });
+  if(w.err){ ctx.strokeStyle='rgba(255,77,77,.9)'; ctx.lineWidth=5; ctx.strokeRect(2,2,W-4,H-4); }
+  if(w.done){ ctx.strokeStyle='rgba(57,255,106,.9)'; ctx.lineWidth=5; ctx.strokeRect(2,2,W-4,H-4); }
+}
+cv.addEventListener('pointerdown',e=>{ const r=cv.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
+  for(const h of hits){ if(Math.hypot(x-h.x,y-h.y)<=h.r){ Snd.init(); Snd.click(); if(!S.running){ toast('Önce ▶ RUN ile simülasyonu başlat'); return; } world.press(h.a); flash[h.a]=0.25; return; } } });
+
+/* ---------- Ana döngü ---------- */
+let last=performance.now(), acc=0, fr=0;
+function scanOnce(){
+  const iv=world.sense(); for(const k in iv) plc.b[k]=iv[k];
+  const qs=S.lv.io.Q.map(d=>d.a), before=qs.map(a=>!!plc.b[a]);
+  plc.scan(S.prog,20); world.advance(plc.b,SCAN);
+  let ch=false,hs=false; qs.forEach((a,i)=>{ if(!!plc.b[a]!==before[i]){ ch=true; if(world.sc.pistons.some(p=>p.a===a)) hs=true; } });
+  if(ch) Snd.relay(); if(hs) Snd.hiss();
+  if(world.err) onFail(); else if(world.done) onWin();
+}
+function frame(now){
+  const dt=Math.min(0.1,(now-last)/1000); last=now;
+  for(const k in flash) if(flash[k]>0) flash[k]-=dt;
+  if(S.running){ acc+=dt*S.speed; let n=0; while(acc>=SCAN&&n<300&&S.running){ scanOnce(); acc-=SCAN; n++; } } else acc=0;
+  const mOpen=$('#menu').classList.contains('show');
+  if(mOpen&&S.mscr==='main') drawMenuAnim(now);
+  if(!mOpen){ drawScene(); if((fr++&1)===0) updateLive(); }
+  requestAnimationFrame(frame);
+}
+function relayout(){ resizeCanvas(); if(S.prog){ const cw=calcCW(); if(cw!==S.cw) renderLadder(); } }
+window.addEventListener('resize',relayout); if(window.ResizeObserver) new ResizeObserver(relayout).observe($('#sceneWrap'));
+$('#bSnd').textContent=save.sound?'🔊':'🔇';
+resizeCanvas(); loadLevel(save.last>=0&&save.last<TOTAL?save.last:0);
+showMenu('main');
+if(!save.intro){ card(`<h3>⚡ Ladder Ustası'na hoş geldin!</h3>${HOW}<div class="brow"><button class="btn pri wide" id="ok">Başlayalım</button></div>`,e=>{ if(e.target.id==='ok'){ save.intro=true; persist(); closeAll(); showMenu('main'); } }); }
+requestAnimationFrame(frame);
+</script></body></html>
