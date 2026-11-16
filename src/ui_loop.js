@@ -14,7 +14,7 @@ function frame(now){
   if(S.running){ acc+=dt*S.speed; let n=0; while(acc>=SCAN&&n<300&&S.running){ scanOnce(); acc-=SCAN; n++; } } else acc=0;
   const mOpen=$('#menu').classList.contains('show');
   if(mOpen&&S.mscr==='main') drawMenuAnim(now);
-  if(!mOpen){ drawScene(); if((fr++&1)===0) updateLive(); }
+  if(!mOpen){ drawScene(); if((fr++&1)===0){ updateLive(); updatePanel(); } }
   requestAnimationFrame(frame);
 if(me()) pullProgress().catch(()=>{});
 }

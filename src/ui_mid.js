@@ -3,15 +3,17 @@ function loadLevel(id,quiet){
   S.id=id; const lv=S.lv=getLevel(id); save.last=id; persist();
   const dn=save.done[id]; S.redo=false; S.tool=null;
   if(dn){ S.view=true; S.prog=clone(dn.prog); S.tags=Object.assign(defaultTags(lv),customTags(dn.tags)); }
-  else { S.view=false; const d=save.draft[id]; S.prog=d&&d.rungs&&d.rungs.length?{rungs:clone(d.rungs)}:{rungs:[mkRung(),mkRung()]}; S.tags=Object.assign(defaultTags(lv),customTags(d&&d.tags)); }
+  else { S.view=false; const d=save.draft[id]; S.prog=d&&d.rungs&&d.rungs.length?{rungs:clone(d.rungs)}:{rungs:[mkRung()]}; S.tags=Object.assign(defaultTags(lv),customTags(d&&d.tags)); }
   world=new World(lv); plc.reset(); stopSim(true);
   const D=DIFFS[lv.diff];
-  $('#title').innerHTML=`<small style="color:${D.c}">${D.n[0]}${lv.n+1}</small>${lv.title}`;
-  $('#task').textContent=lv.task;
+  setHeader();
   S.fresh=S.view?[]:freshElems(lv);
-  buildPalette(); refreshMode(); renderLadder(); closeAll();
+  buildPalette(); buildIO(); goalKey=''; refreshMode(); renderLadder(); closeAll();
   if(!quiet&&S.fresh.length) setTimeout(()=>showIntro(S.fresh),150);
 }
+function setHeader(){ const lv=S.lv, D=DIFFS[lv.diff], C=CATS[lv.cat];
+  $('#title').innerHTML=`<small style="color:${D.c}">${C.n.toUpperCase()} · ${D.n.toUpperCase()} ${lv.n+1}</small>${lv.title}`;
+  $('#task').innerHTML=esc(lv.task).replace(/\b([IQMTC]\d\.\d|[TC]\d)\b/g,'<b>$1</b>'); }
 function refreshMode(){
   $('#palette').style.display=S.view?'none':'flex'; $('#doneBar').style.display=S.view?'flex':'none';
   $('#bClear').style.visibility=S.view?'hidden':'visible'; updInfo();
@@ -19,7 +21,7 @@ function refreshMode(){
 function saveDraft(){ if(S.view||S.redo) return; save.draft[S.id]={rungs:S.prog.rungs,tags:customTags(S.tags)}; persist(); }
 const saveProg=saveDraft;
 function guard(){ if(S.view){ toast(tx('Tamamlanmış bölüm — düzenlemek için alttaki Sıfırla\'ya bas','Level completed — tap Reset below to edit')); return true; } return false; }
-$('#bReset').onclick=()=>{ Snd.init(); Snd.click(); S.view=false; S.redo=true; S.prog={rungs:[mkRung(),mkRung()]}; S.tags=defaultTags(S.lv); S.tool=null;
+$('#bReset').onclick=()=>{ Snd.init(); Snd.click(); S.view=false; S.redo=true; S.prog={rungs:[mkRung()]}; S.tags=defaultTags(S.lv); S.tool=null;
   stopSim(true); refreshMode(); renderLadder(); toast(tx('Sıfırlandı — çözmeden çıkarsan eski çözümün korunur','Reset — if you leave without solving, your old solution is kept')); };
 
 /* ---------- Palet ---------- */

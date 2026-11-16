@@ -1,6 +1,6 @@
 $('#bClear').onclick=()=>{ if(guard()) return; if(!countBlocks(S.prog)){ toast(tx('Program zaten boş','Program is already empty')); return; }
   card(`<h3>${tx('Programı temizle?','Clear program?')}</h3><p class="t" style="text-align:center">${tx('Tüm satırlar silinecek.','All rungs will be deleted.')}</p><div class="brow"><button class="btn wide" id="n">${tx('İptal','Cancel')}</button><button class="btn dan wide" id="y">${tx('Temizle','Clear')}</button></div>`,e=>{
-    if(e.target.id==='y'){ S.prog={rungs:[mkRung(),mkRung()]}; saveDraft(); renderLadder(); closeAll(); } else if(e.target.id==='n') closeAll(); }); };
+    if(e.target.id==='y'){ S.prog={rungs:[mkRung()]}; saveDraft(); renderLadder(); closeAll(); } else if(e.target.id==='n') closeAll(); }); };
 
 /* ---------- Simülasyon kontrolü ---------- */
 function setPill(){ const p=$('#pill'); if(world.err){p.textContent=tx('HATA','FAULT');p.className='bad';} else if(S.running){p.textContent='RUN';p.className='run';} else {p.textContent=world.done?tx('TAMAM','DONE'):'STOP';p.className='';} }
@@ -19,16 +19,43 @@ $('#errEdit').onclick=()=>stopSim();
 $('#bSpd').onclick=()=>{ S.speed=S.speed===1?2:1; $('#bSpd').textContent=S.speed+'x'; Snd.click(); };
 function setSound(v){ save.sound=v; $('#bSnd').textContent=v?'🔊':'🔇'; persist(); }
 $('#bSnd').onclick=()=>{ setSound(!save.sound); Snd.init(); Snd.click(); };
-function hintCard(open){
-  const els=levelElems(S.lv);
-  card(`<h3>💡 ${tx('İpucu','Hint')}</h3><p class="t">${S.lv.hint}</p><div class="grp" style="text-align:left">${tx('BU BÖLÜMDEKİ ELEMANLAR — dokun, detay gör','ELEMENTS IN THIS LEVEL — tap for details')}</div>
-   <div class="elist">${els.map(k=>`<button class="elb ${open===k?'on':''}" data-k="${k}">${elSym(k)}<span>${tx(ELEM[k].t[0],ELEM[k].t[1]).split('  ')[0].split(' — ')[0]}</span></button>`).join('')}</div>
-   ${open?elemHTML(open,true):''}<div class="brow"><button class="btn pri wide" id="ok">${tx('Tamam','OK')}</button></div>`,e=>{
-    const b=e.target.closest('.elb'); if(b){ Snd.click(); hintCard(open===b.dataset.k?null:b.dataset.k); return; } if(e.target.id==='ok') closeAll(); });
+function solHTML(lv){
+  const nm=c=>c.t==='NO'?`-| |- ${c.a}`:c.t==='NC'?`-|/|- ${c.a}`:c.t==='COIL'?`( ) ${c.a}`:c.t==='SET'?`(S) ${c.a}`:c.t==='RST'?`(R) ${c.a}`:`${c.t} ${c.a}`+(c.pv!==undefined?` [${(c.t==='TON'||c.t==='TOF')?fx(c.pv)+' '+tx('sn','s'):c.pv}]`:'');
+  return lv.sol.rungs.map((rg,i)=>{ const sp=branchSpan(rg); const row=rg.c[0].slice(0,OUTC).map((c,k)=>({c,k}));
+    let parts=[]; for(let k=0;k<OUTC;k++){ const c=rg.c[0][k]; if(sp&&k===sp.from){ const up=rg.c[0].slice(sp.from,sp.to+1).filter(Boolean).map(nm).join(' · '), dn=rg.c[1].slice(sp.from,sp.to+1).filter(Boolean).map(nm).join(' · '); parts.push(`( ${up} ∥ ${dn} )`); k=sp.to; continue; } if(c) parts.push(nm(c)); }
+    const o=rg.c[0][OUTC]; return `<span class="rl2"><b style="color:var(--dim)">R${i+1}</b>  ${parts.join(' · ')} → ${o?nm(o):''}</span>`; }).join('');
+}
+function hintCard(open,reveal){
+  const els=levelElems(S.lv), nR=S.lv.sol.rungs.length;
+  card(`<h3>💡 ${tx('İpucu','Hint')}</h3>
+   <div class="hstep"><h4>1 · ${tx('Hangi elemanlar lazım?','Which elements do you need?')}</h4>
+    <div class="elist">${els.map(k=>`<button class="elb ${open===k?'on':''}" data-k="${k}">${elSym(k)}<span>${tx(ELEM[k].t[0],ELEM[k].t[1]).split('  ')[0].split(' — ')[0]}</span></button>`).join('')}</div>
+    ${open?elemHTML(open,true):`<p class="t" style="margin:4px 0 0;font-size:12.5px">${tx(`Çözüm <b>${nR} satır</b> ve <b>${S.lv.opt} blok</b> ile yapılabilir. Bir elemana dokunarak ne işe yaradığını gör.`,`It can be solved with <b>${nR} rung(s)</b> and <b>${S.lv.opt} blocks</b>. Tap an element to see what it does.`)}</p>`}</div>
+   <div class="hstep"><h4>2 · ${tx('Devre tarifi','Circuit recipe')}</h4>${reveal?`<p class="t" style="margin:0">${S.lv.hint}</p>`:`<button class="btn wide" id="rv1" style="width:100%">${tx('🔓 Tarifi göster','🔓 Show recipe')}</button>`}</div>
+   <div class="hstep"><h4>3 · ${tx('Tam çözüm','Full solution')}</h4>${reveal===2?`<div class="sol">${solHTML(S.lv)}</div>`:`<button class="btn wide" id="rv2" style="width:100%" ${reveal?'':'disabled style="opacity:.4;width:100%"'}>${tx('🔑 Çözümü göster','🔑 Show solution')}</button>`}</div>
+   <div class="brow"><button class="btn pri wide" id="ok">${tx('Tamam','OK')}</button></div>`,e=>{
+    const b=e.target.closest('.elb'); if(b){ Snd.click(); hintCard(open===b.dataset.k?null:b.dataset.k,reveal); return; }
+    if(e.target.id==='rv1'){ Snd.click(); hintCard(open,1); return; }
+    if(e.target.id==='rv2'&&reveal){ Snd.click(); hintCard(open,2); return; }
+    if(e.target.id==='ok') closeAll(); });
 }
 $('#bHint').onclick=()=>hintCard(null);
-$('#task').onclick=()=>{ card(`<h3>${S.lv.title}</h3><p class="t">${S.lv.task}</p><div class="brow"><button class="btn pri wide" id="ok">${tx('Tamam','OK')}</button></div>`,e=>{ if(e.target.id==='ok') closeAll(); }); };
-$('#bMenu').onclick=()=>{ Snd.init(); Snd.click(); showMenu('grid',S.lv.cat,S.lv.diff); };
+$('#bMenu').onclick=()=>{ Snd.init(); Snd.click(); openPause(); };
+function openPause(){
+  const wasRun=S.running; if(wasRun) S.running=false;
+  const lv=S.lv, D=DIFFS[lv.diff], C=CATS[lv.cat];
+  card(`<h3 style="font-size:20px">⏸ ${tx('Duraklatıldı','Paused')}</h3><div style="color:var(--dim);font-size:12.5px">${C.n} · <span style="color:${D.c}">${D.n} ${lv.n+1}</span> — ${lv.title}</div>
+   <div class="pz"><button class="bigbtn play" id="pzC" style="min-height:54px;font-size:18px">${tx('▶ Devam Et','▶ Resume')}</button>
+   <button class="bigbtn" id="pzR">${tx('↻ Simülasyonu Baştan Başlat','↻ Restart Simulation')}</button>
+   <button class="bigbtn" id="pzL">${tx('☰ Bölüm Listesi','☰ Level List')}</button>
+   <div class="brow2"><button class="bigbtn" id="pzS">${tx('⚙ Ayarlar','⚙ Settings')}</button><button class="bigbtn" id="pzM">${tx('🏠 Ana Menü','🏠 Main Menu')}</button></div></div>`,e=>{
+    const id=e.target.closest('button')&&e.target.closest('button').id; if(!id) return; Snd.click();
+    if(id==='pzC'){ closeAll(); if(wasRun&&!world.err&&!world.done){ S.running=true; last=performance.now(); } }
+    else if(id==='pzR'){ closeAll(); stopSim(true); if(countBlocks(S.prog)) startSim(); }
+    else if(id==='pzL'){ stopSim(true); closeAll(); showMenu('grid',lv.cat,lv.diff); }
+    else if(id==='pzS'){ stopSim(true); closeAll(); S.setBack='game'; showMenu('set'); }
+    else if(id==='pzM'){ stopSim(true); closeAll(); showMenu('main'); } });
+}
 
 function onFail(){
   S.running=false; $('#errT').textContent='⚠ '+world.err; $('#err').style.display='block';
@@ -53,7 +80,7 @@ const BAR=(v,max,c)=>`<div class="bar"><i style="width:${(100*v/max).toFixed(1)}
 function showMenu(scr,cat,diff){
   if(S.running) stopSim(true);
   S.mscr=scr; if(cat!==undefined){ S.mcat=cat; } if(diff!==undefined) S.mdiff=diff; cat=S.mcat; diff=S.mdiff;
-  const back=t=>`<button class="ib" data-go="${t}">‹</button>`; let h='';
+  const back=t=>`<button class="ib" data-go="${t==='main'&&S.setBack==='game'&&scr==='set'?'game':t}">‹</button>`; let h='';
   if(scr==='main'){
     const L=save.last>=0?getLevel(save.last):null;
     h=`<div class="mm"><canvas id="mcv"></canvas><div class="mm-title">LADDER<span>MASTER</span></div><div class="mm-sub">${tx('PLC MERDİVEN MANTIĞI BULMACASI','PLC LADDER LOGIC PUZZLE')}</div>
@@ -129,6 +156,8 @@ const HOW=()=>tx(`<p class="t"><b>Amaç:</b> Görevdeki fabrika makinesini ladde
 <b>6.</b> Complete the task for <b>+1 point</b>. Opening a completed level shows your saved solution; Reset lets you solve it again — if you leave without solving, the old solution is kept.</p>`);
 $('#menuIn').onclick=e=>{
   const b=e.target.closest('[data-go]'); if(!b) return; Snd.init(); Snd.click(); const g=b.dataset.go;
+  if(g==='game'){ S.setBack=null; closeAll(); return; }
+  if(g==='main') S.setBack=null;
   if(g==='main'||g==='cats'||g==='prog'||g==='set'||g==='how') showMenu(g);
   else if(g==='diffs') showMenu('diffs',b.dataset.c!==undefined?+b.dataset.c:S.mcat);
   else if(g==='grid') showMenu('grid',+b.dataset.c,+b.dataset.d);
@@ -188,7 +217,7 @@ function setLang(l){
   LANG=l==='en'?'en':'tr'; save.lang=LANG; persist(); for(const k in LV_CACHE) delete LV_CACHE[k];
   applyStatic();
   if(S.lv){ const lv=S.lv=getLevel(S.id); S.tags=Object.assign(defaultTags(lv),customTags(S.tags)); world=new World(lv); plc.reset(); stopSim(true);
-    const D=DIFFS[lv.diff]; $('#title').innerHTML=`<small style="color:${D.c}">${D.n[0]}${lv.n+1}</small>${lv.title}`; $('#task').textContent=lv.task;
+    setHeader(); buildIO(); goalKey='';
     buildPalette(); refreshMode(); renderLadder(); }
 }
 
