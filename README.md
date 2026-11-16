@@ -6,7 +6,9 @@ Telefon ekranı için tasarlanmış, tarayıcıda çalışan bir **PLC Ladder (m
 Tek bir HTML dosyası; harici kütüphane, görsel veya ses dosyası yok.
 
 ## Oyna
-`index.html` dosyasını tarayıcıda aç. GitHub Pages açıksa doğrudan sayfa adresinden oynanabilir.
+**▶ Hemen oyna / Play now:** https://tunagirit.github.io/ladder-master/
+
+Ya da `index.html` dosyasını tarayıcıda aç.
 
 ## Özellikler
 - **900 bölüm:** Temel Mantık, Zamanlayıcılar, Sayıcılar × Kolay / Orta / Zor × 100 bölüm
