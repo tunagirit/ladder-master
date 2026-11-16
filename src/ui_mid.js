@@ -1,5 +1,5 @@
 /* ---------- Bölüm yükleme / mod ---------- */
-function loadLevel(id){
+function loadLevel(id,quiet){
   S.id=id; const lv=S.lv=getLevel(id); save.last=id; persist();
   const dn=save.done[id]; S.redo=false; S.tool=null;
   if(dn){ S.view=true; S.prog=clone(dn.prog); S.tags=Object.assign(defaultTags(lv),customTags(dn.tags)); }
@@ -8,7 +8,9 @@ function loadLevel(id){
   const D=DIFFS[lv.diff];
   $('#title').innerHTML=`<small style="color:${D.c}">${D.n[0]}${lv.n+1}</small>${lv.title}`;
   $('#task').textContent=lv.task;
+  S.fresh=S.view?[]:freshElems(lv);
   buildPalette(); refreshMode(); renderLadder(); closeAll();
+  if(!quiet&&S.fresh.length) setTimeout(()=>showIntro(S.fresh),150);
 }
 function refreshMode(){
   $('#palette').style.display=S.view?'none':'flex'; $('#doneBar').style.display=S.view?'flex':'none';
@@ -23,7 +25,7 @@ $('#bReset').onclick=()=>{ Snd.init(); Snd.click(); S.view=false; S.redo=true; S
 /* ---------- Palet ---------- */
 function buildPalette(){
   const p=$('#palette'); p.innerHTML='';
-  S.lv.pal.forEach(t=>{ const b=document.createElement('button'); b.className='pal'; b.dataset.t=t; b.innerHTML=palSym(t)+'<span>'+BS[t]+'</span>'; p.appendChild(b); });
+  S.lv.pal.forEach(t=>{ const b=document.createElement('button'); b.className='pal'; b.dataset.t=t; b.innerHTML=palSym(t)+'<span>'+BS[t]+'</span>'+((S.fresh||[]).includes(t)?'<em class="nw">'+tx('YENİ','NEW')+'</em>':''); p.appendChild(b); });
 }
 let justDragged=false;
 $('#palette').addEventListener('click',e=>{ if(justDragged) return; const b=e.target.closest('.pal'); if(!b) return; Snd.init(); Snd.click(); S.tool=S.tool===b.dataset.t?null:b.dataset.t; refreshTool(); });

@@ -19,7 +19,14 @@ $('#errEdit').onclick=()=>stopSim();
 $('#bSpd').onclick=()=>{ S.speed=S.speed===1?2:1; $('#bSpd').textContent=S.speed+'x'; Snd.click(); };
 function setSound(v){ save.sound=v; $('#bSnd').textContent=v?'🔊':'🔇'; persist(); }
 $('#bSnd').onclick=()=>{ setSound(!save.sound); Snd.init(); Snd.click(); };
-$('#bHint').onclick=()=>{ card(`<h3>💡 ${tx('İpucu','Hint')}</h3><p class="t">${S.lv.hint}</p><div class="brow"><button class="btn pri wide" id="ok">${tx('Tamam','OK')}</button></div>`,e=>{ if(e.target.id==='ok') closeAll(); }); };
+function hintCard(open){
+  const els=levelElems(S.lv);
+  card(`<h3>💡 ${tx('İpucu','Hint')}</h3><p class="t">${S.lv.hint}</p><div class="grp" style="text-align:left">${tx('BU BÖLÜMDEKİ ELEMANLAR — dokun, detay gör','ELEMENTS IN THIS LEVEL — tap for details')}</div>
+   <div class="elist">${els.map(k=>`<button class="elb ${open===k?'on':''}" data-k="${k}">${elSym(k)}<span>${tx(ELEM[k].t[0],ELEM[k].t[1]).split('  ')[0].split(' — ')[0]}</span></button>`).join('')}</div>
+   ${open?elemHTML(open,true):''}<div class="brow"><button class="btn pri wide" id="ok">${tx('Tamam','OK')}</button></div>`,e=>{
+    const b=e.target.closest('.elb'); if(b){ Snd.click(); hintCard(open===b.dataset.k?null:b.dataset.k); return; } if(e.target.id==='ok') closeAll(); });
+}
+$('#bHint').onclick=()=>hintCard(null);
 $('#task').onclick=()=>{ card(`<h3>${S.lv.title}</h3><p class="t">${S.lv.task}</p><div class="brow"><button class="btn pri wide" id="ok">${tx('Tamam','OK')}</button></div>`,e=>{ if(e.target.id==='ok') closeAll(); }); };
 $('#bMenu').onclick=()=>{ Snd.init(); Snd.click(); showMenu('grid',S.lv.cat,S.lv.diff); };
 
@@ -80,10 +87,9 @@ function showMenu(scr,cat,diff){
     <div class="grp">${tx('DİL','LANGUAGE')}</div><div class="seg">${sg('lang','tr','🇹🇷 Türkçe')}${sg('lang','en','🇬🇧 English')}</div>
     <div class="grp">${tx('OYUN','GAME')}</div>
     <button class="mi" data-go="snd">${save.sound?tx('🔊 Ses: Açık','🔊 Sound: On'):tx('🔇 Ses: Kapalı','🔇 Sound: Off')}</button>
-    <button class="mi" data-go="unl">${save.unlock?'☑':'☐'} ${tx('Tüm bölüm kilitlerini aç','Unlock all levels')}</button>
     <button class="mi" data-go="rst" style="color:var(--redt)">${tx('↺ Tüm ilerlemeyi sıfırla','↺ Reset all progress')}</button>`;
   } else if(scr==='how'){
-    h=`<div class="topbar">${back('main')}<h3>${tx('Nasıl Oynanır?','How to Play')}</h3></div>${HOW()}<button class="bigbtn play" data-go="cats" style="margin-top:12px">${tx('▶ OYNA','▶ PLAY')}</button>`;
+    h=`<div class="topbar">${back('main')}<h3>${tx('Nasıl Oynanır?','How to Play')}</h3></div>${HOW()}<div class="cat">${tx('ELEMAN REHBERİ','ELEMENT GUIDE')}</div>${ELEM_ORDER.map(k=>`<div class="gcard">${elemHTML(k,true)}</div>`).join('')}<button class="bigbtn play" data-go="cats" style="margin-top:12px">${tx('▶ OYNA','▶ PLAY')}</button>`;
   }
   $('#menuIn').innerHTML=h; $('#menuIn').scrollTop=0; $('#menu').classList.add('show');
   if(scr==='grid'){ const cur=$('#menuIn .lv5.cur'); if(cur) cur.scrollIntoView({block:'center'}); }
@@ -108,11 +114,10 @@ $('#menuIn').onclick=e=>{
   else if(g==='diffs') showMenu('diffs',b.dataset.c!==undefined?+b.dataset.c:S.mcat);
   else if(g==='grid') showMenu('grid',+b.dataset.c,+b.dataset.d);
   else if(g==='cont') loadLevel(save.last);
-  else if(g==='lvl'){ const id=+b.dataset.id; if(!unlocked(id)){ toast(tx('Önce önceki bölümü tamamla (Ayarlar → kilitleri aç)','Complete the previous level first (Settings → unlock all)')); return; } loadLevel(id); }
+  else if(g==='lvl'){ const id=+b.dataset.id; if(!unlocked(id)){ toast(tx('Önce önceki bölümü tamamla','Complete the previous level first')); return; } loadLevel(id); }
   else if(g==='theme'){ save.theme=b.dataset.v; persist(); applyTheme(); showMenu('set'); }
   else if(g==='lang'){ setLang(b.dataset.v); showMenu('set'); }
   else if(g==='snd'){ setSound(!save.sound); showMenu('set'); }
-  else if(g==='unl'){ save.unlock=!save.unlock; persist(); showMenu('set'); }
   else if(g==='rst'){ card(`<h3>${tx('Tüm ilerleme silinsin mi?','Delete all progress?')}</h3><p class="t" style="text-align:center">${tx('Puanlar ve kayıtlı çözümler silinecek.','Points and saved solutions will be deleted.')}</p><div class="brow"><button class="btn wide" id="n">${tx('İptal','Cancel')}</button><button class="btn dan wide" id="y">${tx('Sıfırla','Reset')}</button></div>`,ev=>{
       if(ev.target.id==='y'){ save.done={}; save.draft={}; save.last=-1; persist(); loadLevel(0); showMenu('main'); } else if(ev.target.id==='n') $('#ovCard').classList.remove('show'); }); }
 };

@@ -177,6 +177,28 @@ p.t{font-size:13px;line-height:1.5;color:var(--tx3);text-align:left;margin:8px 0
 .prow span{flex:0 0 46px;color:var(--dim)}
 .prow .bar{flex:1;margin:0}
 .prow b{flex:0 0 54px;text-align:right;font-family:ui-monospace,monospace}
+.pal{position:relative}
+.pal .nw{position:absolute;top:-4px;right:-4px;background:var(--amb);color:#1d1300;font:800 8px system-ui;font-style:normal;padding:2px 4px;border-radius:6px;box-shadow:0 0 8px var(--amb);animation:pl 1.2s infinite}
+.nwt{font:800 11px system-ui;letter-spacing:1.5px;color:var(--amb);margin-bottom:8px}
+.el{text-align:left}
+.el .eh{display:flex;align-items:center;gap:10px}
+.el .eh b{font-size:16px}
+.ex{background:var(--ed);border:1px solid var(--ln);border-radius:10px;padding:8px 10px;margin-top:6px}
+.ex small{display:block;color:var(--tx3);font-size:12px;line-height:1.4;margin-bottom:6px}
+.rs{display:block;margin:2px 0}
+.rs .w{fill:none;stroke:var(--neon);stroke-width:2}
+.rs .rl{fill:none;stroke:var(--neon);stroke-width:3.5;stroke-linecap:round}
+.rs .bg{fill:var(--ed);stroke:none}
+.rs svg *{fill:none;stroke:var(--neon);stroke-width:2.2;stroke-linecap:round}
+.rs svg text{fill:var(--neon);stroke:none;font:700 11px ui-monospace,monospace;text-anchor:middle}
+.rs .ad{fill:var(--tx2);font:600 9.5px ui-monospace,monospace;text-anchor:middle}
+.elist{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.elb{display:flex;align-items:center;gap:4px;background:var(--chip);border:1.5px solid var(--ln);border-radius:9px;padding:3px 8px 3px 3px;color:var(--tx);font-size:11.5px;font-weight:700}
+.elb svg{transform:scale(.8)}
+.elb svg *,.el .pal svg *{fill:none;stroke:var(--sym);stroke-width:2.2;stroke-linecap:round}
+.elb svg text,.el .pal svg text{fill:var(--tx2);stroke:none;font:700 11px ui-monospace,monospace;text-anchor:middle}
+.elb.on{border-color:var(--neon);background:var(--okbg)}
+.gcard{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:10px;margin-bottom:8px}
 </style></head><body>
 <div id="app">
  <div id="sceneWrap"><canvas id="cv"></canvas><div id="err"><b id="errT"></b><div class="row"><button class="btn pri wide" id="errRetry"></button><button class="btn wide" id="errEdit"></button></div></div></div>
@@ -690,8 +712,9 @@ function getLevel(id){
 /*==UI==*/
 const $=(s,r=document)=>r.querySelector(s);
 const SKEY='ladderustasi_v2';
-let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1,theme:'auto',lang:null};
+let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1,theme:'auto',lang:null,seen:{}};
 try{const s=JSON.parse(localStorage.getItem(SKEY)||'null'); if(s) save=Object.assign(save,s);}catch(e){}
+delete save.unlock; if(!save.seen) save.seen={};
 const persist=()=>{try{localStorage.setItem(SKEY,JSON.stringify(save));}catch(e){}};
 const S={id:0,lv:null,prog:null,tags:{},tool:null,running:false,speed:1,cw:70,view:false,redo:false,mscr:null};
 let world=null,plc=new PLC(),LIVE=[];
@@ -699,7 +722,7 @@ const clone=o=>JSON.parse(JSON.stringify(o));
 const points=()=>Object.keys(save.done).length;
 const tierDone=(c,d)=>{ let k=0; for(let i=0;i<PER;i++) if(save.done[c*300+d*100+i]) k++; return k; };
 const catDone=c=>tierDone(c,0)+tierDone(c,1)+tierDone(c,2);
-const unlocked=id=>save.unlock||id%PER===0||!!save.done[id-1]||!!save.done[id];
+const unlocked=id=>id%PER===0||!!save.done[id-1]||!!save.done[id];
 /* ---------- SES (Web Audio) ---------- */
 const Snd={ctx:null,nb:null,
   init(){ if(!this.ctx){ try{ this.ctx=new (window.AudioContext||window.webkitAudioContext)(); const n=this.ctx.sampleRate; this.nb=this.ctx.createBuffer(1,n,n); const d=this.nb.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; }catch(e){} } if(this.ctx&&this.ctx.state==='suspended') this.ctx.resume(); },
@@ -729,8 +752,82 @@ const DEFTAG=new Set(['START','STOP','I0.0']); for(const k in TAGEN){ DEFTAG.add
 function customTags(t){ const o={}; if(t) for(const a in t){ const v=(t[a]||'').trim(); if(v&&!DEFTAG.has(v)) o[a]=v; } return o; }
 function defaultTags(lv){ const o={}; lv.io.I.concat(lv.io.Q).forEach(d=>o[d.a]=d.n); return o; }
 
+/* ---------- ELEMAN TANITIMLARI ---------- */
+// ex: mini örnek satır [[tip,adres],...]; BR/MEM sembolik elemanlar
+const ELEM={
+ NO:{t:['Açık Kontak  -| |-','NO Contact  -| |-'],
+  d:['Adresi <b>1 (true)</b> olduğunda enerjiyi geçirir, 0 iken keser. Butona basmak, şalteri açmak ya da sensörün kutuyu görmesi kontağı kapatır.','Passes power when its address is <b>1 (true)</b>, blocks it when 0. Pressing a button, turning a switch on or a sensor seeing a box closes the contact.'],
+  e:['Örnek: Şalter açıkken bant çalışsın.','Example: the belt runs while the switch is on.'],ex:[['NO','I0.0'],['COIL','Q0.0']]},
+ NC:{t:['Kapalı Kontak  -|/|-','NC Contact  -|/|-'],
+  d:['Açık kontağın tersi: adres <b>0</b> iken enerji geçirir, <b>1</b> olunca keser. STOP butonları ve “gördüğünde dur” sensörleri için kullanılır.','The opposite of NO: passes power while the address is <b>0</b>, blocks it when <b>1</b>. Used for STOP buttons and “stop when seen” sensors.'],
+  e:['Örnek: Sensör kutuyu görünce bant durur.','Example: the belt stops when the sensor sees a box.'],ex:[['NO','I0.0'],['NC','I0.2'],['COIL','Q0.0']]},
+ COIL:{t:['Bobin  -( )-','Coil  -( )-'],
+  d:['Satırın sonunda durur. Önündeki hat enerjiliyse çıkışı <b>1</b> yapar, enerji kesilince hemen <b>0</b> olur. Motor, valf, lamba sürmek için kullanılır.','Sits at the end of a rung. Turns its output <b>1</b> while the rung is powered and <b>0</b> as soon as power is lost. Drives motors, valves and lamps.'],
+  e:['Örnek: Bant motoru Q0.0.','Example: belt motor Q0.0.'],ex:[['NO','I0.0'],['COIL','Q0.0']]},
+ SET:{t:['Set Bobini  -(S)-','Set Coil  -(S)-'],
+  d:['Enerji <b>bir an</b> gelse bile çıkışı 1\'e <b>kilitler</b>; enerji gitse de 1 kalır. Kapatmak için aynı adrese bir <b>Reset</b> bobini gerekir. Kısa basılan butonlarla bir şeyi “açık bırakmak” için idealdir.','Even a <b>momentary</b> pulse <b>latches</b> the output to 1; it stays 1 after power is gone. A <b>Reset</b> coil on the same address turns it off. Ideal for keeping something on from a short button press.'],
+  e:['Örnek: START\'a kısa bas → bant çalışmaya devam eder.','Example: tap START → the belt keeps running.'],ex:[['NO','I0.0'],['SET','Q0.0']]},
+ RST:{t:['Reset Bobini  -(R)-','Reset Coil  -(R)-'],
+  d:['Enerji geldiğinde adresi <b>0</b> yapar: Set ile kilitlenmiş çıkışı bırakır. Zamanlayıcı (T) veya sayıcı (C) adresine konursa onları <b>sıfırlar</b>.','When powered it forces the address to <b>0</b>: it releases an output latched by Set. On a timer (T) or counter (C) address it <b>resets</b> them.'],
+  e:['Örnek: STOP\'a basınca Set edilmiş bant durur.','Example: pressing STOP releases the latched belt.'],ex:[['NO','I0.1'],['RST','Q0.0']]},
+ TON:{t:['TON — Düz Zamanlayıcı','TON — On-Delay Timer'],
+  d:['Girişi enerjili kaldığı sürece süreyi sayar; süre (PT) dolunca <b>T</b> biti 1 olur. Giriş arada kesilirse sayaç <b>sıfırlanır</b>. T bitini başka satırlarda kontak olarak kullanırsın.','Counts time while its input stays powered; when the preset (PT) elapses its <b>T</b> bit becomes 1. If the input drops, it <b>resets</b>. Use the T bit as a contact on other rungs.'],
+  e:['Örnek: Kutu sensörde 2 sn bekleyince piston itsin: I0.2 → TON T1 (2 sn), sonra T1 → Q0.1.','Example: push 2 s after the box arrives: I0.2 → TON T1 (2 s), then T1 → Q0.1.'],ex:[['NO','I0.2'],['TON','T1']],ex2:[['NO','T1'],['COIL','Q0.1']]},
+ TOF:{t:['TOF — Ters Zamanlayıcı','TOF — Off-Delay Timer'],
+  d:['Giriş enerjiliyken <b>T</b> biti hemen 1 olur. Enerji <b>kesildikten sonra</b> süre (PT) boyunca 1 kalmaya devam eder, süre dolunca 0 olur. “Kapattıktan sonra biraz daha çalış” işleri için.','While the input is powered its <b>T</b> bit is 1 immediately. <b>After</b> power drops it stays 1 for the preset (PT), then turns 0. For “keep running a bit after switching off”.'],
+  e:['Örnek: Boya bitince fan 3 sn daha çalışsın: Q0.3 → TOF T2 (3 sn), T2 → fan.','Example: fan runs 3 s more after painting: Q0.3 → TOF T2 (3 s), T2 → fan.'],ex:[['NO','Q0.3'],['TOF','T2']],ex2:[['NO','T2'],['COIL','Q0.2']]},
+ CTU:{t:['CTU — Yukarı Sayıcı','CTU — Up Counter'],
+  d:['Girişin her <b>yükselen kenarında</b> (0→1 geçişinde) değeri (CV) 1 artırır. CV hedefe (PV) ulaşınca <b>C</b> biti 1 olur. Reset bobini ile CV tekrar 0 olur.','Adds 1 to its count (CV) on every <b>rising edge</b> (0→1) of its input. When CV reaches the preset (PV) its <b>C</b> bit becomes 1. A Reset coil sets CV back to 0.'],
+  e:['Örnek: Sensörden 3 kutu geçince lamba yansın: I0.2 → CTU C1 (3), C1 → lamba.','Example: lamp on after 3 boxes: I0.2 → CTU C1 (3), C1 → lamp.'],ex:[['NO','I0.2'],['CTU','C1']],ex2:[['NO','C1'],['COIL','Q0.2']]},
+ CTD:{t:['CTD — Aşağı Sayıcı','CTD — Down Counter'],
+  d:['Hedef değerden (PV) başlar ve her yükselen kenarda <b>1 azalır</b>. CV 0\'a inince <b>C</b> biti 1 olur. Reset bobini sayacı tekrar PV\'ye yükler. Kalan adet takibi için kullanışlıdır.','Starts at the preset (PV) and <b>counts down</b> by 1 on each rising edge. When CV reaches 0 its <b>C</b> bit becomes 1. A Reset coil reloads it to PV. Handy for “items left”.'],
+  e:['Örnek: Palete 4 kutu sığar; 4 kutu geçince bant dursun.','Example: a pallet holds 4 boxes; stop the belt after 4.'],ex:[['NO','I0.2'],['CTD','C1']],ex2:[['NO','I0.0'],['NC','C1'],['COIL','Q0.0']]},
+ BR:{t:['Paralel Kol (VEYA) ⑂','Parallel Branch (OR) ⑂'],
+  d:['Satırın ⋮ menüsünden eklenir. Üst <b>veya</b> alt yoldan biri enerjiliyse enerji geçer. En önemli kullanımı <b>mühürleme</b>: START\'ın altına çıkışın kendi kontağını koyarsan butonu bırakınca da çıkış kendini tutar.','Added from the rung\'s ⋮ menu. Power passes if the upper <b>or</b> the lower path is powered. Its key use is the <b>seal-in</b>: put the output\'s own contact under START and the output holds itself after you release the button.'],
+  e:['Örnek (mühürleme): (START ∥ Q0.0) · STOP → Q0.0','Example (seal-in): (START ∥ Q0.0) · STOP → Q0.0'],ex:[['NO','I0.0'],['NC','I0.1'],['COIL','Q0.0']],br:[['NO','Q0.0']]},
+ MEM:{t:['Hafıza Biti (M)','Memory Bit (M)'],
+  d:['M0.0 gibi adresler fiziksel bir çıkışa bağlı olmayan <b>ara rölelerdir</b>. Bir durumu (ör. “hat çalışıyor”) saklayıp başka satırlarda kontak olarak kullanırsın.','Addresses like M0.0 are <b>internal relays</b> with no physical output. Store a state (e.g. “line running”) and use it as a contact on other rungs.'],
+  e:['Örnek: Mühürlü durum M0.0\'da, motor ondan bir zamanlayıcıyla sürülür.','Example: the sealed state lives in M0.0 and drives the motor through a timer.'],ex:[['NO','I0.0'],['NC','I0.1'],['COIL','M0.0']],br:[['NO','M0.0']]}
+};
+const ELEM_ORDER=['NO','NC','COIL','BR','SET','RST','MEM','TON','TOF','CTU','CTD'];
+function brSym(){ return '<svg width="34" height="24" viewBox="0 0 34 24"><path d="M2 4H32M8 4V20H26V4"/></svg>'; }
+function memSym(){ return '<svg width="34" height="24" viewBox="0 0 34 24"><rect x="4" y="2" width="26" height="20" rx="3"/><text x="17" y="16">M</text></svg>'; }
+function elSym(k){ return k==='BR'?brSym():k==='MEM'?memSym():palSym(k); }
+// örnek satırı SVG olarak çiz: main = [[tip,adr],...] (son eleman çıkış), br = ilk sütunun altına paralel kol
+function rungSVG(main,br){
+  const W=290, cw=56, x0=10, y=20, H=br?76:42, outX=W-38;
+  let g=`<path class="w" d="M${x0} ${y}H${outX}"/>`, k=`<path class="rl" d="M4 4V${H-4}M${W-4} 4V${H-4}"/><path class="w" d="M${W-4} ${y}H${outX+34}"/>`;
+  const sym=(t,a,x,yy)=>`<svg x="${x}" y="${yy-12}" width="34" height="24" viewBox="0 0 34 24">${palSym(t).replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'')}</svg><text class="ad" x="${x+17}" y="${yy+22}">${a}</text>`;
+  const n=main.length-1;
+  main.forEach(([t,a],i)=>{ const x=i<n?x0+12+i*cw:outX; g+=`<rect class="bg" x="${x}" y="${y-12}" width="34" height="24"/>`+sym(t,a,x,y); });
+  if(br){ const yb=y+36, xe=x0+12+br.length*cw-10; g+=`<path class="w" d="M${x0} ${y}V${yb}H${xe}V${y}"/>`;
+    br.forEach(([t,a],i)=>{ const x=x0+12+i*cw; g+=`<rect class="bg" x="${x}" y="${yb-12}" width="34" height="24"/>`+sym(t,a,x,yb); }); }
+  return `<svg class="rs" viewBox="0 0 ${W} ${H+8}" width="100%">${k}${g}</svg>`;
+}
+function elemHTML(k,full){
+  const E=ELEM[k];
+  let ex=rungSVG(E.ex,E.br); if(E.ex2) ex+=rungSVG(E.ex2);
+  return `<div class="el"><div class="eh"><div class="pal sel" style="flex:0 0 54px;height:42px">${elSym(k)}</div><b>${tx(E.t[0],E.t[1])}</b></div>
+   <p class="t">${tx(E.d[0],E.d[1])}</p>${full?`<div class="ex"><small>${tx(E.e[0],E.e[1])}</small>${ex}</div>`:''}</div>`;
+}
+// bölümde kullanılan elemanlar (çözüme göre)
+function levelElems(lv){
+  const s=new Set(); for(const rg of lv.sol.rungs){ if(rg.br&&rg.c[1].some(Boolean)) s.add('BR'); for(const row of rg.c) for(const c of row) if(c){ s.add(c.t); if(c.a&&c.a[0]==='M') s.add('MEM'); } }
+  return ELEM_ORDER.filter(k=>s.has(k));
+}
+// yeni gösterilecek elemanlar: palette olan + çözümde geçen, henüz görülmemiş
+function freshElems(lv){ const pool=new Set(lv.pal.concat(levelElems(lv))); return ELEM_ORDER.filter(k=>pool.has(k)&&!save.seen[k]); }
+function showIntro(list,done){
+  if(!list.length){ done&&done(); return; }
+  let i=0;
+  const draw=()=>card(`<div class="nwt">🆕 ${tx('YENİ ELEMAN','NEW ELEMENT')}${list.length>1?` · ${i+1}/${list.length}`:''}</div>${elemHTML(list[i],true)}
+    <div class="brow"><button class="btn pri wide" id="ok">${i<list.length-1?tx('Sonraki ▶','Next ▶'):tx('Anladım, başlayalım','Got it, let\'s go')}</button></div>`,e=>{
+      if(e.target.id!=='ok') return; save.seen[list[i]]=1; persist(); Snd.click();
+      if(++i<list.length) draw(); else { closeAll(); done&&done(); } });
+  draw();
+}
 /* ---------- Bölüm yükleme / mod ---------- */
-function loadLevel(id){
+function loadLevel(id,quiet){
   S.id=id; const lv=S.lv=getLevel(id); save.last=id; persist();
   const dn=save.done[id]; S.redo=false; S.tool=null;
   if(dn){ S.view=true; S.prog=clone(dn.prog); S.tags=Object.assign(defaultTags(lv),customTags(dn.tags)); }
@@ -739,7 +836,9 @@ function loadLevel(id){
   const D=DIFFS[lv.diff];
   $('#title').innerHTML=`<small style="color:${D.c}">${D.n[0]}${lv.n+1}</small>${lv.title}`;
   $('#task').textContent=lv.task;
+  S.fresh=S.view?[]:freshElems(lv);
   buildPalette(); refreshMode(); renderLadder(); closeAll();
+  if(!quiet&&S.fresh.length) setTimeout(()=>showIntro(S.fresh),150);
 }
 function refreshMode(){
   $('#palette').style.display=S.view?'none':'flex'; $('#doneBar').style.display=S.view?'flex':'none';
@@ -754,7 +853,7 @@ $('#bReset').onclick=()=>{ Snd.init(); Snd.click(); S.view=false; S.redo=true; S
 /* ---------- Palet ---------- */
 function buildPalette(){
   const p=$('#palette'); p.innerHTML='';
-  S.lv.pal.forEach(t=>{ const b=document.createElement('button'); b.className='pal'; b.dataset.t=t; b.innerHTML=palSym(t)+'<span>'+BS[t]+'</span>'; p.appendChild(b); });
+  S.lv.pal.forEach(t=>{ const b=document.createElement('button'); b.className='pal'; b.dataset.t=t; b.innerHTML=palSym(t)+'<span>'+BS[t]+'</span>'+((S.fresh||[]).includes(t)?'<em class="nw">'+tx('YENİ','NEW')+'</em>':''); p.appendChild(b); });
 }
 let justDragged=false;
 $('#palette').addEventListener('click',e=>{ if(justDragged) return; const b=e.target.closest('.pal'); if(!b) return; Snd.init(); Snd.click(); S.tool=S.tool===b.dataset.t?null:b.dataset.t; refreshTool(); });
@@ -993,7 +1092,14 @@ $('#errEdit').onclick=()=>stopSim();
 $('#bSpd').onclick=()=>{ S.speed=S.speed===1?2:1; $('#bSpd').textContent=S.speed+'x'; Snd.click(); };
 function setSound(v){ save.sound=v; $('#bSnd').textContent=v?'🔊':'🔇'; persist(); }
 $('#bSnd').onclick=()=>{ setSound(!save.sound); Snd.init(); Snd.click(); };
-$('#bHint').onclick=()=>{ card(`<h3>💡 ${tx('İpucu','Hint')}</h3><p class="t">${S.lv.hint}</p><div class="brow"><button class="btn pri wide" id="ok">${tx('Tamam','OK')}</button></div>`,e=>{ if(e.target.id==='ok') closeAll(); }); };
+function hintCard(open){
+  const els=levelElems(S.lv);
+  card(`<h3>💡 ${tx('İpucu','Hint')}</h3><p class="t">${S.lv.hint}</p><div class="grp" style="text-align:left">${tx('BU BÖLÜMDEKİ ELEMANLAR — dokun, detay gör','ELEMENTS IN THIS LEVEL — tap for details')}</div>
+   <div class="elist">${els.map(k=>`<button class="elb ${open===k?'on':''}" data-k="${k}">${elSym(k)}<span>${tx(ELEM[k].t[0],ELEM[k].t[1]).split('  ')[0].split(' — ')[0]}</span></button>`).join('')}</div>
+   ${open?elemHTML(open,true):''}<div class="brow"><button class="btn pri wide" id="ok">${tx('Tamam','OK')}</button></div>`,e=>{
+    const b=e.target.closest('.elb'); if(b){ Snd.click(); hintCard(open===b.dataset.k?null:b.dataset.k); return; } if(e.target.id==='ok') closeAll(); });
+}
+$('#bHint').onclick=()=>hintCard(null);
 $('#task').onclick=()=>{ card(`<h3>${S.lv.title}</h3><p class="t">${S.lv.task}</p><div class="brow"><button class="btn pri wide" id="ok">${tx('Tamam','OK')}</button></div>`,e=>{ if(e.target.id==='ok') closeAll(); }); };
 $('#bMenu').onclick=()=>{ Snd.init(); Snd.click(); showMenu('grid',S.lv.cat,S.lv.diff); };
 
@@ -1054,10 +1160,9 @@ function showMenu(scr,cat,diff){
     <div class="grp">${tx('DİL','LANGUAGE')}</div><div class="seg">${sg('lang','tr','🇹🇷 Türkçe')}${sg('lang','en','🇬🇧 English')}</div>
     <div class="grp">${tx('OYUN','GAME')}</div>
     <button class="mi" data-go="snd">${save.sound?tx('🔊 Ses: Açık','🔊 Sound: On'):tx('🔇 Ses: Kapalı','🔇 Sound: Off')}</button>
-    <button class="mi" data-go="unl">${save.unlock?'☑':'☐'} ${tx('Tüm bölüm kilitlerini aç','Unlock all levels')}</button>
     <button class="mi" data-go="rst" style="color:var(--redt)">${tx('↺ Tüm ilerlemeyi sıfırla','↺ Reset all progress')}</button>`;
   } else if(scr==='how'){
-    h=`<div class="topbar">${back('main')}<h3>${tx('Nasıl Oynanır?','How to Play')}</h3></div>${HOW()}<button class="bigbtn play" data-go="cats" style="margin-top:12px">${tx('▶ OYNA','▶ PLAY')}</button>`;
+    h=`<div class="topbar">${back('main')}<h3>${tx('Nasıl Oynanır?','How to Play')}</h3></div>${HOW()}<div class="cat">${tx('ELEMAN REHBERİ','ELEMENT GUIDE')}</div>${ELEM_ORDER.map(k=>`<div class="gcard">${elemHTML(k,true)}</div>`).join('')}<button class="bigbtn play" data-go="cats" style="margin-top:12px">${tx('▶ OYNA','▶ PLAY')}</button>`;
   }
   $('#menuIn').innerHTML=h; $('#menuIn').scrollTop=0; $('#menu').classList.add('show');
   if(scr==='grid'){ const cur=$('#menuIn .lv5.cur'); if(cur) cur.scrollIntoView({block:'center'}); }
@@ -1082,11 +1187,10 @@ $('#menuIn').onclick=e=>{
   else if(g==='diffs') showMenu('diffs',b.dataset.c!==undefined?+b.dataset.c:S.mcat);
   else if(g==='grid') showMenu('grid',+b.dataset.c,+b.dataset.d);
   else if(g==='cont') loadLevel(save.last);
-  else if(g==='lvl'){ const id=+b.dataset.id; if(!unlocked(id)){ toast(tx('Önce önceki bölümü tamamla (Ayarlar → kilitleri aç)','Complete the previous level first (Settings → unlock all)')); return; } loadLevel(id); }
+  else if(g==='lvl'){ const id=+b.dataset.id; if(!unlocked(id)){ toast(tx('Önce önceki bölümü tamamla','Complete the previous level first')); return; } loadLevel(id); }
   else if(g==='theme'){ save.theme=b.dataset.v; persist(); applyTheme(); showMenu('set'); }
   else if(g==='lang'){ setLang(b.dataset.v); showMenu('set'); }
   else if(g==='snd'){ setSound(!save.sound); showMenu('set'); }
-  else if(g==='unl'){ save.unlock=!save.unlock; persist(); showMenu('set'); }
   else if(g==='rst'){ card(`<h3>${tx('Tüm ilerleme silinsin mi?','Delete all progress?')}</h3><p class="t" style="text-align:center">${tx('Puanlar ve kayıtlı çözümler silinecek.','Points and saved solutions will be deleted.')}</p><div class="brow"><button class="btn wide" id="n">${tx('İptal','Cancel')}</button><button class="btn dan wide" id="y">${tx('Sıfırla','Reset')}</button></div>`,ev=>{
       if(ev.target.id==='y'){ save.done={}; save.draft={}; save.last=-1; persist(); loadLevel(0); showMenu('main'); } else if(ev.target.id==='n') $('#ovCard').classList.remove('show'); }); }
 };
@@ -1231,7 +1335,7 @@ function relayout(){ resizeCanvas(); if(S.prog){ const cw=calcCW(); if(cw!==S.cw
 window.addEventListener('resize',relayout); if(window.ResizeObserver) new ResizeObserver(relayout).observe($('#sceneWrap'));
 $('#bSnd').textContent=save.sound?'🔊':'🔇';
 LANG=save.lang||((navigator.language||'tr').toLowerCase().startsWith('tr')?'tr':'en'); save.lang=LANG; applyTheme(); applyStatic();
-resizeCanvas(); loadLevel(save.last>=0&&save.last<TOTAL?save.last:0);
+resizeCanvas(); loadLevel(save.last>=0&&save.last<TOTAL?save.last:0,true);
 showMenu('main');
 if(!save.intro){ card(`<h3>⚡ ${tx('Ladder Master\'a hoş geldin!','Welcome to Ladder Master!')}</h3>${HOW()}<div class="brow"><button class="btn pri wide" id="ok">${tx('Başlayalım','Let\'s go')}</button></div>`,e=>{ if(e.target.id==='ok'){ save.intro=true; persist(); closeAll(); showMenu('main'); } }); }
 requestAnimationFrame(frame);
