@@ -10,7 +10,9 @@ const DIFFS=[
   I18({n:['Kolay','Easy'],c:'var(--neon)',s:['Temel devreler, yavaş bant','Basic circuits, slow belt']}),
   I18({n:['Orta','Medium'],c:'var(--amb)',s:['Mühürleme ve kombinasyonlar','Seal-ins and combinations']}),
   I18({n:['Zor','Hard'],c:'var(--red)',s:['Çok satırlı, hızlı hat','Multi-rung, fast line']})];
-const PER=100, TOTAL=CATS.length*DIFFS.length*PER;
+const ROAD=100000; // id = kategori*ROAD + yoldaki sıra (sonsuz yol)
+const EXTRA_EVERY=10; // her 10. bölüm ekstra zor
+const isExtra=i=>i%EXTRA_EVERY===EXTRA_EVERY-1;
 
 function mkRng(seed){ let s=(Math.imul(seed+1,2654435761))>>>0||1; return ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; }; }
 const ri=(r,a,b)=>a+Math.floor(r()*(b-a+1));
@@ -261,11 +263,25 @@ const TPL=[
     [mDivert,mCtdTwo(false),mRestart(false)],
     [hFinal,mCtdTwo(true),mRestart(true)] ]];
 const LV_CACHE={};
+// yoldaki i. bölüm için şablon seçimi (saf fonksiyon: aynı i her zaman aynı bölümü verir)
+function pickTpl(c,i){
+  const E=TPL[c][0], M=TPL[c][1], H=TPL[c][2];
+  if(isExtra(i)) return {pool:2, t:Math.floor(mkRng(c*977+i*31+5)()*H.length)};
+  if(i<E.length) return {pool:0, t:i};                       // ilk bölümler sırayla: elemanlar adım adım tanıtılır
+  const r=mkRng(c*7919+i*104729+17);
+  const pm=Math.max(0,Math.min(0.85,(i-E.length)/60));       // ilerledikçe orta seviye şablon olasılığı artar
+  const pool=r()<pm?1:0, P=pool?M:E;
+  return {pool, t:Math.floor(r()*P.length)};
+}
 function getLevel(id){
   if(LV_CACHE[id]) return LV_CACHE[id];
-  const cat=Math.floor(id/300), diff=Math.floor(id/100)%3, n=id%100;
-  const r=mkRng(id*7919+13), k=n/99, list=TPL[cat][diff];
-  const lv=list[n%list.length](r,k,n);
-  Object.assign(lv,{id,cat,diff,n}); lv.opt=countBlocks(lv.sol);
+  const cat=Math.floor(id/ROAD), n=id%ROAD;
+  let p=pickTpl(cat,n);
+  if(n>0&&!isExtra(n)){ const q=pickTpl(cat,n-1); if(q.pool===p.pool&&q.t===p.t){ const L=TPL[cat][p.pool].length; p={pool:p.pool,t:(p.t+1)%L}; } }
+  const r=mkRng(id*7919+13);
+  const k=isExtra(n)?Math.min(1,0.45+n/160):Math.min(1,n/120);  // parametre zorluğu (hız, adet, süre)
+  const lv=TPL[cat][p.pool][p.t](r,k,n);
+  if(isExtra(n)){ lv.scene.speed=Math.round(lv.scene.speed*1.15); }
+  Object.assign(lv,{id,cat,diff:p.pool,n,extra:isExtra(n)}); lv.opt=countBlocks(lv.sol);
   return LV_CACHE[id]=lv;
 }

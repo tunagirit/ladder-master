@@ -43,16 +43,16 @@ $('#bHint').onclick=()=>hintCard(null);
 $('#bMenu').onclick=()=>{ Snd.init(); Snd.click(); openPause(); };
 function openPause(){
   const wasRun=S.running; if(wasRun) S.running=false;
-  const lv=S.lv, D=DIFFS[lv.diff], C=CATS[lv.cat];
-  card(`<h3 style="font-size:20px">⏸ ${tx('Duraklatıldı','Paused')}</h3><div style="color:var(--dim);font-size:12.5px">${C.n} · <span style="color:${D.c}">${D.n} ${lv.n+1}</span> — ${lv.title}</div>
+  const lv=S.lv;
+  card(`<h3 style="font-size:20px">⏸ ${tx('Duraklatıldı','Paused')}</h3><div style="color:var(--dim);font-size:12.5px">${lvLabel(lv)}${lv.extra?' · <span style="color:var(--red)">🔥 '+tx('Ekstra Zor','Extra Hard')+'</span>':''} — ${lv.title}</div>
    <div class="pz"><button class="bigbtn play" id="pzC" style="min-height:54px;font-size:18px">${tx('▶ Devam Et','▶ Resume')}</button>
    <button class="bigbtn" id="pzR">${tx('↻ Simülasyonu Baştan Başlat','↻ Restart Simulation')}</button>
-   <button class="bigbtn" id="pzL">${tx('☰ Bölüm Listesi','☰ Level List')}</button>
+   <button class="bigbtn" id="pzL">${tx('🗺 Yol Haritası','🗺 Level Map')}</button>
    <div class="brow2"><button class="bigbtn" id="pzS">${tx('⚙ Ayarlar','⚙ Settings')}</button><button class="bigbtn" id="pzM">${tx('🏠 Ana Menü','🏠 Main Menu')}</button></div></div>`,e=>{
     const id=e.target.closest('button')&&e.target.closest('button').id; if(!id) return; Snd.click();
     if(id==='pzC'){ closeAll(); if(wasRun&&!world.err&&!world.done){ S.running=true; last=performance.now(); } }
     else if(id==='pzR'){ closeAll(); stopSim(true); if(countBlocks(S.prog)) startSim(); }
-    else if(id==='pzL'){ stopSim(true); closeAll(); showMenu('grid',lv.cat,lv.diff); }
+    else if(id==='pzL'){ stopSim(true); closeAll(); showMenu('map',lv.cat); }
     else if(id==='pzS'){ stopSim(true); closeAll(); S.setBack='game'; showMenu('set'); }
     else if(id==='pzM'){ stopSim(true); closeAll(); showMenu('main'); } });
 }
@@ -67,12 +67,12 @@ function onWin(){
   save.done[S.id]={prog:{rungs:clone(S.prog.rungs)},tags:customTags(S.tags)}; delete save.draft[S.id]; persist();
   S.redo=false; S.view=true; refreshMode(); Snd.win(); schedulePush();
   setTimeout(()=>{ if(!world.done) return;
-    const nx=lv.n<PER-1?S.id+1:null;
+    const nx=S.id+1;
     card(`<h3 style="color:var(--neon);font-size:21px">${tx('BÖLÜM TAMAM!','LEVEL COMPLETE!')}</h3><div class="gain">${first?tx('+1 PUAN','+1 POINT'):wasView?tx('✔ Çözüm çalışıyor','✔ Solution works'):tx('✔ Çözüm güncellendi','✔ Solution updated')}</div>
-    <p class="t" style="text-align:center">${tx('Toplam','Total')} <b style="color:var(--neon)">${points()}</b> / ${TOTAL} ${tx('puan','points')}<br>${tx('Kullanılan blok','Blocks used')}: <b>${n}</b> · ${tx('referans','reference')} ${lv.opt}</p>
+    <p class="t" style="text-align:center">⚡ <b style="color:var(--neon)">${points()}</b> ${tx('puan','points')}<br>${tx('Kullanılan blok','Blocks used')}: <b>${n}</b> · ${tx('referans','reference')} ${lv.opt}</p>
     ${nx!==null?'<div class="brow"><button class="btn pri wide" id="nx">'+tx('Sonraki Bölüm ▶','Next Level ▶')+'</button></div>':''}
-    <div class="brow"><button class="btn wide" id="rt">${tx('👁 Çözümü Gör','👁 View Solution')}</button><button class="btn wide" id="mn">${tx('☰ Bölümler','☰ Levels')}</button></div>`,e=>{
-      if(e.target.id==='nx') loadLevel(nx); else if(e.target.id==='rt'){ stopSim(true); closeAll(); renderLadder(); } else if(e.target.id==='mn'){ stopSim(true); closeAll(); showMenu('grid',lv.cat,lv.diff); } }); },700);
+    <div class="brow"><button class="btn wide" id="rt">${tx('👁 Çözümü Gör','👁 View Solution')}</button><button class="btn wide" id="mn">${tx('🗺 Harita','🗺 Map')}</button></div>`,e=>{
+      if(e.target.id==='nx') loadLevel(nx); else if(e.target.id==='rt'){ stopSim(true); closeAll(); renderLadder(); } else if(e.target.id==='mn'){ stopSim(true); closeAll(); showMenu('map',lv.cat); } }); },700);
 }
 
 /* ---------- MENÜLER ---------- */
@@ -84,30 +84,22 @@ function showMenu(scr,cat,diff){
   if(scr==='main'){
     const L=save.last>=0?getLevel(save.last):null;
     h=`<div class="mm"><canvas id="mcv"></canvas><div class="mm-title">LADDER<span>MASTER</span></div><div class="mm-sub">${tx('PLC MERDİVEN MANTIĞI BULMACASI','PLC LADDER LOGIC PUZZLE')}</div>
-    <div class="pts">⚡ ${points()} / ${TOTAL} ${tx('puan','points')}</div>
+    <div class="pts">⚡ ${points()} ${tx('puan','points')}</div>
     <button class="acct" data-go="acct">${me()?`👤 <b>${esc(me().username)}</b>`:tx('👤 Giriş yap / Kayıt ol','👤 Sign in / Sign up')}</button>
     <button class="bigbtn play" data-go="cats">${tx('▶ OYNA','▶ PLAY')}</button>
-    ${L?`<button class="bigbtn" data-go="cont">${tx('⏵ Devam Et','⏵ Continue')} <small>${CATS[L.cat].n} · ${DIFFS[L.diff].n} ${L.n+1}</small></button>`:''}
+    ${L?`<button class="bigbtn" data-go="cont">${tx('⏵ Devam Et','⏵ Continue')} <small>${lvLabel(L)}</small></button>`:''}
     <div class="brow2"><button class="bigbtn" data-go="board">${tx('🏆 Liderlik','🏆 Leaderboard')}</button><button class="bigbtn" data-go="prog">${tx('📊 İlerleme','📊 Progress')}</button></div>
     <button class="bigbtn" data-go="how">${tx('❓ Nasıl Oynanır','❓ How to Play')}</button>
     <button class="bigbtn" data-go="set">${tx('⚙ Ayarlar','⚙ Settings')}</button><div class="ver">Ladder Master ${VERSION}</div></div>`;
   } else if(scr==='cats'){
     h=`<div class="topbar">${back('main')}<h3>${tx('Kategori Seç','Choose Category')}</h3><span class="pp">⚡ ${points()}</span></div>`+
-    CATS.map((c,i)=>{ const d=catDone(i); return `<button class="ccard" data-go="diffs" data-c="${i}" style="border-color:color-mix(in srgb,${c.c} 35%,transparent)"><div class="ic" style="color:${c.c}">${palSym(c.ic)}</div><div class="bd"><b>${c.n}</b><small>${c.s}</small>${BAR(d,300,c.c)}</div><div class="cnt">${d}<small>/300</small></div></button>`; }).join('');
-  } else if(scr==='diffs'){
-    const C=CATS[cat];
-    h=`<div class="topbar">${back('cats')}<h3 style="color:${C.c}">${C.n}</h3><span class="pp">${catDone(cat)}/300</span></div>`+
-    DIFFS.map((d,i)=>{ const k=tierDone(cat,i); return `<button class="ccard" data-go="grid" data-c="${cat}" data-d="${i}" style="border-color:color-mix(in srgb,${d.c} 40%,transparent)"><div class="ic" style="color:${d.c};font:900 22px system-ui">${'●'.repeat(i+1)}</div><div class="bd"><b style="color:${d.c}">${d.n}</b><small>${d.s} · 100 ${tx('bölüm','levels')}</small>${BAR(k,100,d.c)}</div><div class="cnt">${k}<small>/100</small></div></button>`; }).join('');
-  } else if(scr==='grid'){
-    const C=CATS[cat], D=DIFFS[diff], base=cat*300+diff*100;
-    h=`<div class="topbar">${back('diffs')}<h3><span style="color:${C.c}">${C.n}</span> · <span style="color:${D.c}">${D.n}</span></h3><button class="ib" data-go="main">🏠</button></div>
-    <div class="prow"><span>${tx('İlerleme','Progress')}</span>${BAR(tierDone(cat,diff),100,D.c)}<b>${tierDone(cat,diff)}/100</b></div><div class="lvs5" style="margin-top:10px">`;
-    for(let i=0;i<PER;i++){ const id=base+i, dn=!!save.done[id], ok=unlocked(id);
-      h+=`<button class="lv5 ${dn?'dn':''} ${ok?'':'lock'} ${id===S.id?'cur':''}" data-go="lvl" data-id="${id}">${ok?i+1:'🔒'}<small>${dn?'✔':''}</small></button>`; }
-    h+='</div>';
+    CATS.map((c,i)=>{ const f=frontier(i); return `<button class="ccard" data-go="map" data-c="${i}" style="border-color:color-mix(in srgb,${c.c} 35%,transparent)"><div class="ic" style="color:${c.c}">${palSym(c.ic)}</div><div class="bd"><b>${c.n}</b><small>${c.s}</small><div class="cstat"><span>🗺 ${tx('Bölüm','Level')} ${f+1}</span><span>✔ ${catDone(i)}</span><span>🔥 ${extraDone(i)}</span></div></div><div class="cnt" style="font-size:22px;color:${c.c}">›</div></button>`; }).join('');
+  } else if(scr==='map'){
+    const C=CATS[cat]; h=`<div class="topbar mapbar">${back('cats')}<h3 style="color:${C.c}">${C.n}</h3><span class="pp">⚡ ${points()}</span></div><div id="road"></div>`;
   } else if(scr==='prog'){
-    h=`<div class="topbar">${back('main')}<h3>${tx('İlerleme','Progress')}</h3><span class="pp">⚡ ${points()} / ${TOTAL}</span></div><p class="t">${tx(`Her tamamlanan bölüm <b>1 puan</b>. Toplam ${TOTAL} bölüm.`,`Each completed level is worth <b>1 point</b>. ${TOTAL} levels in total.`)}</p>`+
-    CATS.map((c,ci)=>`<div class="cat" style="color:${c.c}">${c.n} · ${catDone(ci)}/300</div>`+DIFFS.map((d,di)=>`<div class="prow"><span style="color:${d.c}">${d.n}</span>${BAR(tierDone(ci,di),100,d.c)}<b>${tierDone(ci,di)}/100</b></div>`).join('')).join('');
+    h=`<div class="topbar">${back('main')}<h3>${tx('İlerleme','Progress')}</h3><span class="pp">⚡ ${points()}</span></div><p class="t">${tx('Her tamamlanan bölüm <b>1 puan</b>. Yollar sonsuz — ne kadar ileri gidebilirsin?','Each completed level is worth <b>1 point</b>. The roads are endless — how far can you go?')}</p>`+
+    CATS.map((c,ci)=>`<div class="pcard" style="border-color:color-mix(in srgb,${c.c} 40%,transparent)"><b style="color:${c.c}">${c.n}</b><div class="cstat big"><span>🗺 ${tx('Bölüm','Level')} <b>${frontier(ci)+1}</b></span><span>✔ <b>${catDone(ci)}</b></span><span>🔥 <b>${extraDone(ci)}</b></span></div></div>`).join('')+
+    `<p class="t" style="font-size:12px;color:var(--dim)">🗺 ${tx('ulaştığın bölüm','level reached')} · ✔ ${tx('tamamlanan','completed')} · 🔥 ${tx('ekstra zor tamamlanan','extra hard completed')}</p>`;
   } else if(scr==='set'){
     const sg=(k,v,l)=>`<button data-go="${k}" data-v="${v}" class="${save[k]===v?'on':''}">${l}</button>`;
     h=`<div class="topbar">${back('main')}<h3>${tx('Ayarlar','Settings')}</h3></div>
@@ -139,7 +131,7 @@ function showMenu(scr,cat,diff){
   }
   $('#menuIn').innerHTML=h; $('#menuIn').scrollTop=0; $('#menu').classList.add('show');
   if(scr==='board') loadBoard();
-  if(scr==='grid'){ const cur=$('#menuIn .lv5.cur'); if(cur) cur.scrollIntoView({block:'center'}); }
+  if(scr==='map') drawRoad(cat);
 }
 const HOW=()=>tx(`<p class="t"><b>Amaç:</b> Görevdeki fabrika makinesini ladder (merdiven) diyagramı ile programla.</p>
 <p class="t"><b>1.</b> Alttaki paletten bir bloğu tutup ızgaradaki boş kutuya <b>sürükle-bırak</b> (ya da bloğa dokunup sonra kutuya dokun).<br>
@@ -160,8 +152,7 @@ $('#menuIn').onclick=e=>{
   if(g==='game'){ S.setBack=null; closeAll(); return; }
   if(g==='main') S.setBack=null;
   if(g==='main'||g==='cats'||g==='prog'||g==='set'||g==='how') showMenu(g);
-  else if(g==='diffs') showMenu('diffs',b.dataset.c!==undefined?+b.dataset.c:S.mcat);
-  else if(g==='grid') showMenu('grid',+b.dataset.c,+b.dataset.d);
+  else if(g==='map') showMenu('map',b.dataset.c!==undefined?+b.dataset.c:S.mcat);
   else if(g==='cont') loadLevel(save.last);
   else if(g==='lvl'){ const id=+b.dataset.id; if(!unlocked(id)){ toast(tx('Önce önceki bölümü tamamla','Complete the previous level first')); return; } loadLevel(id); }
   else if(g==='acct'){ S.mreg=false; showMenu('acct'); }
@@ -178,7 +169,7 @@ $('#menuIn').onclick=e=>{
   else if(g==='lang'){ setLang(b.dataset.v); showMenu('set'); }
   else if(g==='snd'){ setSound(!save.sound); showMenu('set'); }
   else if(g==='rst'){ card(`<h3>${tx('Tüm ilerleme silinsin mi?','Delete all progress?')}</h3><p class="t" style="text-align:center">${tx('Puanlar ve kayıtlı çözümler silinecek.','Points and saved solutions will be deleted.')}</p><div class="brow"><button class="btn wide" id="n">${tx('İptal','Cancel')}</button><button class="btn dan wide" id="y">${tx('Sıfırla','Reset')}</button></div>`,ev=>{
-      if(ev.target.id==='y'){ save.done={}; save.draft={}; save.last=-1; persist(); if(me()) pushProgress().catch(()=>{}); loadLevel(0,true); showMenu('main'); } else if(ev.target.id==='n') $('#ovCard').classList.remove('show'); }); }
+      if(ev.target.id==='y'){ save.done={}; save.draft={}; save.last=-1; save.v=3; persist(); if(me()) pushProgress().catch(()=>{}); loadLevel(0,true); showMenu('main'); } else if(ev.target.id==='n') $('#ovCard').classList.remove('show'); }); }
 };
 function drawMenuAnim(now){
   const c=document.getElementById('mcv'); if(!c) return; const r=c.getBoundingClientRect(); if(!r.width) return;
@@ -236,4 +227,23 @@ async function loadBoard(){
       :`<p class="t" style="text-align:center">${tx('Henüz kimse yok — ilk sen ol!','No one yet — be the first!')}</p>`;
     el().innerHTML=h;
   }catch(e){ if(el()) el().innerHTML=`<p class="t" style="text-align:center;color:var(--red)">${esc(e.msg||tx('Yüklenemedi','Could not load'))}</p>`; }
+}
+
+/* ---------- YOL HARİTASI (Candy Crush tarzı) ---------- */
+function drawRoad(c){
+  const box=document.getElementById('road'); if(!box) return;
+  const f=frontier(c), show=Math.max(f+10,14), STEP=92, W=box.clientWidth||360, H=show*STEP+150;
+  const xs=i=>W/2+Math.sin(i*0.85)*W*0.3, ys=i=>H-70-i*STEP;
+  let d=`M${xs(0)} ${ys(0)}`; for(let i=1;i<show;i++){ const x0=xs(i-1),y0=ys(i-1),x1=xs(i),y1=ys(i); d+=` C${x0} ${y0-STEP/2},${x1} ${y1+STEP/2},${x1} ${y1}`; }
+  let dn=`M${xs(0)} ${ys(0)}`; for(let i=1;i<=Math.min(f,show-1);i++){ const x0=xs(i-1),y0=ys(i-1),x1=xs(i),y1=ys(i); dn+=` C${x0} ${y0-STEP/2},${x1} ${y1+STEP/2},${x1} ${y1}`; }
+  const deco=['⚙️','🏭','🔧','📦','🔌','🛢️','⚡','🧰'];
+  let h=`<div class="rd" style="height:${H}px"><svg class="rdp" width="${W}" height="${H}"><path d="${d}" class="rb"/><path d="${d}" class="rl"/>${f>0?`<path d="${dn}" class="rdn"/>`:''}</svg>`;
+  for(let i=0;i<show;i++){ if(i%3===1){ const side=Math.sin(i*0.85)>0?-1:1; h+=`<span class="dec" style="left:${W/2+side*W*0.36-14}px;top:${ys(i)-14}px">${deco[(i*7+c*3)%deco.length]}</span>`; } }
+  for(let i=0;i<show;i++){ const id=c*ROAD+i, done=!!save.done[id], cur=i===f, ex=isExtra(i), lock=!done&&!cur;
+    const cls=['nd',done?'dn':'',cur?'cur':'',lock?'lk':'',ex?'ex':''].join(' ');
+    h+=`<button class="${cls}" data-go="lvl" data-id="${id}" style="left:${xs(i)}px;top:${ys(i)}px">${lock?(ex?'🔥':'🔒'):`<b>${i+1}</b>`}${done?'<i>✔</i>':''}${cur?'<em>▶</em>':''}${ex&&!lock?'<u>🔥</u>':''}</button>`;
+    if(ex&&(cur||lock)&&i<f+10) h+=`<span class="exl" style="left:${xs(i)}px;top:${ys(i)+36}px">${tx('EKSTRA ZOR','EXTRA HARD')}</span>`; }
+  h+=`<div class="fog" style="top:0;height:150px"><span>☁️ ${tx('Yol devam ediyor…','The road continues…')} ☁️</span></div></div>`;
+  box.innerHTML=h;
+  const cur=box.querySelector('.nd.cur'); if(cur){ const m=$('#menuIn'); m.scrollTop=Math.max(0,cur.offsetTop-m.clientHeight*0.55); }
 }

@@ -5,7 +5,7 @@
 create table if not exists public.profiles (
   id          uuid primary key references auth.users on delete cascade,
   username    text not null check (username ~ '^[A-Za-z0-9_]{3,16}$'),
-  points      int  not null default 0 check (points between 0 and 900),
+  points      int  not null default 0 check (points >= 0),
   updated_at  timestamptz not null default now()
 );
 create unique index if not exists profiles_username_lower on public.profiles (lower(username));
@@ -34,3 +34,7 @@ drop policy if exists "progress sahibi gunceller" on public.progress;
 create policy "progress sahibi okur"      on public.progress for select using (auth.uid() = id);
 create policy "progress sahibi ekler"     on public.progress for insert with check (auth.uid() = id);
 create policy "progress sahibi gunceller" on public.progress for update using (auth.uid() = id) with check (auth.uid() = id);
+
+-- v1.0.4: puan üst sınırı kaldırıldı (sonsuz yol haritası)
+alter table public.profiles drop constraint if exists profiles_points_check;
+alter table public.profiles add constraint profiles_points_check check (points >= 0);

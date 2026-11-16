@@ -5,14 +5,15 @@ function loadLevel(id,quiet){
   if(dn){ S.view=true; S.prog=clone(dn.prog); S.tags=Object.assign(defaultTags(lv),customTags(dn.tags)); }
   else { S.view=false; const d=save.draft[id]; S.prog=d&&d.rungs&&d.rungs.length?{rungs:clone(d.rungs)}:{rungs:[mkRung()]}; S.tags=Object.assign(defaultTags(lv),customTags(d&&d.tags)); }
   world=new World(lv); plc.reset(); stopSim(true);
-  const D=DIFFS[lv.diff];
   setHeader();
   S.fresh=S.view?[]:freshElems(lv);
   buildPalette(); buildIO(); goalKey=''; refreshMode(); renderLadder(); closeAll();
   if(!quiet&&S.fresh.length) setTimeout(()=>showIntro(S.fresh),150);
+  else if(!quiet&&lv.extra&&!S.view) toast('🔥 '+tx('Ekstra zor bölüm — bol şans!','Extra hard level — good luck!'));
 }
-function setHeader(){ const lv=S.lv, D=DIFFS[lv.diff], C=CATS[lv.cat];
-  $('#title').innerHTML=`<small style="color:${D.c}">${C.n.toUpperCase()} · ${D.n.toUpperCase()} ${lv.n+1}</small>${lv.title}`;
+function lvLabel(lv){ return `${CATS[lv.cat].n} · ${tx('Bölüm','Level')} ${lv.n+1}`; }
+function setHeader(){ const lv=S.lv, C=CATS[lv.cat];
+  $('#title').innerHTML=`<small style="color:${lv.extra?'var(--red)':C.c}">${lvLabel(lv).toUpperCase()}${lv.extra?' · 🔥 '+tx('EKSTRA ZOR','EXTRA HARD'):''}</small>${lv.title}`;
   $('#task').innerHTML=esc(lv.task).replace(/\b([IQMTC]\d\.\d|[TC]\d)\b/g,'<b>$1</b>'); }
 function refreshMode(){
   $('#palette').style.display=S.view?'none':'flex'; $('#doneBar').style.display=S.view?'flex':'none';
