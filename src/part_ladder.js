@@ -48,6 +48,7 @@ function renderLadder(){
   });
   if(S.prog.rungs.length<8&&!S.view){ const b=document.createElement('button'); b.id='addr'; b.textContent=tx('＋ Satır Ekle','＋ Add Rung'); box.appendChild(b); }
   box.scrollTop=sc; refreshTool();
+  if(S.popCell){ const [pi,pr,pc]=S.popCell; S.popCell=null; const L=LIVE[pi]; const el=L&&L.cells[pr]&&L.cells[pr][pc]; if(el){ el.classList.add('pop'); setTimeout(()=>el.classList.remove('pop'),450); } }
 }
 function updateLive(){
   const res=plc.res, live=res.length===S.prog.rungs.length&&(S.running||world.err||world.done);

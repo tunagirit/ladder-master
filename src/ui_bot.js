@@ -13,7 +13,7 @@ function stopSim(silent){
   S.running=false; if(world) world.reset(); plc.reset(); $('#err').style.display='none';
   $('#run').textContent='▶ RUN'; $('#run').classList.remove('on'); if(world) setPill(); if(!silent) Snd.click(); if(LIVE.length) updateLive();
 }
-$('#run').onclick=()=>{ if(S.running||world.err) stopSim(); else startSim(); };
+$('#run').onclick=()=>{ Hap.tap(); if(S.running||world.err) stopSim(); else startSim(); };
 $('#errRetry').onclick=()=>{ stopSim(true); startSim(); };
 $('#errEdit').onclick=()=>stopSim();
 $('#bSpd').onclick=()=>{ S.speed=S.speed===1?2:1; $('#bSpd').textContent=S.speed+'x'; Snd.click(); };
@@ -59,13 +59,13 @@ function openPause(){
 
 function onFail(){
   S.running=false; $('#errT').textContent='⚠ '+world.err; $('#err').style.display='block';
-  $('#run').textContent='▶ RUN'; $('#run').classList.remove('on'); Snd.err(); setPill();
+  $('#run').textContent='▶ RUN'; $('#run').classList.remove('on'); Snd.err(); Hap.err(); $('#sceneWrap').classList.remove('shk'); void $('#sceneWrap').offsetWidth; $('#sceneWrap').classList.add('shk'); setPill();
 }
 function onWin(){
   S.running=false; $('#run').textContent='▶ RUN'; $('#run').classList.remove('on'); setPill();
   const wasView=S.view, first=!save.done[S.id], n=countBlocks(S.prog), lv=S.lv;
   save.done[S.id]={prog:{rungs:clone(S.prog.rungs)},tags:customTags(S.tags)}; delete save.draft[S.id]; persist();
-  S.redo=false; S.view=true; refreshMode(); Snd.win(); schedulePush();
+  S.redo=false; S.view=true; refreshMode(); Snd.win(); Hap.win(); confetti(); schedulePush();
   setTimeout(()=>{ if(!world.done) return;
     const nx=S.id+1;
     card(`<h3 style="color:var(--neon);font-size:21px">${tx('BÖLÜM TAMAM!','LEVEL COMPLETE!')}</h3><div class="gain">${first?tx('+1 PUAN','+1 POINT'):wasView?tx('✔ Çözüm çalışıyor','✔ Solution works'):tx('✔ Çözüm güncellendi','✔ Solution updated')}</div>
@@ -107,6 +107,7 @@ function showMenu(scr,cat,diff){
     <div class="grp">${tx('DİL','LANGUAGE')}</div><div class="seg">${sg('lang','tr','🇹🇷 Türkçe')}${sg('lang','en','🇬🇧 English')}</div>
     <div class="grp">${tx('OYUN','GAME')}</div>
     <button class="mi" data-go="snd">${save.sound?tx('🔊 Ses: Açık','🔊 Sound: On'):tx('🔇 Ses: Kapalı','🔇 Sound: Off')}</button>
+    <button class="mi" data-go="hap">${save.haptic!==false?tx('📳 Titreşim: Açık','📳 Haptics: On'):tx('📴 Titreşim: Kapalı','📴 Haptics: Off')}</button>
     <button class="mi" data-go="rst" style="color:var(--redt)">${tx('↺ Tüm ilerlemeyi sıfırla','↺ Reset all progress')}</button>
     <div class="ver">Ladder Master ${VERSION}</div>`;
   } else if(scr==='acct'){
@@ -130,6 +131,7 @@ function showMenu(scr,cat,diff){
     h=`<div class="topbar">${back('main')}<h3>${tx('Nasıl Oynanır?','How to Play')}</h3></div>${HOW()}<div class="cat">${tx('ELEMAN REHBERİ','ELEMENT GUIDE')}</div>${ELEM_ORDER.map(k=>`<div class="gcard">${elemHTML(k,true)}</div>`).join('')}<button class="bigbtn play" data-go="map" style="margin-top:12px">${tx('▶ OYNA','▶ PLAY')}</button>`;
   }
   $('#menuIn').innerHTML=h; $('#menuIn').scrollTop=0; $('#menu').classList.add('show');
+  const mi=$('#menuIn'); mi.classList.remove('scrIn'); void mi.offsetWidth; mi.classList.add('scrIn');
   if(scr==='board') loadBoard();
   if(scr==='map') drawRoad();
   if(scr==='main') maybeAskInstall();
@@ -149,7 +151,7 @@ const HOW=()=>tx(`<p class="t"><b>Amaç:</b> Görevdeki fabrika makinesini ladde
 <b>5.</b> Press <b style="color:var(--neon)">▶ RUN</b> and tap START / STOP / switches in the scene. Green lines are energized.<br>
 <b>6.</b> Complete the task for <b>+1 point</b>. Opening a completed level shows your saved solution; Reset lets you solve it again — if you leave without solving, the old solution is kept.</p>`);
 $('#menuIn').onclick=e=>{
-  const b=e.target.closest('[data-go]'); if(!b) return; Snd.init(); Snd.click(); const g=b.dataset.go;
+  const b=e.target.closest('[data-go]'); if(!b) return; Snd.init(); Snd.click(); Hap.tap(); const g=b.dataset.go;
   if(g==='game'){ S.setBack=null; closeAll(); return; }
   if(g==='main') S.setBack=null;
   if(g==='main'||g==='cats'||g==='prog'||g==='set'||g==='how') showMenu(g);
@@ -169,6 +171,7 @@ $('#menuIn').onclick=e=>{
   else if(g==='sync'){ pullProgress().then(n=>{ toast(tx('Senkronize edildi','Synced')+(n?` (+${n})`:'')); showMenu('acct'); }).catch(e=>toast(e.msg||'!')); }
   else if(g==='theme'){ save.theme=b.dataset.v; persist(); applyTheme(); showMenu('set'); }
   else if(g==='lang'){ setLang(b.dataset.v); showMenu('set'); }
+  else if(g==='hap'){ save.haptic=save.haptic===false; persist(); Hap.pick(); showMenu('set'); }
   else if(g==='snd'){ setSound(!save.sound); showMenu('set'); }
   else if(g==='rst'){ card(`<h3>${tx('Tüm ilerleme silinsin mi?','Delete all progress?')}</h3><p class="t" style="text-align:center">${tx('Puanlar ve kayıtlı çözümler silinecek.','Points and saved solutions will be deleted.')}</p><div class="brow"><button class="btn wide" id="n">${tx('İptal','Cancel')}</button><button class="btn dan wide" id="y">${tx('Sıfırla','Reset')}</button></div>`,ev=>{
       if(ev.target.id==='y'){ save.done={}; save.draft={}; save.last=-1; save.v=4; persist(); if(me()) pushProgress().catch(()=>{}); loadLevel(0,true); showMenu('main'); } else if(ev.target.id==='n') $('#ovCard').classList.remove('show'); }); }
@@ -285,3 +288,13 @@ function maybeAskInstall(){
   setTimeout(()=>{ if(!$('#ovCard').classList.contains('show')&&!S.running) installFlow(false); },900);
 }
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
+
+/* ---------- KONFETİ ---------- */
+function confetti(){
+  const c=document.createElement('canvas'); c.className='cnf'; const app=$('#app'); app.appendChild(c);
+  const W=c.width=app.clientWidth*2, H=c.height=app.clientHeight*2, x=c.getContext('2d');
+  const cols=['#39ff6a','#ffb020','#4da3ff','#ff4d4d','#c77dff','#ffffff'];
+  const P=[...Array(140)].map(()=>({x:W/2+(Math.random()-.5)*W*.3,y:H*.38,vx:(Math.random()-.5)*28,vy:-Math.random()*34-12,r:Math.random()*10+6,a:Math.random()*6,va:(Math.random()-.5)*.4,c:cols[Math.floor(Math.random()*cols.length)]}));
+  let t=0; (function f(){ t++; x.clearRect(0,0,W,H); for(const p of P){ p.vy+=1.1; p.vx*=.985; p.x+=p.vx; p.y+=p.vy; p.a+=p.va; x.save(); x.translate(p.x,p.y); x.rotate(p.a); x.globalAlpha=Math.max(0,1-t/110); x.fillStyle=p.c; x.fillRect(-p.r/2,-p.r/4,p.r,p.r/2); x.restore(); }
+    if(t<110) requestAnimationFrame(f); else c.remove(); })();
+}

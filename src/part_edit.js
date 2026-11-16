@@ -46,7 +46,7 @@ function openEditor(i,r,c,cell,isNew){
     if(e.target.id==='mDel'){ S.prog.rungs[i].c[r][c]=null; saveProg(); renderLadder(); Snd.click(); closeAll(); return; }
     if(e.target.id==='mOk'){ if(!sel){ toast(tx('Bu blok için kullanılabilir adres yok','No available address for this block')); return; }
       const tg=$('#tgIn'); if(tg) S.tags[sel]=tg.value.trim();
-      const nc={t:t,a:sel}; if(tm||ct) nc.pv=pv; S.prog.rungs[i].c[r][c]=nc; saveProg(); renderLadder(); Snd.place(); closeAll(); }
+      const nc={t:t,a:sel}; if(tm||ct) nc.pv=pv; S.prog.rungs[i].c[r][c]=nc; S.popCell=[i,r,c]; saveProg(); renderLadder(); Snd.place(); Hap.place(); closeAll(); }
   };
 }
 function openSheet(){ $('#ovSheet').classList.add('show'); }

@@ -14,11 +14,11 @@
 :root{--bg:#0d1117;--p1:#151b23;--p2:#1c242e;--ln:#2a3542;--tx:#d7dee7;--dim:#7d8a99;--neon:#39ff6a;--amb:#ffb020;--red:#ff4d4d;--blu:#4da3ff;--pur:#c77dff;
 --okbg:#0f2a18;--okln:#1f7a37;--tx2:#cfe0f2;--tx3:#aab6c3;--redt:#ff9a9a;--danbg:#3b1414;--danln:#7a2323;--danhot:#5a1717;--wire:#3a4757;--ph:#2b3744;--bar:#222c37;--chip:#1d2733;
 --sheet:#161d27;--selbg:#14263a;--ttl:#eafff0;--sym:#9fb0c2;--bv:#9fe8b3;--bxln:#6d8097;--rail:#46576b;--toast:#243242;--act:#26323f;--btn:#212c38;--ln2:#1b242e;--big:#161e28;
---bx:#141c25;--card:#141b24;--mglow:#132a1c;--gridl:#131b24;--qq:#12461f;--ed:#0f141b;--in:#0e141b;--bxon:#0d2615;--icb:#0b1016;--app:#06090d;--ov:rgba(3,6,10,.82);--glow:1;color-scheme:dark}
+--bx:#141c25;--card:#141b24;--mglow:#132a1c;--gridl:#131b24;--qq:#12461f;--ed:#0f141b;--in:#0e141b;--bxon:#0d2615;--icb:#0b1016;--app:#06090d;--ov:rgba(3,6,10,.82);--glow:1;--tbg:#101c2b;--tln:#1f3550;color-scheme:dark}
 html[data-theme=light]{--bg:#eef2f6;--p1:#ffffff;--p2:#f2f5f8;--ln:#cdd6e0;--tx:#18212c;--dim:#5e6b7a;--neon:#11a843;--amb:#c77a00;--red:#d92b2b;--blu:#1c6fd1;--pur:#8a3fd1;
 --okbg:#dcf6e4;--okln:#7fd39b;--tx2:#1f2b38;--tx3:#3c4856;--redt:#c42020;--danbg:#fde4e4;--danln:#efa3a3;--danhot:#f8c9c9;--wire:#a9b6c4;--ph:#c3cdd8;--bar:#dde3ea;--chip:#f2f5f8;
 --sheet:#ffffff;--selbg:#dceafd;--ttl:#0b3d1c;--sym:#4c5b6b;--bv:#0e7a33;--bxln:#7f8fa1;--rail:#7d8c9c;--toast:#2a3644;--act:#e3e9f0;--btn:#eef2f6;--ln2:#dfe5ec;--big:#ffffff;
---bx:#f6f8fa;--card:#ffffff;--mglow:#d6f3df;--gridl:#e4e9ef;--qq:#c6f0d3;--ed:#f7f9fb;--in:#ffffff;--bxon:#dcf6e4;--icb:#f2f5f8;--app:#cfd8e2;--ov:rgba(20,30,40,.45);--glow:0;color-scheme:light}
+--bx:#f6f8fa;--card:#ffffff;--mglow:#d6f3df;--gridl:#e4e9ef;--qq:#c6f0d3;--ed:#f7f9fb;--in:#ffffff;--bxon:#dcf6e4;--icb:#f2f5f8;--app:#cfd8e2;--ov:rgba(20,30,40,.45);--glow:0;--tbg:#e8f1fd;--tln:#bcd4f3;color-scheme:light}
 html[data-theme=light] #toast{color:#fff}
 html[data-theme=light] .mm-title{text-shadow:0 2px 0 rgba(17,168,67,.25)}
 html[data-theme=light] .mm-title span{text-shadow:none}
@@ -53,10 +53,14 @@ html,body{margin:0;height:100%;background:var(--app);color:var(--tx);font-family
 #top .ib{width:42px;height:40px;font-size:19px}
 #title{flex:1;min-width:0;font-weight:800;font-size:16px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #title small{display:block;font-size:11px;font-weight:700;letter-spacing:.6px;margin-bottom:1px}
-#taskBox{background:var(--p1);padding:0 12px 9px;border-bottom:1px solid var(--ln)}
-#task{font-size:14px;line-height:1.42;color:var(--tx);max-height:6.2em;overflow-y:auto;user-select:text;-webkit-user-select:text}
+#taskBox{background:var(--p1);padding:0 10px 9px;border-bottom:1px solid var(--ln)}
+#task{position:relative;font-size:13px;line-height:1.45;color:var(--tx);max-height:7.6em;overflow-y:auto;user-select:text;-webkit-user-select:text;background:var(--tbg);border:1px solid var(--tln);border-left:4px solid var(--blu);border-radius:10px;padding:22px 11px 8px 11px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+#task::before{content:attr(data-lbl);position:absolute;left:11px;top:6px;font:800 10px system-ui;letter-spacing:1.4px;color:var(--blu)}
 #task b{color:var(--blu)}
 #goals{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.gl{transition:background .25s,color .25s,border-color .25s}
+.gl.ok{animation:glok .5s}
+@keyframes glok{40%{transform:scale(1.12)}}
 .gl{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid var(--ln);background:var(--chip);color:var(--tx3)}
 .gl.ok{border-color:var(--okln);background:var(--okbg);color:var(--neon)}
 #sceneWrap{flex:0 0 auto;height:clamp(150px,23vh,220px);position:relative}
@@ -167,7 +171,8 @@ p.t{font-size:13px;line-height:1.5;color:var(--tx3);text-align:left;margin:8px 0
 #doneBar{flex:0 0 66px;display:none;align-items:center;gap:10px;padding:8px 10px;background:var(--okbg);border-top:2px solid var(--okln);font-size:12.5px;line-height:1.3}
 #doneBar span{flex:1}
 #doneBar b{color:var(--neon)}
-#ghost{position:fixed;left:0;top:0;width:62px;height:54px;border-radius:10px;background:var(--selbg);border:1.5px solid var(--blu);box-shadow:0 6px 18px rgba(0,0,0,.6),0 0 14px rgba(77,163,255,.6);display:none;flex-direction:column;align-items:center;justify-content:center;font-size:9px;color:var(--tx);pointer-events:none;z-index:99;opacity:.95}
+#ghost{position:fixed;left:0;top:0;width:72px;height:64px;border-radius:12px;background:var(--selbg);border:2px solid var(--blu);box-shadow:0 10px 26px rgba(0,0,0,.55),0 0 16px rgba(77,163,255,.6);display:none;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--tx);pointer-events:none;z-index:99;opacity:.96;animation:gpop .14s ease-out}
+@keyframes gpop{from{scale:.6;opacity:.3}}
 #ghost svg *{fill:none;stroke:var(--tx2);stroke-width:2.2;stroke-linecap:round}
 #ghost svg text{fill:var(--tx2);stroke:none;font:700 11px ui-monospace,monospace;text-anchor:middle}
 .cell.dz{background:rgba(57,255,106,.25)!important;outline:2px solid var(--neon)!important;animation:none!important}
@@ -299,6 +304,38 @@ html[data-theme=light] #io{background:#1a222c}
 .ishot b{font-size:17px}.ishot small{display:block;color:var(--dim);font-size:12px;margin-top:2px}
 .isteps{text-align:left;font-size:14px;line-height:1.6;margin:10px 0 0;padding-left:20px}
 .isteps b{color:var(--blu)}
+/* --- animasyonlar --- */
+.card{animation:cpop .22s cubic-bezier(.2,1.4,.4,1)}
+@keyframes cpop{from{transform:scale(.86);opacity:0}}
+.ov{transition:opacity .15s}
+.scrIn>*{animation:scr .26s ease-out both}
+.scrIn>*:nth-child(2){animation-delay:.03s}.scrIn>*:nth-child(3){animation-delay:.06s}.scrIn>*:nth-child(4){animation-delay:.09s}.scrIn>*:nth-child(n+5){animation-delay:.12s}
+@keyframes scr{from{transform:translateY(14px);opacity:0}}
+.cell.pop{animation:cellpop .42s cubic-bezier(.2,1.6,.4,1)}
+@keyframes cellpop{0%{transform:scale(.4);opacity:.2}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+.pal,.bigbtn,.btn,.ib,#run,.iob,.nd,.mi,.chip{transition:transform .08s}
+.pal:active,.bigbtn:active,.btn:active,.ib:active,#run:active,.mi:active,.chip:active{transform:scale(.95)}
+.nd:active{transform:translate(-50%,-50%) scale(.92)}
+#sceneWrap.shk{animation:shk .45s}
+@keyframes shk{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(2px)}}
+#err{animation:cpop .25s cubic-bezier(.2,1.4,.4,1)}
+.cnf{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:60}
+.rd .nd{animation:ndin .35s ease-out both}
+@keyframes ndin{from{opacity:0;scale:.5}}
+.pal.sel{transform:translateY(-4px)}
+/* --- bilgi balonu --- */
+#tip{position:fixed;z-index:120;max-width:290px;background:var(--sheet);border:1.5px solid var(--blu);border-radius:14px;padding:10px 12px 11px;box-shadow:0 12px 30px rgba(0,0,0,.5);opacity:0;transform:scale(.9) translateY(6px);pointer-events:none;transition:opacity .15s,transform .18s cubic-bezier(.2,1.4,.4,1)}
+#tip.show{opacity:1;transform:none;pointer-events:auto}
+#tip::after{content:"";position:absolute;left:calc(var(--ax) - 8px);bottom:-9px;width:14px;height:14px;background:var(--sheet);border-right:1.5px solid var(--blu);border-bottom:1.5px solid var(--blu);transform:rotate(45deg)}
+#tip.below::after{bottom:auto;top:-9px;transform:rotate(225deg)}
+#tip .th{display:flex;align-items:center;gap:8px}
+#tip .th svg *{fill:none;stroke:var(--blu);stroke-width:2.2;stroke-linecap:round}
+#tip .th svg text{fill:var(--blu);stroke:none;font:700 11px ui-monospace,monospace;text-anchor:middle}
+#tip .th b{font-size:14.5px}
+#tip .tx2{font-size:12px;color:var(--amb);margin-top:4px;font-weight:700}
+#tip .tx2 code{font:700 12px ui-monospace,monospace}
+#tip p{margin:6px 0 4px;font-size:12.5px;line-height:1.45;color:var(--tx3)}
+#tip small{font-size:11.5px;color:var(--dim);line-height:1.4;display:block}
 </style></head><body>
 <div id="app">
  <div id="top"><button class="ib" id="bMenu" aria-label="Menu">☰</button><div id="title"></div><span id="pill">STOP</span><button class="ib" id="bSnd">🔊</button></div>
@@ -314,5 +351,6 @@ html[data-theme=light] #io{background:#1a222c}
  <div class="ov" id="menu"><div class="sheet" id="menuIn"></div></div>
  <div id="toast"></div>
  <div id="ghost"></div>
+ <div id="tip"></div>
 </div>
 <script>

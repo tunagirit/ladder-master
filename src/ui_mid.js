@@ -12,7 +12,7 @@ function loadLevel(id,quiet){
   else if(!quiet&&lv.extra&&!S.view) toast('🔥 '+tx('Ekstra zor bölüm — bol şans!','Extra hard level — good luck!'));
 }
 function lvLabel(lv){ return `${tx('Bölüm','Level')} ${lv.n+1} · ${CATS[lv.cat].n}`; }
-function setHeader(){ const lv=S.lv, C=CATS[lv.cat];
+function setHeader(){ const lv=S.lv, C=CATS[lv.cat]; $('#task').dataset.lbl='🎯 '+tx('GÖREV','TASK');
   $('#title').innerHTML=`<small style="color:${lv.extra?'var(--red)':C.c}">${lvLabel(lv).toUpperCase()}${lv.extra?' · 🔥 '+tx('EKSTRA ZOR','EXTRA HARD'):''}</small>${lv.title}`;
   $('#task').innerHTML=esc(lv.task).replace(/\b([IQMTC]\d\.\d|[TC]\d)\b/g,'<b>$1</b>'); }
 function refreshMode(){
@@ -31,7 +31,7 @@ function buildPalette(){
   S.lv.pal.forEach(t=>{ const b=document.createElement('button'); b.className='pal'; b.dataset.t=t; b.innerHTML=palSym(t)+'<span>'+BS[t]+'</span>'+((S.fresh||[]).includes(t)?'<em class="nw">'+tx('YENİ','NEW')+'</em>':''); p.appendChild(b); });
 }
 let justDragged=false;
-$('#palette').addEventListener('click',e=>{ if(justDragged) return; const b=e.target.closest('.pal'); if(!b) return; Snd.init(); Snd.click(); S.tool=S.tool===b.dataset.t?null:b.dataset.t; refreshTool(); });
+$('#palette').addEventListener('click',e=>{ if(justDragged) return; const b=e.target.closest('.pal'); if(!b||S.view) return; Snd.init(); Snd.click(); Hap.tap(); S.tool=S.tool===b.dataset.t?null:b.dataset.t; refreshTool(); });
 function refreshTool(){
   document.querySelectorAll('.pal').forEach(b=>b.classList.toggle('sel',b.dataset.t===S.tool));
   $('#rungs').dataset.tool=S.tool?(isOut(S.tool)?'o':'c'):''; updInfo();
@@ -80,42 +80,63 @@ function dropAction(d,i,r,c){
   else { rs[i].c[r][c]=null; const a=canPlace(src.t,i,r,c), b=canPlace(dst.t,f.i,f.r,f.c); rs[i].c[r][c]=dst; res=a||b?(a||b):'swap'; }
   rs[f.i].c[f.r][f.c]=src; return res;
 }
-$('#palette').addEventListener('pointerdown',e=>{ const b=e.target.closest('.pal'); if(!b||S.view) return; drag={t:b.dataset.t,x:e.clientX,y:e.clientY,pid:e.pointerId,on:false}; });
+/* basılı tutunca bilgi balonu */
+let tipT=null;
+function hideTip(){ const t=$('#tip'); if(t) t.classList.remove('show'); }
+function showTip(el,t,extra){
+  const E=ELEM[t]; if(!E) return; const tp=$('#tip');
+  tp.innerHTML=`<div class="th">${palSym(t)}<b>${tx(E.t[0],E.t[1])}</b></div>${extra?`<div class="tx2">${extra}</div>`:''}<p>${tx(E.d[0],E.d[1])}</p><small>${tx(E.e[0],E.e[1])}</small>`;
+  const r=el.getBoundingClientRect(), app=$('#app').getBoundingClientRect(); tp.style.left='0px'; tp.style.top='0px'; tp.classList.add('show');
+  const w=tp.offsetWidth, h=tp.offsetHeight; let x=r.left+r.width/2-w/2; x=Math.max(app.left+8,Math.min(app.right-w-8,x));
+  let y=r.top-h-12; if(y<app.top+8) y=r.bottom+12; tp.style.left=x+'px'; tp.style.top=y+'px';
+  tp.style.setProperty('--ax',(r.left+r.width/2-x)+'px'); tp.classList.toggle('below',y>r.top);
+  Hap.info(); Snd.init(); Snd.click();
+}
+function armTip(el,t,extra){ clearTimeout(tipT); tipT=setTimeout(()=>{ if(drag&&!drag.on){ drag.tip=true; showTip(el,t,extra); } },430); }
+document.addEventListener('pointerdown',e=>{ if(!e.target.closest('#tip')) hideTip(); },true);
+$('#palette').addEventListener('pointerdown',e=>{ const b=e.target.closest('.pal'); if(!b) return; if(S.view){ drag={t:b.dataset.t,x:e.clientX,y:e.clientY,pid:e.pointerId,on:false,ro:true}; armTip(b,b.dataset.t); return; }
+  drag={t:b.dataset.t,x:e.clientX,y:e.clientY,pid:e.pointerId,on:false}; armTip(b,b.dataset.t); });
 $('#rungs').addEventListener('pointerdown',e=>{
-  const ce=e.target.closest('.cell'); if(!ce||S.view) return;
+  const ce=e.target.closest('.cell'); if(!ce) return;
   const i=+ce.closest('.rung').dataset.i, r=+ce.dataset.r, c=+ce.dataset.c, cell=S.prog.rungs[i].c[r][c]; if(!cell) return;
-  drag={t:cell.t,x:e.clientX,y:e.clientY,pid:e.pointerId,on:false,from:{i,r,c,el:ce}};
+  drag={t:cell.t,x:e.clientX,y:e.clientY,pid:e.pointerId,on:false,from:{i,r,c,el:ce},ro:S.view};
+  const ex=`<code>${cell.a}</code>${S.tags[cell.a]?' · '+esc(S.tags[cell.a]):''}${cell.pv!==undefined?' · '+((cell.t==='TON'||cell.t==='TOF')?fx(cell.pv)+' '+tx('sn','s'):'PV '+cell.pv):''}`;
+  armTip(ce,cell.t,ex);
 });
 window.addEventListener('pointermove',e=>{
   if(!drag||e.pointerId!==drag.pid) return;
+  if(drag.tip||drag.ro) return;
   if(!drag.on){
     const dx=e.clientX-drag.x, dy=e.clientY-drag.y, dist=Math.hypot(dx,dy);
     if(drag.from){ if(dist<7) return; drag.from.el.classList.add('dragsrc'); $('#palette').classList.add('trash'); }
-    else { if(dist<10) return; if(e.pointerType!=='mouse'&&Math.abs(dy)<Math.abs(dx)){ drag=null; return; } }
+    else { if(dist<10) return; if(e.pointerType!=='mouse'&&Math.abs(dy)<Math.abs(dx)){ clearTimeout(tipT); drag=null; return; } }
+    clearTimeout(tipT); Hap.pick();
     drag.on=true; const g=$('#ghost'); g.innerHTML=palSym(drag.t)+'<span>'+(drag.from?drag.from.el.querySelector('.ad,.bt')?.textContent||BS[drag.t]:BS[drag.t])+'</span>'; g.style.display='flex';
     $('#rungs').dataset.tool=isOut(drag.t)?'o':'c'; Snd.init(); Snd.click();
   }
   e.preventDefault();
-  $('#ghost').style.transform=`translate(${e.clientX-31}px,${e.clientY-64}px)`;
+  $('#ghost').style.transform=`translate(${e.clientX-36}px,${e.clientY-32}px)`;
   const rb=$('#rungs').getBoundingClientRect();
   if(e.clientY<rb.top+28&&e.clientY>rb.top-40) $('#rungs').scrollTop-=7; else if(e.clientY>rb.bottom-28&&e.clientY<rb.bottom+4) $('#rungs').scrollTop+=7;
   if(drag.from) $('#palette').classList.toggle('hot',inPalette(e.clientX,e.clientY));
   const ce=cellAt(e.clientX,e.clientY);
   document.querySelectorAll('.cell.dz').forEach(x=>{ if(x!==ce) x.classList.remove('dz','sw'); });
   if(ce){ const a=dropAction(drag,+ce.closest('.rung').dataset.i,+ce.dataset.r,+ce.dataset.c);
-    if(a==='new'||a==='move'||a==='swap'){ ce.classList.add('dz'); ce.classList.toggle('sw',a==='swap'); } }
+    if(a==='new'||a==='move'||a==='swap'){ if(!ce.classList.contains('dz')) Hap.tap(); ce.classList.add('dz'); ce.classList.toggle('sw',a==='swap'); } }
 },{passive:false});
 document.addEventListener('touchmove',e=>{ if(drag&&drag.on) e.preventDefault(); },{passive:false});
 window.addEventListener('pointerup',e=>{
-  if(!drag||e.pointerId!==drag.pid) return; const d=drag; drag=null; dragClean();
-  if(!d.on) return; justDragged=true; setTimeout(()=>justDragged=false,60); Snd.init();
+  if(!drag||e.pointerId!==drag.pid) return; const d=drag; drag=null; clearTimeout(tipT); dragClean();
+  if(d.tip){ justDragged=true; setTimeout(()=>justDragged=false,80); setTimeout(hideTip,2600); return; }
+  if(!d.on) return; Hap.drop(); justDragged=true; setTimeout(()=>justDragged=false,60); Snd.init();
   const rs=S.prog.rungs;
-  if(d.from&&inPalette(e.clientX,e.clientY)){ rs[d.from.i].c[d.from.r][d.from.c]=null; saveDraft(); renderLadder(); Snd.click(); toast(tx('Blok silindi','Block deleted')); return; }
+  if(d.from&&inPalette(e.clientX,e.clientY)){ rs[d.from.i].c[d.from.r][d.from.c]=null; saveDraft(); renderLadder(); Snd.click(); Hap.err(); toast(tx('Blok silindi','Block deleted')); return; }
   const ce=cellAt(e.clientX,e.clientY); if(!ce) return;
   const i=+ce.closest('.rung').dataset.i, r=+ce.dataset.r, c=+ce.dataset.c, a=dropAction(d,i,r,c);
   if(a==='new') openEditor(i,r,c,{t:d.t,a:null,pv:defPV(d.t)},true);
-  else if(a==='move'){ rs[i].c[r][c]=rs[d.from.i].c[d.from.r][d.from.c]; rs[d.from.i].c[d.from.r][d.from.c]=null; saveDraft(); renderLadder(); Snd.place(); }
-  else if(a==='swap'){ const t=rs[i].c[r][c]; rs[i].c[r][c]=rs[d.from.i].c[d.from.r][d.from.c]; rs[d.from.i].c[d.from.r][d.from.c]=t; saveDraft(); renderLadder(); Snd.place(); toast(tx('Bloklar yer değiştirdi','Blocks swapped')); }
+  else if(a==='move'){ rs[i].c[r][c]=rs[d.from.i].c[d.from.r][d.from.c]; rs[d.from.i].c[d.from.r][d.from.c]=null; S.popCell=[i,r,c]; saveDraft(); renderLadder(); Snd.place(); }
+  else if(a==='swap'){ const t=rs[i].c[r][c]; rs[i].c[r][c]=rs[d.from.i].c[d.from.r][d.from.c]; rs[d.from.i].c[d.from.r][d.from.c]=t; S.popCell=[i,r,c]; saveDraft(); renderLadder(); Snd.place(); toast(tx('Bloklar yer değiştirdi','Blocks swapped')); }
   else if(a!=='dolu'&&a!=='x') toast(a);
 });
-window.addEventListener('pointercancel',e=>{ if(drag&&e.pointerId===drag.pid){ drag=null; dragClean(); } });
+window.addEventListener('pointercancel',e=>{ if(drag&&e.pointerId===drag.pid){ clearTimeout(tipT); drag=null; dragClean(); } });
+$('#palette').addEventListener('contextmenu',e=>e.preventDefault()); $('#rungs').addEventListener('contextmenu',e=>e.preventDefault());

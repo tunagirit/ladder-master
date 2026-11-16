@@ -67,7 +67,7 @@ function buildIO(){
     const b=document.createElement('button'); b.className='iob'+(d.k==='sw'?' sw':''); b.dataset.a=d.a; b.style.setProperty('--c',col);
     b.innerHTML=`<span class="lt"></span><span class="tx"><b>${d.n}</b><small>${d.a}</small></span>`; box.appendChild(b); });
 }
-$('#io').addEventListener('pointerdown',e=>{ const b=e.target.closest('.iob'); if(!b) return; e.preventDefault(); Snd.init(); Snd.click();
+$('#io').addEventListener('pointerdown',e=>{ const b=e.target.closest('.iob'); if(!b) return; e.preventDefault(); Snd.init(); Snd.click(); Hap.sw();
   if(!S.running){ toast(tx('Önce ▶ RUN ile simülasyonu başlat','Start the simulation with ▶ RUN first')); return; }
   world.press(b.dataset.a); flash[b.dataset.a]=0.25; });
 let goalKey='';
