@@ -5,7 +5,7 @@ function idleNudge(dt){
   const sc=world.sc, st=S.lv.io.I.find(d=>d.n==='START'||d.k==='btn');
   const waiting=!world.motor&&world.boxes.some(b=>b.st==='belt')&&!S.lv.scene.ackA;
   if(!waiting||!st||!sc.startA){ idleT=0; return; }
-  idleT+=dt*S.speed; if(idleT>3.5){ idleT=-30; Hap.tap(); toast(tx(`⏸ Bant duruyor — devam etmek için START (${sc.startA}) butonuna bas`,`⏸ Belt is stopped — press START (${sc.startA}) to continue`)); }
+  idleT+=dt*S.speed; if(idleT>3.5){ idleT=-30; Hap.tap(); toast(tx(`Bant duruyor — devam etmek için START (${sc.startA}) butonuna bas`,`Belt is stopped — press START (${sc.startA}) to continue`)); }
 }
 let last=performance.now(), acc=0, fr=0;
 function scanOnce(){
@@ -30,11 +30,11 @@ if(isIOS()) setTimeout(maybeAskInstall,1500);
 }
 function relayout(){ resizeCanvas(); if(S.prog){ const cw=calcCW(); if(cw!==S.cw) renderLadder(); } }
 window.addEventListener('resize',relayout); if(window.ResizeObserver) new ResizeObserver(relayout).observe($('#sceneWrap'));
-$('#bSnd').textContent=save.sound?'🔊':'🔇';
+$('#bSnd').innerHTML=I(save.sound?'volume_up':'volume_off');
 LANG=save.lang||((navigator.language||'tr').toLowerCase().startsWith('tr')?'tr':'en'); save.lang=LANG; applyTheme(); applyStatic();
 resizeCanvas(); loadLevel(save.last>=0?save.last:0,true);
 showMenu('main');
-if(!save.intro){ card(`<h3>⚡ ${tx('Ladder Master\'a hoş geldin!','Welcome to Ladder Master!')}</h3>${HOW()}<div class="brow"><button class="btn pri wide" id="ok">${tx('Başlayalım','Let\'s go')}</button></div>`,e=>{ if(e.target.id==='ok'){ save.intro=true; persist(); closeAll(); showMenu('main'); } }); }
+if(!save.intro){ card(`<h3>${tx('Ladder Master\'a hoş geldin!','Welcome to Ladder Master!')}</h3>${HOW()}<div class="brow"><button class="btn pri wide" id="ok">${tx('Başlayalım','Let\'s go')}</button></div>`,e=>{ if(e.target.id==='ok'){ save.intro=true; persist(); closeAll(); showMenu('main'); } }); }
 requestAnimationFrame(frame);
 if(me()) pullProgress().catch(()=>{});
 if(isIOS()) setTimeout(maybeAskInstall,1500);

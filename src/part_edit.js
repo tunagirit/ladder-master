@@ -1,11 +1,11 @@
 function rungMenu(i){
   const rg=S.prog.rungs[i], n=S.prog.rungs.length;
   const sh=$('#sheet'); sh.innerHTML=`<h3>${tx('Satır','Rung')} ${i+1}</h3><p class="t" style="margin-top:0">${tx('PLC satırları yukarıdan aşağıya taranır.','The PLC scans rungs from top to bottom.')}</p>
-  <button class="mi" data-a="br">${rg.br?tx('⑂ Paralel kolu kaldır','⑂ Remove parallel branch'):tx('⑂ Paralel kol ekle (OR)','⑂ Add parallel branch (OR)')}</button>
-  <button class="mi" data-a="up" ${i===0?'disabled style="opacity:.4"':''}>${tx('▲ Yukarı taşı','▲ Move up')}</button>
-  <button class="mi" data-a="dn" ${i===n-1?'disabled style="opacity:.4"':''}>${tx('▼ Aşağı taşı','▼ Move down')}</button>
-  <button class="mi" data-a="del" style="color:var(--redt)">${tx('🗑 Satırı sil','🗑 Delete rung')}</button>
-  <button class="mi" data-a="x">${tx('Kapat','Close')}</button>`;
+  <button class="mi" data-a="br">${I('call_split')}${rg.br?tx('Paralel kolu kaldır','Remove parallel branch'):tx('Paralel kol ekle (OR)','Add parallel branch (OR)')}</button>
+  <button class="mi" data-a="up" ${i===0?'disabled style="opacity:.4"':''}>${I('arrow_upward')}${tx('Yukarı taşı','Move up')}</button>
+  <button class="mi" data-a="dn" ${i===n-1?'disabled style="opacity:.4"':''}>${I('arrow_downward')}${tx('Aşağı taşı','Move down')}</button>
+  <button class="mi" data-a="del" style="color:var(--redt)">${I('delete')}${tx('Satırı sil','Delete rung')}</button>
+  <button class="mi" data-a="x">${I('close')}${tx('Kapat','Close')}</button>`;
   openSheet();
   sh.onclick=e=>{ const b=e.target.closest('.mi'); if(!b||b.disabled) return; const a=b.dataset.a; const rs=S.prog.rungs;
     if(a==='br'){ rg.br=!rg.br; if(!rg.br) rg.c[1]=Array(COLS).fill(null); }
@@ -34,9 +34,9 @@ function openEditor(i,r,c,cell,isNew){
     sh.innerHTML=`<div style="display:flex;align-items:center;gap:10px"><div class="pal sel" style="flex:0 0 62px;height:46px">${palSym(t)}</div><div><h3>${BN[t]}</h3><div style="font-size:11px;color:var(--dim)">${tx('Adres seç ve istersen etiket yaz','Choose an address and optionally type a tag')}</div></div></div>`+
     groups.map(([n,l])=>`<div class="grp">${n}</div><div class="chips">${l.map(a=>`<button class="chip ${a===sel?'sel':''}" data-a="${a}">${a}<small>${S.tags[a]||'—'}</small></button>`).join('')}</div>`).join('')+
     `<div class="fld"><label>${tx('Etiket (Tag)','Tag')}</label><input id="tgIn" maxlength="14" placeholder="${tx('örn: Bant_Motor','e.g. Belt_Motor')}" value="${(S.tags[sel]||'').replace(/"/g,'')}"></div>`+
-    (tm?`<div class="fld"><label>${tx('Süre','Time')}</label><div class="step"><button class="btn" data-s="-">−</button><b>${pv.toFixed(1)} ${tx('sn','s')}</b><button class="btn" data-s="+">＋</button></div></div>`:'')+
-    (ct?`<div class="fld"><label>${tx('Hedef (PV)','Preset (PV)')}</label><div class="step"><button class="btn" data-s="-">−</button><b>${pv}</b><button class="btn" data-s="+">＋</button></div></div>`:'')+
-    `<div class="brow">${isNew?'':'<button class="btn dan" id="mDel">'+tx('🗑 Sil','🗑 Delete')+'</button>'}<button class="btn wide" id="mCan">${tx('İptal','Cancel')}</button><button class="btn pri wide" id="mOk">${tx('✓ Tamam','✓ OK')}</button></div>`;
+    (tm?`<div class="fld"><label>${tx('Süre','Time')}</label><div class="step"><button class="btn" data-s="-">${I('remove')}</button><b>${pv.toFixed(1)} ${tx('sn','s')}</b><button class="btn" data-s="+">${I('add')}</button></div></div>`:'')+
+    (ct?`<div class="fld"><label>${tx('Hedef (PV)','Preset (PV)')}</label><div class="step"><button class="btn" data-s="-">${I('remove')}</button><b>${pv}</b><button class="btn" data-s="+">${I('add')}</button></div></div>`:'')+
+    `<div class="brow">${isNew?'':'<button class="btn dan" id="mDel">'+I('delete')+'</button>'}<button class="btn wide" id="mCan">${tx('İptal','Cancel')}</button><button class="btn pri wide" id="mOk">${tx('Tamam','OK')}</button></div>`;
   };
   draw(); openSheet();
   sh.onclick=e=>{

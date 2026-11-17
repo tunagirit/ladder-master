@@ -32,7 +32,7 @@ function renderLadder(){
   S.prog.rungs.forEach((rg,i)=>{
     const rows=rg.br?2:1, sp=branchSpan(rg);
     const el=document.createElement('div'); el.className='rung'; el.dataset.i=i;
-    el.innerHTML=`<div class="gut"><span class="rn">R${i+1}</span><button class="rm">⋮</button></div><div class="grid" style="width:${cw*COLS+8}px;height:${rows*44}px"><div class="rail" style="left:0"></div><div class="rail" style="left:${cw*COLS+4}px"></div></div>`;
+    el.innerHTML=`<div class="gut"><span class="rn">R${i+1}</span><button class="rm">${I('more_vert')}</button></div><div class="grid" style="width:${cw*COLS+8}px;height:${rows*44}px"><div class="rail" style="left:0"></div><div class="rail" style="left:${cw*COLS+4}px"></div></div>`;
     const g=el.querySelector('.grid'); const L={cells:[[],[]],vl:null,vr:null,grid:g};
     for(let r=0;r<rows;r++) for(let c=0;c<COLS;c++){
       if(r===1&&c===OUTC) continue;
@@ -46,7 +46,7 @@ function renderLadder(){
     if(sp){ for(const [k,x] of [['vl',sp.from*cw+4],['vr',(sp.to+1)*cw+4]]){ const v=document.createElement('div'); v.className='vw'; v.style.cssText=`left:${x-1.5}px;top:22px;height:44px`; g.appendChild(v); L[k]=v; } }
     box.appendChild(el); LIVE.push(L);
   });
-  if(S.prog.rungs.length<8&&!S.view){ const b=document.createElement('button'); b.id='addr'; b.textContent=tx('＋ Satır Ekle','＋ Add Rung'); box.appendChild(b); }
+  if(S.prog.rungs.length<8&&!S.view){ const b=document.createElement('button'); b.id='addr'; b.innerHTML=I('add')+tx('Satır Ekle','Add Rung'); box.appendChild(b); }
   box.scrollTop=sc; refreshTool();
   if(S.popCell){ const [pi,pr,pc]=S.popCell; S.popCell=null; const L=LIVE[pi]; const el=L&&L.cells[pr]&&L.cells[pr][pc]; if(el){ el.classList.add('pop'); setTimeout(()=>el.classList.remove('pop'),450); } }
 }

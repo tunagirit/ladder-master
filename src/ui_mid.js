@@ -9,11 +9,11 @@ function loadLevel(id,quiet){
   S.fresh=S.view?[]:freshElems(lv);
   buildPalette(); buildIO(); goalKey=''; refreshMode(); renderLadder(); closeAll();
   if(!quiet&&S.fresh.length) setTimeout(()=>showIntro(S.fresh),150);
-  else if(!quiet&&lv.extra&&!S.view) toast('🔥 '+tx('Ekstra zor bölüm — bol şans!','Extra hard level — good luck!'));
+  else if(!quiet&&lv.extra&&!S.view) toast(tx('Ekstra zor bölüm — bol şans!','Extra hard level — good luck!'));
 }
 function lvLabel(lv){ return `${tx('Bölüm','Level')} ${lv.n+1} · ${CATS[lv.cat].n}`; }
-function setHeader(){ const lv=S.lv, C=CATS[lv.cat]; $('#task').dataset.lbl='🎯 '+tx('GÖREV','TASK');
-  $('#title').innerHTML=`<small style="color:${lv.extra?'var(--red)':C.c}">${lvLabel(lv).toUpperCase()}${lv.extra?' · 🔥 '+tx('EKSTRA ZOR','EXTRA HARD'):''}</small>${lv.title}`;
+function setHeader(){ const lv=S.lv, C=CATS[lv.cat]; $('#task').dataset.lbl=tx('GÖREV','TASK');
+  $('#title').innerHTML=`<small style="color:${lv.extra?'var(--red)':C.c}">${lvLabel(lv).toUpperCase()}${lv.extra?' · '+tx('EKSTRA ZOR','EXTRA HARD'):''}</small>${lv.title}`;
   $('#task').innerHTML=esc(lv.task).replace(/\b([IQMTC]\d\.\d|[TC]\d)\b/g,'<b>$1</b>'); }
 function refreshMode(){
   $('#palette').style.display=S.view?'none':'flex'; $('#doneBar').style.display=S.view?'flex':'none';
@@ -38,7 +38,7 @@ function refreshTool(){
 }
 function updInfo(){
   const n=countBlocks(S.prog);
-  const msg=S.view?tx('<span style="color:var(--neon)">✔ Kayıtlı çözümün</span> — ▶ RUN ile çalıştırıp izle','<span style="color:var(--neon)">✔ Your saved solution</span> — press ▶ RUN to watch')
+  const msg=S.view?tx('<span style="color:var(--neon)">Kayıtlı çözümün</span> — RUN ile çalıştırıp izle','<span style="color:var(--neon)">Your saved solution</span> — press RUN to watch')
     :S.redo?tx('<span style="color:var(--amb)">Yeniden çözüyorsun</span> — yeni çözüm bulana kadar eskisi korunur','<span style="color:var(--amb)">Re-solving</span> — old solution kept until you solve it again')
     :S.tool?tx(`Seçili: <b style="color:var(--blu)">${BN[S.tool]}</b> — ${isOut(S.tool)?'son sütuna':'sol sütunlara'} dokun`,`Selected: <b style="color:var(--blu)">${BN[S.tool]}</b> — tap ${isOut(S.tool)?'the last column':'a left column'}`):tx('Bloğu yukarı <b>sürükle-bırak</b> ya da seç &amp; dokun','<b>Drag &amp; drop</b> a block up, or select &amp; tap');
   $('#einfo').innerHTML=tx(`Blok <b>${n}</b> · referans çözüm ${S.lv.opt} blok`,`Blocks <b>${n}</b> · reference solution ${S.lv.opt}`)+`<br>${msg}`;

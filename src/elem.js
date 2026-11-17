@@ -66,8 +66,8 @@ function freshElems(lv){ const pool=new Set(lv.pal.concat(levelElems(lv))); retu
 function showIntro(list,done){
   if(!list.length){ done&&done(); return; }
   let i=0;
-  const draw=()=>card(`<div class="nwt">🆕 ${tx('YENİ ELEMAN','NEW ELEMENT')}${list.length>1?` · ${i+1}/${list.length}`:''}</div>${elemHTML(list[i],true)}
-    <div class="brow"><button class="btn pri wide" id="ok">${i<list.length-1?tx('Sonraki ▶','Next ▶'):tx('Anladım, başlayalım','Got it, let\'s go')}</button></div>`,e=>{
+  const draw=()=>card(`<div class="nwt">${I('new_releases','f sm')} ${tx('YENİ ELEMAN','NEW ELEMENT')}${list.length>1?` · ${i+1}/${list.length}`:''}</div>${elemHTML(list[i],true)}
+    <div class="brow"><button class="btn pri wide" id="ok">${i<list.length-1?tx('Sonraki','Next'):tx('Anladım, başlayalım','Got it, let\'s go')}</button></div>`,e=>{
       if(e.target.id!=='ok') return; save.seen[list[i]]=1; persist(); Snd.click();
       if(++i<list.length) draw(); else { closeAll(); done&&done(); } });
   draw();
