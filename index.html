@@ -11,7 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ladder Master">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Ladder Master — PLC Logic Puzzle</title>
 <style>
 :root{--bg:#0d1117;--p1:#151b23;--p2:#1c242e;--ln:#2a3542;--tx:#d7dee7;--dim:#7d8a99;--neon:#39ff6a;--amb:#ffb020;--red:#ff4d4d;--blu:#4da3ff;--pur:#c77dff;
@@ -643,6 +643,150 @@ html[data-theme=light] .mm-title{text-shadow:none}
 .cstat{gap:16px;align-items:center}.cstat span{display:inline-flex;align-items:center;gap:4px}
 .pts .ms,.pp .ms{font-size:20px}
 .mi:disabled{opacity:.4}
+
+/* ================= v1.1.1 — EKRAN / CİHAZ UYUMU ================= */
+/* sayfanın kendisi asla kaymaz, aşağı çekilmez, lastik efekti yok */
+html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:manipulation}
+#app{height:100%;max-height:100dvh;padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);overflow:hidden}
+#rungs,.sheet,.card,#task,#io,#palette,#menuIn,#tip{overscroll-behavior:contain}
+.ov{padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left)}
+#ovCard{padding-bottom:env(safe-area-inset-bottom)}
+#sceneWrap,#io,#ctrl,#top,#taskBox,#palette,#doneBar,#ehead{flex-shrink:0}
+#editor{min-height:96px}
+
+/* ---------- ana menü: ekrana sığar, kaydırma gerekmez ---------- */
+.mm{height:100%;min-height:0;gap:clamp(8px,1.6dvh,14px);padding-bottom:0}
+.mm-hero{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:clamp(6px,1.2dvh,12px)}
+#mcv{flex:1 1 150px;min-height:0;max-height:170px;height:auto;width:100%}
+.mm-title{font-size:clamp(38px,7dvh,58px);margin-top:0}
+.mm-title span{font-size:clamp(22px,3.8dvh,32px);margin-top:clamp(2px,.8dvh,8px)}
+.mm-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.mm-chips .pts,.mm-chips .acct{margin:0}
+.mm-act{flex:0 0 auto;display:flex;flex-direction:column;gap:clamp(8px,1.4dvh,12px)}
+.mm .bigbtn{min-height:clamp(50px,7dvh,60px)}
+.mm .bigbtn.play{min-height:clamp(62px,10dvh,88px)}
+.mm .brow2 .bigbtn{min-height:clamp(60px,9.5dvh,88px)}
+.brow3{display:flex;gap:10px}
+.brow3 .bigbtn{flex:1;justify-content:center;padding:0 12px;font-size:15px;gap:8px}
+.mm .ver{text-align:center;margin:0 0 2px}
+.scrIn .mm-act>*{animation:scr .26s ease-out both}
+.scrIn .mm-act>*:nth-child(2){animation-delay:.04s}.scrIn .mm-act>*:nth-child(3){animation-delay:.08s}.scrIn .mm-act>*:nth-child(n+4){animation-delay:.12s}
+#menu .sheet{padding-top:10px}
+
+/* ---------- kısa telefonlar (SE, küçük Android) ---------- */
+@media (max-height:760px) and (orientation:portrait){
+ #top{padding:4px 6px 2px 2px}
+ #top .ib{width:44px;height:44px}
+ #title{font-size:18px}
+ #taskBox{padding:0 10px 8px}
+ #task{max-height:6.2em;font-size:13px;padding:22px 12px 8px}
+ #task::before{top:7px}
+ #goals{margin-top:6px}
+ .gl{height:28px;font-size:12px}
+ #sceneWrap{height:clamp(96px,17dvh,150px);margin-top:6px}
+ #io{padding:8px 12px 2px}
+ .iob{height:46px}
+ #ctrl{padding:8px 12px}
+ #run,#ctrl .ib.big{height:48px}
+ #ctrl .ib.big{width:52px;min-width:52px}
+ #ehead{padding:6px 12px 2px}
+ #palette{flex-basis:76px;padding-top:6px}
+ .pal{height:60px;flex-basis:60px}
+ #doneBar{flex-basis:72px}
+}
+@media (max-height:680px) and (orientation:portrait){
+ #task{max-height:5.4em}
+ #sceneWrap{height:clamp(92px,15dvh,120px)}
+ .iob{height:42px}
+ #run,#ctrl .ib.big{height:44px}
+ .mm-sub{display:none}
+}
+
+/* ---------- tablet dikey: daha geniş, daha ferah tek sütun ---------- */
+@media (min-width:600px) and (orientation:portrait){
+ #app{max-width:760px}
+ #sceneWrap{height:clamp(200px,24dvh,320px);margin:10px 16px 0}
+ #taskBox{padding:2px 16px 14px}
+ #task{max-height:8em;font-size:15.5px}
+ #io,#ctrl{padding-left:16px;padding-right:16px}
+ #title{font-size:22px}
+ .sheet{max-width:640px;margin:0 auto}
+ #menu .sheet{max-width:none;padding-left:max(18px,calc((100% - 560px)/2));padding-right:max(18px,calc((100% - 560px)/2))}
+ .mm{justify-content:center}
+ .mm-hero{flex:0 1 auto;justify-content:center}
+ #mcv{flex:0 1 190px;max-height:190px}
+ .mm-title{font-size:clamp(48px,6dvh,72px)}
+}
+
+/* ---------- yatay: telefon yatay, tablet yatay, bilgisayar → iki sütun ---------- */
+@media (orientation:landscape) and (min-width:700px){
+ #app{max-width:1440px;display:grid;
+  grid-template-columns:minmax(340px,1fr) minmax(400px,1.15fr);
+  grid-template-rows:auto auto minmax(0,1fr) auto auto;
+  grid-template-areas:"top ed" "task ed" "scene ed" "io ed" "ctrl pal";
+  column-gap:0}
+ #top{grid-area:top}
+ #taskBox{grid-area:task}
+ #sceneWrap{grid-area:scene;height:auto;min-height:90px;max-height:440px;align-self:center;width:calc(100% - 24px);margin:8px 12px 0}
+ #sceneWrap{height:calc(100% - 8px)}
+ #io{grid-area:io}
+ #ctrl{grid-area:ctrl;padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+ #editor{grid-area:ed;min-height:0;border-left:1px solid var(--md-outlineVariant)}
+ #palette,#doneBar{grid-area:pal;border-left:1px solid var(--md-outlineVariant)}
+ #doneBar{border-radius:0}
+ #task{max-height:7.5em}
+ .sheet{max-width:620px;margin:0 auto}
+ .card{max-width:480px}
+ #menu .sheet{max-width:none;padding-left:max(18px,calc((100% - 640px)/2));padding-right:max(18px,calc((100% - 640px)/2))}
+ /* ana menü iki sütun: solda logo, sağda butonlar */
+ #menuIn:has(.mm){padding-left:max(24px,calc((100% - 980px)/2));padding-right:max(24px,calc((100% - 980px)/2))}
+ .mm{flex-direction:row;align-items:center;gap:clamp(20px,4vw,56px)}
+ .mm-hero{flex:1 1 0;justify-content:center;height:100%}
+ .mm-act{flex:1 1 0;max-width:460px;justify-content:center;max-height:100%}
+ #mcv{flex:0 1 170px;max-height:200px}
+ .mm-title{font-size:clamp(40px,9dvh,76px)}
+ .mm-title span{font-size:clamp(22px,4.6dvh,40px)}
+}
+/* bilgisayar / büyük tablet yatay: daha büyük yazı ve hücreler */
+@media (orientation:landscape) and (min-width:1100px) and (min-height:700px){
+ #title{font-size:22px}
+ #task{font-size:15px;max-height:9em}
+ #sceneWrap{margin:12px 16px 0}
+ #io,#ctrl{padding-left:16px;padding-right:16px}
+ #ehead{font-size:13.5px;padding:14px 18px 6px}
+ #rungs{padding:10px 14px 16px}
+ #palette{padding-left:16px;padding-right:16px}
+}
+/* telefon yatay (alçak ekran): sıkı yerleşim */
+@media (orientation:landscape) and (max-height:520px){
+ #top{padding:2px 4px 0 0}
+ #top .ib{width:40px;height:40px;min-width:40px}
+ #title{font-size:16px}
+ #title small{font-size:10.5px}
+ #pill{height:24px}
+ #taskBox{padding:0 10px 6px}
+ #task{max-height:4.3em;font-size:12.5px;padding:18px 10px 6px}
+ #task::before{top:5px;font-size:10px}
+ #goals{margin-top:5px;gap:4px}
+ .gl{height:24px;font-size:11.5px;padding:0 8px 0 6px}
+ #sceneWrap{margin:4px 10px 0;min-height:70px}
+ #io{padding:6px 10px 0;gap:8px}
+ .iob{height:40px}
+ #ctrl{padding:6px 10px calc(6px + env(safe-area-inset-bottom))}
+ #run,#ctrl .ib.big{height:42px}
+ #ctrl .ib.big{width:48px;min-width:48px}
+ #ehead{padding:4px 12px 0}
+ #palette{flex-basis:70px;padding-top:5px;padding-bottom:calc(5px + env(safe-area-inset-bottom))}
+ .pal{height:58px;flex-basis:58px}
+ .mm-sub{display:none}
+ #mcv{display:none}
+ .mm .bigbtn{min-height:44px}
+ .mm .bigbtn.play{min-height:54px;font-size:22px}
+ .mm .brow2 .bigbtn{min-height:48px;flex-direction:row;gap:8px}
+ .mm-act{gap:7px}
+ .sheet{max-height:94%}
+ .card{max-height:94%;padding:16px}
+}
 </style></head><body>
 <div id="app">
  <div id="top"><button class="ib" id="bMenu" aria-label="Menu"><span class="ms">menu</span></button><div id="title"></div><span id="pill">STOP</span><button class="ib" id="bSnd"><span class="ms">volume_up</span></button></div>
@@ -1175,7 +1319,7 @@ function getLevel(id){
 }
 /*==UI==*/
 const $=(s,r=document)=>r.querySelector(s);
-const VERSION='v1.1.0';
+const VERSION='v1.1.1';
 const I=(n,c)=>'<span class="ms'+(c?' '+c.split(' ').map(x=>x==='f'?'f':'ms-'+x).join(' '):'')+'">'+n+'</span>';  // Material Symbols ikon
 const SKEY='ladderustasi_v2';
 let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1,theme:'auto',lang:null,seen:{}};
@@ -1550,7 +1694,7 @@ window.addEventListener('pointerup',e=>{
 window.addEventListener('pointercancel',e=>{ if(drag&&e.pointerId===drag.pid){ clearTimeout(tipT); drag=null; dragClean(); } });
 $('#palette').addEventListener('contextmenu',e=>e.preventDefault()); $('#rungs').addEventListener('contextmenu',e=>e.preventDefault());
 /* ---------- Ladder çizimi ---------- */
-function calcCW(){ const w=$('#rungs').clientWidth-12-30-10; return Math.max(54,Math.min(84,Math.floor(w/COLS))); }
+function calcCW(){ const w=$('#rungs').clientWidth-12-30-10; return Math.max(54,Math.min(150,Math.floor(w/COLS))); }
 function cellSVG(cell,r,c,cw,inSpan,brEmpty){
   const m=cw/2,y=22; let s=`<svg width="${cw}" height="44" viewBox="0 0 ${cw} 44">`;
   const tag=cell&&S.tags[cell.a]?S.tags[cell.a]:'';
@@ -1775,15 +1919,15 @@ function showMenu(scr,cat,diff){
   const back=t=>`<button class="ib" data-go="${t==='main'&&S.setBack==='game'&&scr==='set'?'game':t}">${I('arrow_back')}</button>`; let h='';
   if(scr==='main'){
     const L=save.last>=0?getLevel(save.last):null;
-    h=`<div class="mm"><canvas id="mcv"></canvas><div class="mm-title">LADDER<span>MASTER</span></div><div class="mm-sub">${tx('PLC MERDİVEN MANTIĞI BULMACASI','PLC LADDER LOGIC PUZZLE')}</div>
-    <div class="pts">${I('bolt','f sm')} ${points()} ${tx('puan','points')}</div>
-    <button class="acct" data-go="acct">${me()?`<span class="av2">${esc(me().username[0].toUpperCase())}</span><b>${esc(me().username)}</b>`:I('account_circle')+tx('Giriş yap / Kayıt ol','Sign in / Sign up')}</button>
-    <button class="bigbtn play" data-go="map">${I('play_arrow','f')}${tx('OYNA','PLAY')}</button>
+    h=`<div class="mm"><div class="mm-hero"><canvas id="mcv"></canvas><div class="mm-title">LADDER<span>MASTER</span></div><div class="mm-sub">${tx('PLC MERDİVEN MANTIĞI BULMACASI','PLC LADDER LOGIC PUZZLE')}</div>
+    <div class="mm-chips"><div class="pts">${I('bolt','f sm')} ${points()} ${tx('puan','points')}</div>
+    <button class="acct" data-go="acct">${me()?`<span class="av2">${esc(me().username[0].toUpperCase())}</span><b>${esc(me().username)}</b>`:I('account_circle')+tx('Giriş yap / Kayıt ol','Sign in / Sign up')}</button></div></div>
+    <div class="mm-act"><button class="bigbtn play" data-go="map">${I('play_arrow','f')}${tx('OYNA','PLAY')}</button>
     ${L?`<button class="bigbtn" data-go="cont">${I('resume')}<span style="flex:1;text-align:left">${tx('Devam Et','Continue')}<br><small>${lvLabel(L)}</small></span></button>`:''}
     <div class="brow2"><button class="bigbtn" data-go="board">${I('leaderboard')}${tx('Liderlik','Leaderboard')}</button><button class="bigbtn" data-go="prog">${I('insights')}${tx('İlerleme','Progress')}</button></div>
     ${canInstall()?`<button class="bigbtn instb" data-go="install">${I('install_mobile')}${tx('Uygulamayı Yükle','Install App')}</button>`:''}
-    <button class="bigbtn" data-go="how">${I('help')}${tx('Nasıl Oynanır','How to Play')}</button>
-    <button class="bigbtn" data-go="set">${I('settings')}${tx('Ayarlar','Settings')}</button><div class="ver">Ladder Master ${VERSION}</div></div>`;
+    <div class="brow3"><button class="bigbtn" data-go="how">${I('help')}${tx('Nasıl Oynanır','How to Play')}</button>
+    <button class="bigbtn" data-go="set">${I('settings')}${tx('Ayarlar','Settings')}</button></div><div class="ver">Ladder Master ${VERSION}</div></div></div>`;
   } else if(scr==='map'){
     h=`<div class="topbar mapbar">${back('main')}<h3>${tx('Yol Haritası','Level Map')}</h3><span class="pp">${I('bolt','f sm')} ${points()}</span></div><div id="road"></div>`;
   } else if(scr==='prog'){
@@ -1871,8 +2015,8 @@ $('#menuIn').onclick=e=>{
 const dkm=()=>document.documentElement.dataset.theme!=='light';
 function drawMenuAnim(now){
   const c=document.getElementById('mcv'); if(!c) return; const r=c.getBoundingClientRect(); if(!r.width) return;
-  const D=Math.min(2,window.devicePixelRatio||1); if(c.width!==Math.round(r.width*D)){ c.width=Math.round(r.width*D); c.height=Math.round(r.height*D); }
-  const x=c.getContext('2d'); x.setTransform(D,0,0,D,0,0); const w=r.width,h=r.height,t=now/1000; x.clearRect(0,0,w,h);
+  if(r.height<40) return; const D=Math.min(2,window.devicePixelRatio||1); if(c.width!==Math.round(r.width*D)||c.height!==Math.round(r.height*D)){ c.width=Math.round(r.width*D); c.height=Math.round(r.height*D); }
+  const k=Math.min(1.25,r.height/150), x=c.getContext('2d'); x.setTransform(D*k,0,0,D*k,0,0); const w=r.width/k,h=150,t=now/1000; x.clearRect(0,0,w,h);
   const L=18,Rr=w-18, cs=getComputedStyle(document.documentElement), BG=cs.getPropertyValue('--bg').trim()||'#0d1117', WR=cs.getPropertyValue('--bar').trim()||'#26323f', SY=cs.getPropertyValue('--sym').trim()||'#9fb0c2';
   const PRI=cs.getPropertyValue('--md-primary').trim()||'#39ff6a'; x.shadowColor=PRI; x.shadowBlur=dkm()?10:0; x.strokeStyle=PRI; x.lineWidth=3.5; x.beginPath(); x.moveTo(L,6); x.lineTo(L,h*0.58); x.moveTo(Rr,6); x.lineTo(Rr,h*0.58); x.stroke();
   [0,1].forEach(i=>{ const y=22+i*36, ph=(t*0.5+i*0.45)%1.4, p=Math.min(1,ph);
@@ -2120,6 +2264,18 @@ if(me()) pullProgress().catch(()=>{});
 if(isIOS()) setTimeout(maybeAskInstall,1500);
 }
 function relayout(){ resizeCanvas(); if(S.prog){ const cw=calcCW(); if(cw!==S.cw) renderLadder(); } }
+/* sayfa kaymasın / aşağı çekilmesin: sadece gerçekten kayabilen iç alanlar kaysın */
+(function(){
+  let sx=0,sy=0;
+  const can=(t,v)=>{ for(let el=t;el&&el!==document.body;el=el.parentElement){ if(el.nodeType!==1) continue; const cs=getComputedStyle(el);
+      if(v){ if(/(auto|scroll)/.test(cs.overflowY)&&el.scrollHeight>el.clientHeight+1) return true; }
+      else if(/(auto|scroll)/.test(cs.overflowX)&&el.scrollWidth>el.clientWidth+1) return true; } return false; };
+  document.addEventListener('touchstart',e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; },{passive:true});
+  document.addEventListener('touchmove',e=>{ if(e.touches.length>1){ e.preventDefault(); return; } const t=e.touches[0], dx=t.clientX-sx, dy=t.clientY-sy;
+    if(!e.cancelable) return; const tg=e.target; if(tg.closest&&tg.closest('input,textarea')) return;
+    if(!can(tg,Math.abs(dy)>=Math.abs(dx))) e.preventDefault(); },{passive:false});
+  ['gesturestart','gesturechange'].forEach(n=>document.addEventListener(n,e=>e.preventDefault(),{passive:false}));
+})();
 window.addEventListener('resize',relayout); if(window.ResizeObserver) new ResizeObserver(relayout).observe($('#sceneWrap'));
 $('#bSnd').innerHTML=I(save.sound?'volume_up':'volume_off');
 LANG=save.lang||((navigator.language||'tr').toLowerCase().startsWith('tr')?'tr':'en'); save.lang=LANG; applyTheme(); applyStatic();

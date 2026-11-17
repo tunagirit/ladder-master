@@ -1,5 +1,5 @@
 /* ---------- Ladder çizimi ---------- */
-function calcCW(){ const w=$('#rungs').clientWidth-12-30-10; return Math.max(54,Math.min(84,Math.floor(w/COLS))); }
+function calcCW(){ const w=$('#rungs').clientWidth-12-30-10; return Math.max(54,Math.min(150,Math.floor(w/COLS))); }
 function cellSVG(cell,r,c,cw,inSpan,brEmpty){
   const m=cw/2,y=22; let s=`<svg width="${cw}" height="44" viewBox="0 0 ${cw} 44">`;
   const tag=cell&&S.tags[cell.a]?S.tags[cell.a]:'';

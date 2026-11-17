@@ -29,6 +29,18 @@ if(me()) pullProgress().catch(()=>{});
 if(isIOS()) setTimeout(maybeAskInstall,1500);
 }
 function relayout(){ resizeCanvas(); if(S.prog){ const cw=calcCW(); if(cw!==S.cw) renderLadder(); } }
+/* sayfa kaymasın / aşağı çekilmesin: sadece gerçekten kayabilen iç alanlar kaysın */
+(function(){
+  let sx=0,sy=0;
+  const can=(t,v)=>{ for(let el=t;el&&el!==document.body;el=el.parentElement){ if(el.nodeType!==1) continue; const cs=getComputedStyle(el);
+      if(v){ if(/(auto|scroll)/.test(cs.overflowY)&&el.scrollHeight>el.clientHeight+1) return true; }
+      else if(/(auto|scroll)/.test(cs.overflowX)&&el.scrollWidth>el.clientWidth+1) return true; } return false; };
+  document.addEventListener('touchstart',e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; },{passive:true});
+  document.addEventListener('touchmove',e=>{ if(e.touches.length>1){ e.preventDefault(); return; } const t=e.touches[0], dx=t.clientX-sx, dy=t.clientY-sy;
+    if(!e.cancelable) return; const tg=e.target; if(tg.closest&&tg.closest('input,textarea')) return;
+    if(!can(tg,Math.abs(dy)>=Math.abs(dx))) e.preventDefault(); },{passive:false});
+  ['gesturestart','gesturechange'].forEach(n=>document.addEventListener(n,e=>e.preventDefault(),{passive:false}));
+})();
 window.addEventListener('resize',relayout); if(window.ResizeObserver) new ResizeObserver(relayout).observe($('#sceneWrap'));
 $('#bSnd').innerHTML=I(save.sound?'volume_up':'volume_off');
 LANG=save.lang||((navigator.language||'tr').toLowerCase().startsWith('tr')?'tr':'en'); save.lang=LANG; applyTheme(); applyStatic();

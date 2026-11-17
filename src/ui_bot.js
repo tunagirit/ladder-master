@@ -96,15 +96,15 @@ function showMenu(scr,cat,diff){
   const back=t=>`<button class="ib" data-go="${t==='main'&&S.setBack==='game'&&scr==='set'?'game':t}">${I('arrow_back')}</button>`; let h='';
   if(scr==='main'){
     const L=save.last>=0?getLevel(save.last):null;
-    h=`<div class="mm"><canvas id="mcv"></canvas><div class="mm-title">LADDER<span>MASTER</span></div><div class="mm-sub">${tx('PLC MERDİVEN MANTIĞI BULMACASI','PLC LADDER LOGIC PUZZLE')}</div>
-    <div class="pts">${I('bolt','f sm')} ${points()} ${tx('puan','points')}</div>
-    <button class="acct" data-go="acct">${me()?`<span class="av2">${esc(me().username[0].toUpperCase())}</span><b>${esc(me().username)}</b>`:I('account_circle')+tx('Giriş yap / Kayıt ol','Sign in / Sign up')}</button>
-    <button class="bigbtn play" data-go="map">${I('play_arrow','f')}${tx('OYNA','PLAY')}</button>
+    h=`<div class="mm"><div class="mm-hero"><canvas id="mcv"></canvas><div class="mm-title">LADDER<span>MASTER</span></div><div class="mm-sub">${tx('PLC MERDİVEN MANTIĞI BULMACASI','PLC LADDER LOGIC PUZZLE')}</div>
+    <div class="mm-chips"><div class="pts">${I('bolt','f sm')} ${points()} ${tx('puan','points')}</div>
+    <button class="acct" data-go="acct">${me()?`<span class="av2">${esc(me().username[0].toUpperCase())}</span><b>${esc(me().username)}</b>`:I('account_circle')+tx('Giriş yap / Kayıt ol','Sign in / Sign up')}</button></div></div>
+    <div class="mm-act"><button class="bigbtn play" data-go="map">${I('play_arrow','f')}${tx('OYNA','PLAY')}</button>
     ${L?`<button class="bigbtn" data-go="cont">${I('resume')}<span style="flex:1;text-align:left">${tx('Devam Et','Continue')}<br><small>${lvLabel(L)}</small></span></button>`:''}
     <div class="brow2"><button class="bigbtn" data-go="board">${I('leaderboard')}${tx('Liderlik','Leaderboard')}</button><button class="bigbtn" data-go="prog">${I('insights')}${tx('İlerleme','Progress')}</button></div>
     ${canInstall()?`<button class="bigbtn instb" data-go="install">${I('install_mobile')}${tx('Uygulamayı Yükle','Install App')}</button>`:''}
-    <button class="bigbtn" data-go="how">${I('help')}${tx('Nasıl Oynanır','How to Play')}</button>
-    <button class="bigbtn" data-go="set">${I('settings')}${tx('Ayarlar','Settings')}</button><div class="ver">Ladder Master ${VERSION}</div></div>`;
+    <div class="brow3"><button class="bigbtn" data-go="how">${I('help')}${tx('Nasıl Oynanır','How to Play')}</button>
+    <button class="bigbtn" data-go="set">${I('settings')}${tx('Ayarlar','Settings')}</button></div><div class="ver">Ladder Master ${VERSION}</div></div></div>`;
   } else if(scr==='map'){
     h=`<div class="topbar mapbar">${back('main')}<h3>${tx('Yol Haritası','Level Map')}</h3><span class="pp">${I('bolt','f sm')} ${points()}</span></div><div id="road"></div>`;
   } else if(scr==='prog'){
@@ -192,8 +192,8 @@ $('#menuIn').onclick=e=>{
 const dkm=()=>document.documentElement.dataset.theme!=='light';
 function drawMenuAnim(now){
   const c=document.getElementById('mcv'); if(!c) return; const r=c.getBoundingClientRect(); if(!r.width) return;
-  const D=Math.min(2,window.devicePixelRatio||1); if(c.width!==Math.round(r.width*D)){ c.width=Math.round(r.width*D); c.height=Math.round(r.height*D); }
-  const x=c.getContext('2d'); x.setTransform(D,0,0,D,0,0); const w=r.width,h=r.height,t=now/1000; x.clearRect(0,0,w,h);
+  if(r.height<40) return; const D=Math.min(2,window.devicePixelRatio||1); if(c.width!==Math.round(r.width*D)||c.height!==Math.round(r.height*D)){ c.width=Math.round(r.width*D); c.height=Math.round(r.height*D); }
+  const k=Math.min(1.25,r.height/150), x=c.getContext('2d'); x.setTransform(D*k,0,0,D*k,0,0); const w=r.width/k,h=150,t=now/1000; x.clearRect(0,0,w,h);
   const L=18,Rr=w-18, cs=getComputedStyle(document.documentElement), BG=cs.getPropertyValue('--bg').trim()||'#0d1117', WR=cs.getPropertyValue('--bar').trim()||'#26323f', SY=cs.getPropertyValue('--sym').trim()||'#9fb0c2';
   const PRI=cs.getPropertyValue('--md-primary').trim()||'#39ff6a'; x.shadowColor=PRI; x.shadowBlur=dkm()?10:0; x.strokeStyle=PRI; x.lineWidth=3.5; x.beginPath(); x.moveTo(L,6); x.lineTo(L,h*0.58); x.moveTo(Rr,6); x.lineTo(Rr,h*0.58); x.stroke();
   [0,1].forEach(i=>{ const y=22+i*36, ph=(t*0.5+i*0.45)%1.4, p=Math.min(1,ph);
