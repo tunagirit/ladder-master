@@ -83,7 +83,7 @@ function onWin(){
   save.done[S.id]={prog:{rungs:clone(S.prog.rungs)},tags:customTags(S.tags)}; delete save.draft[S.id]; persist();
   S.redo=false; S.view=true; refreshMode(); Snd.win(); Hap.win(); confetti(); schedulePush();
   setTimeout(()=>{ if(!world.done) return;
-    const nx=S.id+1;
+    const nx=S.id+1<ROAD_END?S.id+1:null;
     card(`<h3 style="color:var(--md-primary);font-size:24px">${tx('BÖLÜM TAMAM!','LEVEL COMPLETE!')}</h3><div class="gain">${first?tx('+1 PUAN','+1 POINT'):wasView?tx('Çözüm çalışıyor','Solution works'):tx('Çözüm güncellendi','Solution updated')}</div>
     <p class="t" style="text-align:center">${I('bolt','f sm')} <b style="color:var(--neon)">${points()}</b> ${tx('puan','points')}<br>${tx('Kullanılan blok','Blocks used')}: <b>${n}</b> · ${tx('referans','reference')} ${lv.opt}</p>
     ${nx!==null?'<div class="brow"><button class="btn pri wide" id="nx" style="height:56px;font-size:17px">'+tx('Sonraki Bölüm','Next Level')+I('arrow_forward')+'</button></div>':''}
@@ -111,7 +111,7 @@ function showMenu(scr,cat,diff){
   } else if(scr==='map'){
     h=`<div class="topbar mapbar">${back('main')}<h3>${tx('Yol Haritası','Level Map')}</h3><span class="pp">${I('bolt','f sm')} ${points()}</span></div><div id="road"></div>`;
   } else if(scr==='prog'){
-    h=`<div class="topbar">${back('main')}<h3>${tx('İlerleme','Progress')}</h3><span class="pp">${I('bolt','f sm')} ${points()}</span></div><p class="t">${tx('Her tamamlanan bölüm <b>1 puan</b>. Yol sonsuz — ne kadar ileri gidebilirsin?','Each completed level is worth <b>1 point</b>. The road is endless — how far can you go?')}</p>
+    h=`<div class="topbar">${back('main')}<h3>${tx('İlerleme','Progress')}</h3><span class="pp">${I('bolt','f sm')} ${points()}</span></div><p class="t">${tx('Her tamamlanan bölüm <b>1 puan</b>. Yol çok uzun — ne kadar ileri gidebilirsin?','Each completed level is worth <b>1 point</b>. The road is very long — how far can you go?')}</p>
     <div class="pcard"><div class="cstat big"><span>${I('map','sm')} ${tx('Bölüm','Level')} <b>${frontier()+1}</b></span><span>${I('check_circle','sm')} <b>${points()}</b></span><span>${I('local_fire_department','sm')} <b>${extraDone()}</b></span></div></div>
     <div class="grp">${tx('KONULARA GÖRE TAMAMLANAN','COMPLETED BY TOPIC')}</div>`+
     CATS.map((c,ci)=>`<div class="pcard" style="display:flex;align-items:center;gap:12px;border-color:color-mix(in srgb,${c.c} 40%,transparent)"><div class="pic" style="color:${c.c}">${palSym(c.ic)}</div><div style="flex:1"><b style="color:${c.c}">${c.n}</b><div style="font-size:12px;color:var(--dim)">${c.s}</div></div><b style="font-size:20px">${topicDone(ci)}</b></div>`).join('')+
@@ -287,7 +287,7 @@ function shape(k){ if(SHP[k]) return SHP[k];
   return SHP[k]=`polygon(${pts.join(',')})`; }
 function drawRoad(){ const c=0;
   const box=document.getElementById('road'); if(!box) return;
-  const f=frontier(), show=Math.max(f+10,14), STEP=92, W=box.clientWidth||360, H=show*STEP+150;
+  const f=frontier(), show=Math.min(ROAD_END,Math.max(f+10,14)), end=show>=ROAD_END, STEP=92, W=box.clientWidth||360, H=show*STEP+150;
   const xs=i=>W/2+Math.sin(i*0.85)*W*0.3, ys=i=>H-70-i*STEP;
   let d=`M${xs(0)} ${ys(0)}`; for(let i=1;i<show;i++){ const x0=xs(i-1),y0=ys(i-1),x1=xs(i),y1=ys(i); d+=` C${x0} ${y0-STEP/2},${x1} ${y1+STEP/2},${x1} ${y1}`; }
   let dn=`M${xs(0)} ${ys(0)}`; for(let i=1;i<=Math.min(f,show-1);i++){ const x0=xs(i-1),y0=ys(i-1),x1=xs(i),y1=ys(i); dn+=` C${x0} ${y0-STEP/2},${x1} ${y1+STEP/2},${x1} ${y1}`; }
@@ -297,12 +297,12 @@ function drawRoad(){ const c=0;
   for(let i=0;i<show;i++){ const id=i, done=!!save.done[id], cur=i===f, ex=isExtra(i), bn=isBonus(i), lock=!done&&!cur;
     const cls=['nd',done?'dn':'',cur?'cur':'',lock?'lk':'',ex?'ex':'',bn?'bn':''].join(' ');
     const shp=ex?shape('burst'):bn?shape('clover'):cur?shape('sunny'):done?shape(i%3===0?'clover':'cookie'):shape('round');
-    h+=`<button class="${cls}" data-go="lvl" data-id="${id}" style="left:${xs(i)}px;top:${ys(i)}px;--shp:${shp}">${lock?(ex?I('local_fire_department','f'):bn?I('celebration','f'):I('lock','f')):`<b>${i+1}</b>`}${done?'<i>'+I('check')+'</i>':''}${cur?'<em>'+tx('OYNA','PLAY')+'</em>':''}${ex&&!lock?'<u>'+I('local_fire_department','f')+'</u>':''}${bn&&!lock?'<u>'+I('celebration','f')+'</u>':''}${!lock&&!ex&&!bn?`<s class="tp" style="background:${CATS[getLevel(id).cat].c}"></s>`:''}</button>`;
+    h+=`<button class="${cls}" data-go="lvl" data-id="${id}" style="left:${xs(i)}px;top:${ys(i)}px;--shp:${shp}">${lock?(ex?I('local_fire_department','f'):bn?I('celebration','f'):I('lock','f')):`<b${i>=999?` style="font-size:${i>=9999?.7:.85}em"`:''}>${i+1}</b>`}${done?'<i>'+I('check')+'</i>':''}${cur?'<em>'+tx('OYNA','PLAY')+'</em>':''}${ex&&!lock?'<u>'+I('local_fire_department','f')+'</u>':''}${bn&&!lock?'<u>'+I('celebration','f')+'</u>':''}${!lock&&!ex&&!bn?`<s class="tp" style="background:${CATS[getLevel(id).cat].c}"></s>`:''}</button>`;
     if(i===TOPIC_START[1]&&!save.done[id]) h+=`<span class="exl" style="left:${xs(i)}px;top:${ys(i)+40}px;color:var(--amb)">${tx('YENİ: ZAMANLAYICILAR','NEW: TIMERS')}</span>`;
     if(i===TOPIC_START[2]&&!save.done[id]) h+=`<span class="exl" style="left:${xs(i)}px;top:${ys(i)+40}px;color:var(--pur)">${tx('YENİ: SAYICILAR','NEW: COUNTERS')}</span>`;
     if(ex&&(cur||lock)&&i<f+10) h+=`<span class="exl" style="left:${xs(i)}px;top:${ys(i)+36}px">${tx('EKSTRA ZOR','EXTRA HARD')}</span>`;
     if(bn&&(cur||lock)&&i<f+10) h+=`<span class="exl bnl" style="left:${xs(i)}px;top:${ys(i)+36}px">BONUS</span>`; }
-  h+=`<div class="fog" style="top:0;height:150px"><span>${I('cloud')} ${tx('Yol devam ediyor…','The road continues…')}</span></div></div>`;
+  h+=end?`<div class="fog end" style="top:0;height:150px"><span>${I('emoji_events')} ${tx('Yolun sonu! Gerçek bir PLC ustasısın.','End of the road! You are a true PLC master.')}</span></div></div>`:`<div class="fog" style="top:0;height:150px"><span>${I('cloud')} ${tx('Yol devam ediyor…','The road continues…')}</span></div></div>`;
   box.innerHTML=h;
   const cur=box.querySelector('.nd.cur'); if(cur){ const m=$('#menuIn'); m.scrollTop=Math.max(0,cur.offsetTop-m.clientHeight*0.55); }
 }

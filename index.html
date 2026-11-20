@@ -3,7 +3,7 @@
 <meta name="theme-color" content="#0d1117">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,100..1000&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=account_circle,add,add_circle,arrow_back,arrow_downward,arrow_forward,arrow_upward,bolt,brightness_auto,build,call_split,celebration,check,check_circle,close,cloud,dark_mode,delete,delete_history,delete_sweep,edit,electrical_services,factory,help,home,insights,install_mobile,inventory_2,ios_share,key,leaderboard,light_mode,lightbulb,local_fire_department,lock,lock_open,login,logout,map,menu,more_vert,new_releases,oil_barrel,play_arrow,precision_manufacturing,radio_button_unchecked,refresh,remove,restart_alt,resume,settings,stop,sync,vibration,visibility,volume_off,volume_up,workspace_premium&display=block">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=account_circle,add,add_circle,arrow_back,arrow_downward,arrow_forward,arrow_upward,bolt,brightness_auto,build,call_split,celebration,check,check_circle,close,cloud,dark_mode,delete,delete_history,delete_sweep,edit,electrical_services,emoji_events,factory,help,home,insights,install_mobile,inventory_2,ios_share,key,leaderboard,light_mode,lightbulb,local_fire_department,lock,lock_open,login,logout,map,menu,more_vert,new_releases,oil_barrel,play_arrow,precision_manufacturing,radio_button_unchecked,refresh,remove,restart_alt,resume,settings,stop,sync,vibration,visibility,volume_off,volume_up,workspace_premium&display=block">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -963,17 +963,19 @@ class World{
     this.startPressed=false; this.startFall=null; this.pS=false; this.noStart=0; this.pP=false; this.stopWatch=0; this.stopPressT=null;
     this.pc=false; this.pendB=null; this.parkT=0; this.lpT=0; this.pA=false; this.ackSeen=false; this.pl=false;
     this.lrT=0; this.loT=0; this.andT=0; this.orT=0; this.atT=0; this.oa=0; this.ob=0; this.pkS=null; this.pLd=false; this.pSrc=false; this.srcFall=null; this.pLt=false; this.pLc=false; this.startAt=null; this.sdLamp=0; this.mFall=null; this.prevSp=false; this.prevFan=false; this.sprayOffT=null; this.q={}; this.shake=0;
-    this.rs=this.sc.rules.map(()=>({})); this.cnt={}; this.pv=this.sc.proc?this.sc.proc.v0:0; this.hour=this.sc.clock?this.sc.clock.h0:0; this.spd=this.sc.speed;
+    this.rs=this.sc.rules.map(()=>({})); this.hold={}; this.mv={}; this.ms=this.sc.mach&&typeof MACH!=='undefined'?MACH[this.sc.mach.kind].init(this.sc.mach,this):null; this.cnt={}; this.pv=this.sc.proc?this.sc.proc.v0:0; this.hour=this.sc.clock?this.sc.clock.h0:0; this.spd=this.sc.speed;
   }
   fail(m){ if(!this.err&&!this.done) this.err=m; return false; }
   press(a){ const d=this.lv.io.I.find(x=>x.a===a); if(!d) return; if(d.k==='btn') this.pulse[a]=0.3; else if(d.k==='sw') this.sw[a]=!this.sw[a]; }
   sensorOn(a){ const s=this.sc.sensors.find(s=>s.a===a); if(!s) return false; return this.boxes.some(b=>b.st==='belt'&&Math.abs(b.x-s.x)<=BW); }
   sense(){
-    const iv={};
+    const iv={}; if(this.ms) MACH[this.sc.mach.kind].sense(this,this.sc.mach,this.ms);
     for(const d of this.lv.io.I){
       if(d.k==='btn') iv[d.a]=(this.pulse[d.a]||0)>0;
       else if(d.k==='sw') iv[d.a]=!!this.sw[d.a];
       else if(d.k==='sensor') iv[d.a]=this.sensorOn(d.a);
+      else if(d.k==='hold') iv[d.a]=!!this.hold[d.a];
+      else if(d.k==='m') iv[d.a]=!!this.mv[d.a];
       else if(d.k==='limit'){ const p=this.sc.pistons.find(p=>p.lim===d.a); iv[d.a]=!!p&&this.ext[p.a]>=0.98; }
     }
     if(this.sc.proc) iv[this.sc.proc.ai]=Math.round(Math.max(0,Math.min(1,this.pv))*32000);
@@ -987,7 +989,8 @@ class World{
     this.motor=!!q[sc.motor];
     if(sc.speedW){ this.spd=Math.max(0,Math.min(60,+q[sc.speedW]||0)); }
     if(sc.clock){ this.hour=Math.floor(sc.clock.h0+this.t*sc.clock.rate)%24; }
-    if(sc.proc){ const P=sc.proc; this.pv+=((q[P.a]?P.up:0)-P.down)*dt; if(P.out) this.pv-=(q[P.out]?P.outRate:0)*dt;
+    if(this.ms){ const m=MACH[sc.mach.kind].step(this,q,dt,sc.mach,this.ms); if(typeof m==='string') return this.fail(m); }
+    if(sc.proc){ const P=sc.proc, on=Array.isArray(P.a)?P.a.some(a=>q[a]):q[P.a]; this.pv+=((on?P.up:0)-P.down+(P.drift?P.drift*Math.sin(this.t*P.dw):0))*dt; if(P.out) this.pv-=(q[P.out]?P.outRate:0)*dt;
       if(this.pv>=P.max) return this.fail(P.maxMsg); if(this.pv<=P.min) return this.fail(P.minMsg); }
     for(const p of sc.pistons){ const tg=q[p.a]?1:0, e=this.ext[p.a], d=tg-e, st=PIST_V*dt; this.ext[p.a]=Math.abs(d)<=st?tg:e+Math.sign(d)*st; }
     if(this.motor){ const v=sc.speedW?this.spd:sc.speed; this.beltOff=(this.beltOff+v*dt)%1000; for(const b of this.boxes) if(b.st==='belt') b.x+=v*dt; }
@@ -1123,6 +1126,80 @@ class World{
   }
 }
 
+/* ===== v1.1.6 MAKİNELER — bant dışındaki sistemlerin fiziği ===== */
+const clamp01=v=>Math.max(0,Math.min(1,v));
+const MACH={
+  /* doğrudan yol verme + termik röle */
+  motor:{ init:()=>({spd:0,ang:0,run:0,trip:0,tripped:false}),
+    sense:(w,m,s)=>{ if(m.trip) w.mv[m.trip]=s.trip>0; },
+    step:(w,q,dt,m,s)=>{ const on=!!q[m.k]; s.spd=clamp01(s.spd+(on?1.4:-0.9)*dt); s.ang+=s.spd*dt*16; if(on) s.run+=dt;
+      if(m.trip&&m.tripAt&&!s.tripped&&s.run>=m.tripAt){ s.tripped=true; s.trip=1.5; w.f.tripped=true; }
+      if(s.trip>0) s.trip-=dt; } },
+  /* yıldız-üçgen */
+  stardelta:{ init:()=>({spd:0,ang:0}), sense:()=>{},
+    step:(w,q,dt,m,s)=>{ const k1=!!q[m.k1],k2=!!q[m.k2],k3=!!q[m.k3];
+      if(k2&&k3) return tx('KISA DEVRE! Yıldız (K2) ve üçgen (K3) kontaktörleri aynı anda çekti.','SHORT CIRCUIT! Star (K2) and delta (K3) contactors were on at the same time.');
+      if((k2||k3)&&!k1){ s.nk=(s.nk||0)+dt; if(s.nk>0.15) return tx('Hata: Yıldız/üçgen kontaktörü ana kontaktör (K1) olmadan çekti!','Error: Star/delta contactor pulled in without the main contactor (K1)!'); } else s.nk=0;
+      const tg=k1&&k3?1:k1&&k2?0.55:0; s.spd+=(tg-s.spd)*Math.min(1,dt*2.2); s.ang+=s.spd*dt*16; } },
+  /* ileri-geri */
+  reverse:{ init:()=>({spd:0,ang:0}), sense:()=>{},
+    step:(w,q,dt,m,s)=>{ const f=!!q[m.kf], r=!!q[m.kr];
+      if(f&&r) return tx('KISA DEVRE! İleri ve geri kontaktörleri aynı anda çekti — kilitleme (interlock) yok.','SHORT CIRCUIT! Forward and reverse contactors were on together — no interlock.');
+      const tg=f?1:r?-1:0; s.spd+=(tg-s.spd)*Math.min(1,dt*3); s.ang+=s.spd*dt*14; } },
+  /* garaj kapısı */
+  garage:{ init:()=>({pos:0,eye:0,used:false,ot:0,ed:0,pd:false}),
+    sense:(w,m,s)=>{ w.mv[m.top]=s.pos>=0.995; w.mv[m.bot]=s.pos<=0.005; if(m.eye) w.mv[m.eye]=s.eye>0; },
+    step:(w,q,dt,m,s)=>{ const u=!!q[m.up], d=!!q[m.dn], v=m.v||0.3;
+      if(u&&d) return tx('Hata: Kapı motoru aynı anda hem yukarı hem aşağı sürüldü!','Error: The door motor was driven up and down at the same time!');
+      s.pos=clamp01(s.pos+((u?v:0)-(d?v:0))*dt);
+      if((u&&s.pos>=0.995)||(d&&s.pos<=0.005)){ s.ot+=dt; if(s.ot>0.35) return tx('Hata: Kapı limit şaltere dayandı ama motor durmadı — kapı zorlanıyor!','Error: The door hit the limit switch but the motor kept running — the door is straining!'); } else s.ot=0;
+      if(s.pos>=0.995) w.f.opened=true; if(w.f.opened&&s.pos<=0.005&&(!m.eye||w.f.rev)) w.f.closed=true;
+      if(m.eye){ if(d&&!s.used&&s.pos<=0.5){ s.used=true; s.eye=1.3; s.et=w.t; }
+        if(s.eye>0){ s.eye-=dt; if(d){ s.ed+=dt; if(s.ed>0.25) return tx('Hata: Fotosel engel gördü ama kapı inmeye devam etti!','Error: The photocell saw an obstacle but the door kept closing!'); } else s.ed=0; }
+        if(s.used&&u&&w.t-s.et<0.8) w.f.rev=true; } } },
+  /* 2 katlı asansör */
+  lift:{ init:()=>({pos:0,ot:0}),
+    sense:(w,m,s)=>{ w.mv[m.f1]=s.pos<=0.005; w.mv[m.f2]=s.pos>=0.995; },
+    step:(w,q,dt,m,s)=>{ const u=!!q[m.up], d=!!q[m.dn], v=m.v||0.35;
+      if(u&&d) return tx('Hata: Asansör motoru aynı anda yukarı ve aşağı sürüldü!','Error: The lift motor was driven up and down at the same time!');
+      s.pos=clamp01(s.pos+((u?v:0)-(d?v:0))*dt);
+      if((u&&s.pos>=0.995)||(d&&s.pos<=0.005)){ s.ot+=dt; if(s.ot>0.35) return tx('Hata: Kabin katta durmadı — kat sensörü motoru kesmeli!','Error: The cabin did not stop at the floor — the floor sensor must cut the motor!'); } else s.ot=0;
+      if(s.pos>=0.995) w.f.up2=true; if(w.f.up2&&s.pos<=0.005) w.f.down1=true; } },
+  /* otopark bariyeri */
+  parking:{ init:m=>({parked:0,total:0,next:0.8,car:null,pass:0,pp:0,ep:0,ex:0,arm:0,refusedAt:-1}),
+    sense:(w,m,s)=>{ w.mv[m.gate]=!!s.car&&!s.pass; w.mv[m.pass]=s.pp>0; w.mv[m.exit]=s.ep>0; },
+    step:(w,q,dt,m,s)=>{ const bar=!!q[m.bar], cap=m.cap; s.arm=clamp01(s.arm+(bar?3:-3)*dt);
+      if(s.pp>0) s.pp-=dt; if(s.ep>0) s.ep-=dt;
+      if(!s.car){ s.next-=dt; if(s.next<=0){ s.car={wait:0}; s.next=1.3; } }
+      else if(!s.pass){
+        if(bar){ if(s.parked>=cap) return tx('Hata: Otopark doluyken bariyer açıldı!','Error: The barrier opened while the car park was full!'); s.pass=0.6; }
+        else { s.car.wait+=dt;
+          if(s.parked<cap&&s.car.wait>1.2) return tx('Hata: Boş yer varken araç kapıda bekletildi — bariyer açılmalıydı!','Error: A car was kept waiting although there was space — the barrier should open!');
+          if(s.parked>=cap&&s.car.wait>=1.2&&!s.ex){ w.f.refused=true; s.ex=0.4; } } }
+      else { s.pass-=dt; if(s.pass<=0){ s.pass=0; s.car=null; s.parked++; s.total++; s.pp=0.25; w.cnt.parked=s.total; } }
+      if(s.ex>0){ s.ex-=dt; if(s.ex<=0){ s.ex=0; s.parked--; s.ep=0.25; } } } },
+  /* oto yıkama */
+  wash:{ init:()=>({st:1,x:-1,washed:0,was:false,wait:0}),
+    sense:(w,m,s)=>{ w.mv[m.car]=s.st===2; },
+    step:(w,q,dt,m,s)=>{ const on=[m.foam,m.brush,m.dry].filter(a=>q[a]);
+      if(on.length>1) return tx('Hata: Yıkama adımları sırayla çalışmalı — aynı anda iki istasyon açık!','Error: Wash steps must run one at a time — two stations are on together!');
+      if(on.length&&s.st!==2) return tx('Hata: Bölmede araç yokken yıkama çalıştı!','Error: The wash ran with no car in the bay!');
+      if(s.st===1){ s.x=Math.min(0,s.x+dt*1.8); if(s.x>=0) s.st=2; }
+      else if(s.st===2){ const d=!!q[m.dry]; if(s.was&&!d){ s.st=3; s.washed++; w.cnt.washed=s.washed; } s.was=d; }
+      else if(s.st===3){ s.x+=dt*1.8; if(s.x>=1){ s.st=0; s.wait=0.8; s.was=false; } }
+      else if(s.st===0&&s.washed<(m.n||3)){ s.wait-=dt; if(s.wait<=0){ s.st=1; s.x=-1; } } } },
+  /* çift el emniyetli pres */
+  press:{ init:()=>({pos:0,down:false}), sense:()=>{},
+    step:(w,q,dt,m,s)=>{ const on=!!q[m.p]; s.pos=clamp01(s.pos+(on?0.9:-1.3)*dt);
+      if(s.pos>=0.999&&!s.down){ s.down=true; w.cnt.stroke=(w.cnt.stroke||0)+1; } if(s.pos<=0.02) s.down=false; } },
+  /* alarm sistemi */
+  alarm:{ init:()=>({open:0,i:0}),
+    sense:(w,m,s)=>{ w.mv[m.door]=s.open>0; },
+    step:(w,q,dt,m,s)=>{ if(s.i<m.doors.length&&w.t>=m.doors[s.i]){ s.open=0.9; s.i++; } if(s.open>0) s.open-=dt; } },
+  /* yalnız çizim için (fizik proc ile) */
+  pumps:{ init:()=>({}), sense:()=>{}, step:()=>{} },
+  green:{ init:()=>({}), sense:()=>{}, step:()=>{} }
+};
 /* ===== BÖLÜM ÜRETİCİ: 3 kategori × 3 zorluk × 100 bölüm ===== */
 const IN=(a,n,k)=>({a,n,k}), O=(a,n)=>({a,n});
 const PAL_A=['NO','NC','COIL'], PAL_B=PAL_A.concat(['SET','RST']), PAL_C=PAL_B.concat(['TON','TOF']), PAL_D=PAL_C.concat(['CTU','CTD']);
@@ -1897,10 +1974,11 @@ const OLD_LEN=[[9,6,4],[3,3,3],[3,3,3]];
 const NC_=TOPIC_START.length, BONUS_C=NC_;
 // bonus: ~15 bölümde bir (ekstra zordan nadir), konu tanıtımlarına ve ekstra zorlara denk gelmez
 const isBonus=i=>i>=10&&i%15===12&&!isExtra(i)&&!intro(i,false);
-function tplLen(c,pool,i,old){ return (old||i<NEW_FROM)&&c<3?OLD_LEN[c][pool]:TPL[c][pool].length; }
-function intro(i,old){ const n=old?3:NC_; for(let c=0;c<n;c++){ const k=i-TOPIC_START[c]; if(k>=0&&k<TPL[c][0].length&&(c===0||c>=3||k<3)) return {c,pool:0,t:k}; } return null; }
+// old: true = v1.1.1 yolu, 'v115' = v1.1.5 yolu (yeni sistemler eklenmeden önce), false = güncel
+function tplLen(c,pool,i,old){ return (old===true||i<NEW_FROM)&&c<3?OLD_LEN[c][pool]:old==='v115'?LEN_115[c][pool]:TPL[c][pool].length; }
+function intro(i,old){ const n=old===true?3:NC_; for(let c=0;c<n;c++){ const k=i-TOPIC_START[c]; if(k>=0&&k<TPL[c][0].length&&(c===0||c>=3||k<3)) return {c,pool:0,t:k}; } return null; }
 function pickTpl(i,old){
-  const r=mkRng(i*104729+17); const n=old?3:NC_;
+  const r=mkRng(i*104729+17); const n=old===true?3:NC_;
   const open=[...Array(n).keys()].filter(c=>i>=TOPIC_START[c]+Math.min(3,TPL[c][0].length));   // tanıtımı bitmiş konular
   if(isExtra(i)){ const c=open[Math.floor(r()*open.length)]; return {c,pool:2,t:Math.floor(r()*tplLen(c,2,i,old))}; }
   const fx=intro(i,old); if(fx) return fx;
@@ -1908,10 +1986,13 @@ function pickTpl(i,old){
   let x=r()*w.reduce((a,b)=>a+b,0), c=open[0]; for(let j=0;j<open.length;j++){ x-=w[j]; if(x<0){ c=open[j]; break; } }
   const pm=Math.max(0,Math.min(0.85,(i-TOPIC_START[c]-6)/50));       // konu içinde orta seviye olasılığı zamanla artar
   const pool=r()<pm?1:0;
-  return {c,pool,t:Math.floor(r()*tplLen(c,pool,i,old))};
+  const t=Math.floor(r()*tplLen(c,pool,i,old));
+  // v1.1.6: bant dışı sistemler (motor, kapı, asansör, otopark…) yolun ~%40'ını oluşturur
+  if(!old&&i>=60&&typeof MACH_SLOTS!=='undefined'&&r()<0.4){ const sl=MACH_SLOTS.filter(s=>open.includes(s.c)&&s.pool<=pool+1); if(sl.length) return Object.assign({},sl[Math.floor(r()*sl.length)]); }
+  return {c,pool,t};
 }
 function tplKey(n,old){
-  if(!old&&isBonus(n)){ const av=BONUS.map((_,j)=>j).filter(j=>n>=BONUS_MIN[j]); return {c:BONUS_C,pool:0,t:av[Math.floor(n/15)%av.length]}; }
+  if(old!==true&&isBonus(n)){ const av=BONUS.map((_,j)=>j).filter(j=>n>=BONUS_MIN[j]); return {c:BONUS_C,pool:0,t:av[Math.floor(n/15)%av.length]}; }
   let p=pickTpl(n,old);
   if(n>0&&!isExtra(n)){ const q=tplKey(n-1,old); if(q.c===p.c&&q.pool===p.pool&&q.t===p.t){ const L=tplLen(p.c,p.pool,n,old); p=Object.assign({},p,{t:(p.t+1)%L}); } }
   return p;
@@ -1937,6 +2018,9 @@ function remapProg(id,rec){
   if(rec.tags){ const t={}; for(const a in rec.tags) t[m[a]||a]=rec.tags[a]; rec.tags=t; }
   return rec;
 }
+/* v1.1.5 → v1.1.6: yeni sistemler havuzlara eklendi; şablonu değişen bölümün kayıtlı çözümü düşer, puanı kalır */
+function same115(id){ const a=tplKey(id,'v115'), b=tplKey(id,false); return a.c===b.c&&a.pool===b.pool&&a.t===b.t; }
+function migrate115(done,draft){ let n=0; for(const k in done){ if(!same115(+k)){ done[k]={prog:null,tags:{}}; n++; } } if(draft) for(const k in draft) if(!same115(+k)) delete draft[k]; return n; }
 function migrateDone(done){ const o={}; for(const k in done){ const id=+k; o[k]=sameTpl(id)?remapProg(id,done[k]):{prog:null,tags:{}}; } return o; }
 /* hangi adresler hangi alana konabilir (editör ve test ortak) */
 function addrGroups(lv,t,field){
@@ -1961,24 +2045,253 @@ function addrGroups(lv,t,field){
   return g;
 }
 const addrList=(lv,t,f)=>addrGroups(lv,t,f).reduce((a,g)=>a.concat(g[1]),[]);
+/* ===== v1.1.6: BANT DIŞI SİSTEMLER — motorlar, kapılar, asansör, otopark, yıkama, pres, sera, alarm… ===== */
+Object.assign(INDEF,{trip:['TERMİK','m'],reset:['RESET','btn'],fwd:['İLERİ','btn'],rev:['GERİ','btn'],open:['AÇ','btn'],close:['KAPAT','btn'],top:['ÜST_LİMİT','m'],botl:['ALT_LİMİT','m'],eye:['FOTOSEL','m'],
+  call1:['ÇAĞRI_1','btn'],call2:['ÇAĞRI_2','btn'],f1:['KAT_1','m'],f2:['KAT_2','m'],pgate:['GİRİŞ_SENSÖR','m'],ppass:['GEÇİŞ','m'],pexit:['ÇIKIŞ','m'],car:['ARAÇ','m'],left:['SOL_EL','hold'],right:['SAĞ_EL','hold'],arm:['KURMA','sw'],door:['KAPI','m'],code:['ŞİFRE','btn']});
+Object.assign(QDEF,{k1:'K1_ANA',k2:'K2_YILDIZ',k3:'K3_ÜÇGEN',km:'K1_MOTOR',kf:'K_İLERİ',kr:'K_GERİ',up:'MOTOR_YUKARI',dn:'MOTOR_AŞAĞI',lup:'YUKARI',ldn:'AŞAĞI',bar:'BARİYER',p1:'POMPA_1',p2:'POMPA_2',foam:'KÖPÜK',brush:'FIRÇA',dry:'KURUTMA',press:'PRES',siren:'SİREN'});
+Object.assign(TAGEN,{'TERMİK':'THERMAL','RESET':'RESET','İLERİ':'FORWARD','GERİ':'REVERSE','AÇ':'OPEN','KAPAT':'CLOSE','ÜST_LİMİT':'TOP_LIMIT','ALT_LİMİT':'BOTTOM_LIMIT','FOTOSEL':'PHOTOCELL','ÇAĞRI_1':'CALL_1','ÇAĞRI_2':'CALL_2','KAT_1':'FLOOR_1','KAT_2':'FLOOR_2',
+  'GİRİŞ_SENSÖR':'GATE_SENSOR','GEÇİŞ':'PASSED','ÇIKIŞ':'EXIT','ARAÇ':'CAR','SOL_EL':'LEFT_HAND','SAĞ_EL':'RIGHT_HAND','KURMA':'ARM','KAPI':'DOOR','ŞİFRE':'CODE','K1_ANA':'K1_MAIN','K2_YILDIZ':'K2_STAR','K3_ÜÇGEN':'K3_DELTA','K1_MOTOR':'K1_MOTOR',
+  'K_İLERİ':'K_FWD','K_GERİ':'K_REV','MOTOR_YUKARI':'MOTOR_UP','MOTOR_AŞAĞI':'MOTOR_DOWN','YUKARI':'UP','AŞAĞI':'DOWN','BARİYER':'BARRIER','POMPA_1':'PUMP_1','POMPA_2':'PUMP_2','KÖPÜK':'FOAM','FIRÇA':'BRUSH','KURUTMA':'DRYER','PRES':'PRESS','SİREN':'SIREN','KURULU':'ARMED','KAT':'FLOOR','FAN':'FAN'});
+const MB={noBelt:true,boxes:0};
+const holdAt=list=>once((w,P,t,st)=>{ list.forEach((x,i)=>{ if(!st[i]&&t>=x[0]){ st[i]=1; w.hold[x[1]]=x[2]; } }); });
+const offAfter=(cond,on,ms,tol)=>(w,q,iv,dt,s)=>{ if(cond(w,q,iv)&&on(w,q,iv)){ s.b=(s.b||0)+dt; if(s.b>(tol||0.3)) return ms; } else s.b=0; };
+
+/* ---------- MOTOR: doğrudan yol verme ---------- */
+const motorDOL=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['start','stop'],['km','lamp'],{lamp:'ÇALIŞIYOR'});
+  const sol={rungs:[R(['NO '+A.start,'NC '+A.stop,'COIL '+A.km],['NO '+A.km]),R(['NO '+A.km,'COIL '+A.lamp])]};
+  const sc=Object.assign({},MB,{mach:{kind:'motor',k:A.km},lamps:[{a:A.lamp,c:'green',n:'ÇALIŞIYOR'}],
+    rules:[(w,q)=>{ if(q[A.km]&&w.t<0.45) return tx('Hata: START\'a basılmadan motor çalıştı!','Error: The motor ran before START was pressed!'); },
+      follow((w,q)=>q[A.km],(w,q)=>q[A.lamp],tx('Hata: ÇALIŞIYOR lambası motorla birlikte yanıp sönmeli!','Error: The RUNNING lamp must follow the motor!')),
+      (w,q,iv,dt,s)=>{ if(iv[A.start]) s.p=1; if(s.p&&!iv[A.start]&&q[A.km]){ s.t=(s.t||0)+dt; if(s.t>1) w.f.run=true; }
+        if(iv[A.stop]) s.st=w.t; if(s.st!=null&&q[A.km]&&w.t-s.st>0.3&&!iv[A.start]) return tx('Hata: STOP\'a basıldı ama motor durmadı!','Error: STOP was pressed but the motor kept running!');
+        if(s.st!=null&&w.f.run&&!q[A.km]) w.f.stopped=true; }]});
+  return {title:tx('Motor Yol Verme','Motor Starter'),
+    task:tx(`Bir pompa motorunu doğrudan yol vererek çalıştır: START (${A.start}) kısa basınca kontaktör K1 (${A.km}) çeksin ve mühürlensin, STOP (${A.stop}) bıraksın. Motor çalışırken ÇALIŞIYOR lambası (${A.lamp}) yansın.`,
+      `Start a pump motor direct-on-line: a short press of START (${A.start}) pulls in contactor K1 (${A.km}) and seals it; STOP (${A.stop}) drops it. The RUNNING lamp (${A.lamp}) is on while the motor runs.`),
+    hint:tx(`(${A.start} ∥ ${A.km}) · KAPALI ${A.stop} → ${A.km} · ${A.km} → ${A.lamp}.`,`(${A.start} ∥ ${A.km}) · NC ${A.stop} → ${A.km} · ${A.km} → ${A.lamp}.`),
+    io,M:0,T:0,C:0,pal:PAL_B,scene:sc,goals:[{k:'run',l:T2('Mühürlü çalış','Sealed run')},{k:'stopped',l:T2('STOP ile dur','Stop with STOP')}],sol,bot:at([[0.5,A.start],[3.5,A.stop]])};
+};
+/* ---------- MOTOR: termik arıza ---------- */
+const motorFault=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['start','stop','trip','reset'],['km','lamp','lamp2'],{lamp:'ÇALIŞIYOR',lamp2:'ARIZA'});
+  const sol={rungs:[R(['NO '+A.start,'NC '+A.stop,'NC M0.0','COIL '+A.km],['NO '+A.km]),R(['NO '+A.trip,'SET M0.0']),R(['NO '+A.reset,'RST M0.0']),R(['NO M0.0','COIL '+A.lamp2]),R(['NO '+A.km,'COIL '+A.lamp])]};
+  const sc=Object.assign({},MB,{mach:{kind:'motor',k:A.km,trip:A.trip,tripAt:2.4},lamps:[{a:A.lamp,c:'green',n:'ÇALIŞIYOR'},{a:A.lamp2,c:'red',n:'ARIZA'}],
+    rules:[follow((w,q)=>q[A.km],(w,q)=>q[A.lamp],tx('Hata: ÇALIŞIYOR lambası motoru izlemeli!','Error: The RUNNING lamp must follow the motor!')),
+      (w,q,iv,dt,s)=>{ if(iv[A.trip]&&s.tt==null){ s.tt=w.t; s.l=true; } if(iv[A.reset]&&s.l){ s.l=false; s.rt=w.t; }
+        if(s.tt!=null&&s.l&&q[A.km]&&w.t-s.tt>0.3) return tx('Hata: Termik attı ama motor durmadı!','Error: The thermal relay tripped but the motor kept running!');
+        const exp=!!s.l; if(s.tt!=null&&!!q[A.lamp2]!==exp&&w.t-(exp?s.tt:s.rt)>0.3) return exp?tx('Hata: Arıza lambası RESET\'e kadar yanık kalmalı (kilitlenmeli)!','Error: The FAULT lamp must stay on (latched) until RESET!'):tx('Hata: RESET\'ten sonra arıza lambası sönmeli!','Error: The FAULT lamp must go off after RESET!');
+        if(s.tt==null&&q[A.lamp2]&&w.t>0.1) return tx('Hata: Arıza yokken ARIZA lambası yandı!','Error: The FAULT lamp lit with no fault!');
+        if(s.tt!=null&&s.l&&!q[A.km]&&q[A.lamp2]&&w.t-s.tt>0.5) w.f.tripOk=true;
+        if(s.rt!=null&&q[A.km]){ s.k=(s.k||0)+dt; if(s.k>0.8) w.f.resetRun=true; } }]});
+  return {title:tx('Termik Arıza Kilidi','Thermal Fault Latch'),
+    task:tx(`START (${A.start}) / STOP (${A.stop}) ile motor (${A.km}) çalışsın. Motor ısınınca termik röle (${A.trip}) atar: motor hemen dursun, ARIZA lambası (${A.lamp2}) kilitlensin ve RESET (${A.reset}) basılana kadar START motoru çalıştıramasın. ÇALIŞIYOR lambası (${A.lamp}) motoru göstersin.`,
+      `START (${A.start}) / STOP (${A.stop}) run the motor (${A.km}). When the motor overheats the thermal relay (${A.trip}) trips: the motor stops at once, the FAULT lamp (${A.lamp2}) latches, and START cannot run the motor until RESET (${A.reset}) is pressed. The RUNNING lamp (${A.lamp}) shows the motor.`),
+    hint:tx(`(START ∥ ${A.km}) · KAPALI STOP · KAPALI M0.0 → ${A.km} · ${A.trip} → (S) M0.0 · ${A.reset} → (R) M0.0 · M0.0 → ${A.lamp2} · ${A.km} → ${A.lamp}.`,`(START ∥ ${A.km}) · NC STOP · NC M0.0 → ${A.km} · ${A.trip} → (S) M0.0 · ${A.reset} → (R) M0.0 · M0.0 → ${A.lamp2} · ${A.km} → ${A.lamp}.`),
+    io,M:1,T:0,C:0,pal:PAL_B,scene:sc,goals:[{k:'tripOk',l:T2('Arızada dur','Stop on fault')},{k:'resetRun',l:T2('RESET sonrası çalış','Run after RESET')}],sol,bot:at([[0.5,A.start],[5,A.start],[6,A.reset],[6.8,A.start]])};
+};
+/* ---------- YILDIZ-ÜÇGEN ---------- */
+const starDelta=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['start','stop'],['k1','k2','k3']); const t=pick(r,[2,2.5,3,4]);
+  const sol={rungs:[R(['NO '+A.start,'NC '+A.stop,'COIL '+A.k1],['NO '+A.k1]),R(['NO '+A.k1,'TON T1 '+t]),R(['NO '+A.k1,'NC T1','NC '+A.k3,'COIL '+A.k2]),R(['NO T1','NC '+A.k2,'COIL '+A.k3])]};
+  const sc=Object.assign({},MB,{mach:{kind:'stardelta',k1:A.k1,k2:A.k2,k3:A.k3},
+    rules:[(w,q,iv,dt,s)=>{ const k1=!!q[A.k1],k2=!!q[A.k2],k3=!!q[A.k3];
+      if(k1&&!s.k1){ s.t1=w.t; } s.k1=k1;
+      if(k1&&s.t1!=null){ const d=w.t-s.t1;
+        if(d>0.25&&d<t-0.35&&!k2) return tx('Hata: Motor önce YILDIZ (K2) bağlı kalkmalı!','Error: The motor must start in STAR (K2) first!');
+        if(k3&&!s.k3){ if(Math.abs(d-t)>0.35) return tx(`Hata: Üçgene geçiş ${fx(t)} sn sonra olmalı (şu an ${fx(d.toFixed(1))} sn)!`,`Error: Switch to delta after ${t} s (now ${d.toFixed(1)} s)!`); w.f.delta=true; }
+        if(d>0.5&&k2) w.f.star=true; }
+      s.k3=k3; if(iv[A.stop]) s.st=w.t;
+      if(s.st!=null&&(k1||k2||k3)&&w.t-s.st>0.3&&!iv[A.start]) return tx('Hata: STOP her şeyi kapatmalı!','Error: STOP must switch everything off!');
+      if(s.st!=null&&w.f.delta&&!k1&&!k2&&!k3) w.f.stop=true;
+      if(w.t<0.45&&(k1||k2||k3)) return tx('Hata: START\'a basılmadan kontaktör çekti!','Error: A contactor pulled in before START!'); }]});
+  return {title:tx(`Yıldız-Üçgen Yol Verme (${fx(t)} sn)`,`Star-Delta Starter (${t} s)`),
+    task:tx(`Büyük motor yıldız-üçgen kalkar: START (${A.start}) ile ana kontaktör K1 (${A.km||A.k1}) ve YILDIZ K2 (${A.k2}) çeksin. ${fx(t)} sn sonra K2 bıraksın, ÜÇGEN K3 (${A.k3}) çeksin. K2 ve K3 asla aynı anda çekmemeli (kısa devre!). STOP (${A.stop}) hepsini kapatsın.`,
+      `A big motor starts star-delta: START (${A.start}) pulls in the main contactor K1 (${A.k1}) and STAR K2 (${A.k2}). After ${t} s K2 drops and DELTA K3 (${A.k3}) pulls in. K2 and K3 must never be on together (short circuit!). STOP (${A.stop}) switches everything off.`),
+    hint:tx(`(START ∥ ${A.k1}) · KAPALI STOP → ${A.k1} · ${A.k1} → TON T1 (${fx(t)}) · ${A.k1} · KAPALI T1 · KAPALI ${A.k3} → ${A.k2} · T1 · KAPALI ${A.k2} → ${A.k3}. KAPALI kontaklarla karşılıklı kilitleme yap.`,`(START ∥ ${A.k1}) · NC STOP → ${A.k1} · ${A.k1} → TON T1 (${t}) · ${A.k1} · NC T1 · NC ${A.k3} → ${A.k2} · T1 · NC ${A.k2} → ${A.k3}. Interlock with NC contacts.`),
+    io,M:0,T:1,C:0,pal:PAL_C,scene:sc,goals:[{k:'star',l:T2('Yıldız kalkış','Star start')},{k:'delta',l:T2('Üçgene geçiş','Switch to delta')},{k:'stop',l:T2('STOP','STOP')}],sol,bot:at([[0.5,A.start],[0.5+t+2,A.stop]])};
+};
+/* ---------- İLERİ-GERİ ---------- */
+const reverseMotor=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['fwd','rev','stop'],['kf','kr']);
+  const sol={rungs:[R(['NO '+A.fwd,'NC '+A.stop,'NC '+A.kr,'COIL '+A.kf],['NO '+A.kf]),R(['NO '+A.rev,'NC '+A.stop,'NC '+A.kf,'COIL '+A.kr],['NO '+A.kr])]};
+  const sc=Object.assign({},MB,{mach:{kind:'reverse',kf:A.kf,kr:A.kr},
+    rules:[(w,q,iv,dt,s)=>{ const f=!!q[A.kf], rv=!!q[A.kr];
+      if(f){ s.f=(s.f||0)+dt; if(s.f>1) w.f.fwd=true; }
+      if(iv[A.rev]&&f) s.lt=w.t; if(s.lt!=null&&f&&!rv&&w.t-s.lt>0.5) w.f.lock=true;
+      if(iv[A.stop]) s.sp=w.t; if(s.pf&&!f&&rv&&(s.sp==null||w.t-s.sp>1.5)) return tx('Hata: Motor durmadan yön değiştirdi! Önce STOP\'a basılmalı.','Error: The motor reversed without stopping! STOP must come first.');
+      if(rv&&w.f.lock){ s.r=(s.r||0)+dt; if(s.r>1) w.f.rev=true; }
+      if(iv[A.stop]&&(f||rv)){ s.sb=(s.sb||0)+dt; if(s.sb>0.3) return tx('Hata: STOP motoru durdurmalı!','Error: STOP must stop the motor!'); } else s.sb=0;
+      s.pf=f; }]});
+  return {title:tx('İleri-Geri Motor (Kilitlemeli)','Forward-Reverse Motor (Interlocked)'),
+    task:tx(`Vinç motoru iki yöne döner. İLERİ (${A.fwd}) K_İLERİ'yi (${A.kf}), GERİ (${A.rev}) K_GERİ'yi (${A.kr}) mühürlü çeksin, STOP (${A.stop}) durdursun. İki kontaktör asla aynı anda çekmesin: motor ileri dönerken GERİ'ye basmak hiçbir şey yapmamalı (kilitleme).`,
+      `A hoist motor turns both ways. FORWARD (${A.fwd}) seals K_FWD (${A.kf}), REVERSE (${A.rev}) seals K_REV (${A.kr}), STOP (${A.stop}) stops it. The two contactors must never be on together: pressing REVERSE while running forward does nothing (interlock).`),
+    hint:tx(`(İLERİ ∥ ${A.kf}) · KAPALI STOP · KAPALI ${A.kr} → ${A.kf} · (GERİ ∥ ${A.kr}) · KAPALI STOP · KAPALI ${A.kf} → ${A.kr}.`,`(FWD ∥ ${A.kf}) · NC STOP · NC ${A.kr} → ${A.kf} · (REV ∥ ${A.kr}) · NC STOP · NC ${A.kf} → ${A.kr}.`),
+    io,M:0,T:0,C:0,pal:PAL_B,scene:sc,goals:[{k:'fwd',l:T2('İleri','Forward')},{k:'lock',l:T2('Kilitleme testi','Interlock test')},{k:'rev',l:T2('Geri','Reverse')}],sol,bot:at([[0.5,A.fwd],[2,A.rev],[3,A.stop],[3.6,A.rev]])};
+};
+/* ---------- GARAJ KAPISI ---------- */
+const garage=eye=>(r,k,n)=>{
+  const iN=['open','close','top','botl']; if(eye) iN.push('eye');
+  const {A,io}=mkCtx(r,n,iN,['up','dn']);
+  const rs=eye?[R(['NO '+A.open,'COIL M0.0'],['NO '+A.eye]),R(['NO M0.0','NC '+A.top,'NC '+A.dn,'COIL '+A.up],['NO '+A.up]),R(['NO '+A.close,'NC '+A.botl,'NC '+A.up,'NC '+A.eye,'COIL '+A.dn],['NO '+A.dn])]
+             :[R(['NO '+A.open,'NC '+A.top,'NC '+A.dn,'COIL '+A.up],['NO '+A.up]),R(['NO '+A.close,'NC '+A.botl,'NC '+A.up,'COIL '+A.dn],['NO '+A.dn])];
+  const sc=Object.assign({},MB,{mach:{kind:'garage',up:A.up,dn:A.dn,top:A.top,bot:A.botl,eye:eye?A.eye:null,v:0.3},
+    rules:[(w,q)=>{ if((q[A.up]||q[A.dn])&&w.t<0.45) return tx('Hata: Butona basılmadan kapı hareket etti!','Error: The door moved before a button was pressed!'); }]});
+  const goals=[{k:'opened',l:T2('Tam açıldı','Fully open')}]; if(eye) goals.push({k:'rev',l:T2('Fotoselde geri aç','Reopen on photocell')}); goals.push({k:'closed',l:T2('Tam kapandı','Fully closed')});
+  return {title:eye?tx('Garaj Kapısı + Fotosel','Garage Door + Photocell'):tx('Garaj Kapısı','Garage Door'),
+    task:tx(`AÇ (${A.open}) kapıyı yukarı (${A.up}), KAPAT (${A.close}) aşağı (${A.dn}) mühürlü sürsün. Kapı ÜST_LİMİT (${A.top}) ve ALT_LİMİT (${A.botl}) şalterlerinde kendiliğinden dursun. Motor aynı anda iki yöne sürülmesin.`+(eye?` Kapanırken FOTOSEL (${A.eye}) engel görürse kapı hemen dursun ve tekrar AÇILSIN.`:''),
+      `OPEN (${A.open}) seals the door motor up (${A.up}), CLOSE (${A.close}) seals it down (${A.dn}). The door stops by itself at TOP_LIMIT (${A.top}) and BOTTOM_LIMIT (${A.botl}). Never drive both directions.`+(eye?` If the PHOTOCELL (${A.eye}) sees an obstacle while closing, the door stops at once and OPENS again.`:'')),
+    hint:eye?tx(`(AÇ ∥ FOTOSEL) → M0.0 · (M0.0 ∥ ${A.up}) · KAPALI ÜST · KAPALI ${A.dn} → ${A.up} · (KAPAT ∥ ${A.dn}) · KAPALI ALT · KAPALI ${A.up} · KAPALI FOTOSEL → ${A.dn}.`,`(OPEN ∥ PHOTOCELL) → M0.0 · (M0.0 ∥ ${A.up}) · NC TOP · NC ${A.dn} → ${A.up} · (CLOSE ∥ ${A.dn}) · NC BOTTOM · NC ${A.up} · NC PHOTOCELL → ${A.dn}.`)
+      :tx(`(AÇ ∥ ${A.up}) · KAPALI ÜST_LİMİT · KAPALI ${A.dn} → ${A.up} · (KAPAT ∥ ${A.dn}) · KAPALI ALT_LİMİT · KAPALI ${A.up} → ${A.dn}.`,`(OPEN ∥ ${A.up}) · NC TOP_LIMIT · NC ${A.dn} → ${A.up} · (CLOSE ∥ ${A.dn}) · NC BOTTOM_LIMIT · NC ${A.up} → ${A.dn}.`),
+    io,M:eye?1:0,T:0,C:0,pal:PAL_B,scene:sc,goals,sol:{rungs:rs},
+    bot:once((w,P,t,st)=>{ if(!st.a&&t>0.5){ st.a=1; P(A.open); } if(st.a===1&&w.ms.pos>=0.995){ st.a=2; st.t=t; } if(st.a===2&&t>st.t+0.6){ st.a=3; P(A.close); }
+      if(eye&&st.a===3&&w.f.rev&&w.ms.pos>=0.995){ st.a=4; st.t=t; } if(st.a===4&&t>st.t+0.6){ st.a=5; P(A.close); } })};
+};
+/* ---------- ASANSÖR ---------- */
+const lift=seg=>(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['call1','call2','f1','f2'],['lup','ldn']);
+  const rs=[R(['NO '+A.call2,'NC '+A.f2,'NC '+A.ldn,'COIL '+A.lup],['NO '+A.lup]),R(['NO '+A.call1,'NC '+A.f1,'NC '+A.lup,'COIL '+A.ldn],['NO '+A.ldn])];
+  if(seg) rs.push(R(['NO '+A.f1,'MOV VW0 1']),R(['NO '+A.f2,'MOV VW0 2']),R(['NO SM0.0','SEG QB1 VW0']));
+  const sc=Object.assign({},MB,{mach:{kind:'lift',up:A.lup,dn:A.ldn,f1:A.f1,f2:A.f2,v:0.35},seg:seg?{pre:'Q1.'}:null,
+    rules:[(w,q)=>{ if((q[A.lup]||q[A.ldn])&&w.t<0.45) return tx('Hata: Çağrı yokken asansör hareket etti!','Error: The lift moved with no call!'); }]});
+  if(seg) sc.rules.push((w,q,iv,dt,s)=>{ if(w.ms.pos<=0.005) s.fl=1; if(w.ms.pos>=0.995) s.fl=2; if(!s.fl) return; const want=SEGT[s.fl], got=qb(q,'Q1.')&127;
+    if(want!==got){ s.b=(s.b||0)+dt; if(s.b>0.3) return tx(`Hata: Kat göstergesi ${s.fl} göstermeli!`,`Error: The floor display must show ${s.fl}!`); } else s.b=0; });
+  return {title:seg?tx('Asansör + Kat Göstergesi','Lift + Floor Display'):tx('2 Katlı Asansör','Two-Floor Lift'),
+    task:tx(`ÇAĞRI_2 (${A.call2}) kabini yukarı (${A.lup}), ÇAĞRI_1 (${A.call1}) aşağı (${A.ldn}) götürsün; kabin KAT_2 (${A.f2}) / KAT_1 (${A.f1}) sensöründe dursun. Motor aynı anda iki yöne sürülmesin.`+(seg?' Kabinin bulunduğu kat QB1\'deki 7-segment göstergede yazsın (kat sensörü → MOV VW0, sonra SEG).':''),
+      `CALL_2 (${A.call2}) takes the cabin up (${A.lup}), CALL_1 (${A.call1}) takes it down (${A.ldn}); the cabin stops at the FLOOR_2 (${A.f2}) / FLOOR_1 (${A.f1}) sensor. Never drive both directions.`+(seg?' Show the current floor on the 7-segment display on QB1 (floor sensor → MOV VW0, then SEG).':'')),
+    hint:tx(`(ÇAĞRI_2 ∥ ${A.lup}) · KAPALI KAT_2 · KAPALI ${A.ldn} → ${A.lup} · (ÇAĞRI_1 ∥ ${A.ldn}) · KAPALI KAT_1 · KAPALI ${A.lup} → ${A.ldn}`+(seg?' · KAT_1 → MOV VW0 ← 1 · KAT_2 → MOV VW0 ← 2 · SM0.0 → SEG QB1 ← VW0.':'.'),`(CALL_2 ∥ ${A.lup}) · NC FLOOR_2 · NC ${A.ldn} → ${A.lup} · (CALL_1 ∥ ${A.ldn}) · NC FLOOR_1 · NC ${A.lup} → ${A.ldn}`+(seg?' · FLOOR_1 → MOV VW0 ← 1 · FLOOR_2 → MOV VW0 ← 2 · SM0.0 → SEG QB1 ← VW0.':'.')),
+    io,M:0,T:0,C:0,SM:!!seg,words:seg?['VW0','QB1']:[],wt:seg?{VW0:'KAT',QB1:'GÖSTERGE'}:{},pal:seg?palOf({rungs:rs}):PAL_B,scene:sc,goals:[{k:'up2',l:T2('2. kata çık','Go up to 2')},{k:'down1',l:T2('1. kata in','Come down to 1')}],sol:{rungs:rs},
+    bot:once((w,P,t,st)=>{ if(!st.a&&t>0.5){ st.a=1; P(A.call2); } if(st.a===1&&w.f.up2){ st.a=2; st.t=t; } if(st.a===2&&t>st.t+0.8){ st.a=3; P(A.call1); } })};
+};
+/* ---------- OTOPARK ---------- */
+const parking=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['pgate','ppass','pexit'],['bar','lamp'],{lamp:'DOLU'}); const cap=pick(r,[3,4]);
+  const sol={rungs:[R(['NO '+A.ppass,'P','INC VW0']),R(['NO '+A.pexit,'P','DEC VW0']),R(['NO '+A.pgate,'CMP VW0 < '+cap,'COIL '+A.bar]),R(['CMP VW0 >= '+cap,'COIL '+A.lamp])]};
+  const sc=Object.assign({},MB,{mach:{kind:'parking',gate:A.pgate,pass:A.ppass,exit:A.pexit,bar:A.bar,cap},lamps:[{a:A.lamp,c:'red',n:'DOLU'}],
+    rules:[follow(w=>w.ms.parked>=cap,(w,q)=>q[A.lamp],tx(`Hata: DOLU lambası ${cap} araç içerdeyken yanmalı!`,`Error: The FULL lamp must be on while ${cap} cars are inside!`),0.35)]});
+  return {title:tx(`Otopark Bariyeri (${cap} yer)`,`Car Park Barrier (${cap} spaces)`),
+    task:tx(`Otoparkta ${cap} yer var. Araç bariyer önüne gelince GİRİŞ_SENSÖR (${A.pgate}) görür; içerde yer varsa BARİYER (${A.bar}) açılsın. Giren aracı GEÇİŞ (${A.ppass}), çıkanı ÇIKIŞ (${A.pexit}) sensörü verir: VW0'da say (INC/DEC + P). İçerde ${cap} araç varken DOLU (${A.lamp}) yansın ve bariyer açılmasın.`,
+      `The car park has ${cap} spaces. When a car reaches the barrier, GATE_SENSOR (${A.pgate}) sees it; if there is space the BARRIER (${A.bar}) opens. PASSED (${A.ppass}) reports a car going in, EXIT (${A.pexit}) a car leaving: count in VW0 (INC/DEC + P). With ${cap} cars inside, FULL (${A.lamp}) lights and the barrier stays shut.`),
+    hint:tx(`GEÇİŞ · P → INC VW0 · ÇIKIŞ · P → DEC VW0 · GİRİŞ_SENSÖR · CMP VW0 < ${cap} → ${A.bar} · CMP VW0 ≥ ${cap} → ${A.lamp}.`,`PASSED · P → INC VW0 · EXIT · P → DEC VW0 · GATE_SENSOR · CMP VW0 < ${cap} → ${A.bar} · CMP VW0 ≥ ${cap} → ${A.lamp}.`),
+    io,M:0,T:0,C:0,words:['VW0'],wt:{VW0:'SAYI'},pal:palOf(sol,['ADD','SUB']),scene:sc,goals:[{k:'refused',l:T2('Doluyken beklet','Hold when full')},{k:'cnt',f:'parked',n:cap+1,l:T2('Giren araç','Cars in')}],sol,bot:()=>()=>{}};
+};
+/* ---------- DÖNÜŞÜMLÜ POMPALAR ---------- */
+const pumpsAlt=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,[],['p1','p2']); const lo=pick(r,[8000,10000]), hi=pick(r,[24000,26000]);
+  const rs=[R(['CMP AIW0 <= '+lo,'SET M0.0']),R(['CMP AIW0 >= '+hi,'RST M0.0']),R(['NO M0.0','P','COIL M0.2']),R(['NO M0.2','NC M0.1','COIL M0.1'],['NC M0.2','NO M0.1']),R(['NO M0.0','NC M0.1','COIL '+A.p1]),R(['NO M0.0','NO M0.1','COIL '+A.p2])];
+  const sc=Object.assign({},MB,{proc:proc('tank',[A.p1,A.p2],{v0:0.5,up:0.14,down:0.05}),pumps:{a:[A.p1,A.p2]},
+    rules:[(w,q,iv,dt,s)=>{ const a=!!q[A.p1], b=!!q[A.p2]; if(a&&b) return tx('Hata: İki pompa aynı anda çalışmamalı!','Error: Both pumps must not run together!');
+      const on=a||b; if(on&&!s.on){ if(w.pv>lo/32000+0.03) return tx(`Hata: Pompa erken çalıştı! Seviye ${lo}'e inmeli.`,`Error: A pump started early! Wait for ${lo}.`);
+        const which=a?1:2; if(s.last===which) return tx('Hata: Pompalar sırayla çalışmalı — bu sefer DİĞER pompa çalışmalıydı!','Error: The pumps must alternate — the OTHER pump should run this time!'); s.last=which; }
+      if(!on&&s.on){ if(w.pv<hi/32000-0.03) return tx(`Hata: Pompa erken durdu! ${hi}'e kadar doldurmalı.`,`Error: The pump stopped early! Fill up to ${hi}.`); w.cnt.cyc=(w.cnt.cyc||0)+1; }
+      s.on=on; }]});
+  return {title:tx('Dönüşümlü Pompa İstasyonu','Alternating Pump Station'),
+    task:tx(`İki pompa (${A.p1}, ${A.p2}) eşit yıpransın diye SIRAYLA çalışsın. Seviye (AIW0) ${lo}'e inince bir dolum başlasın, ${hi}'e gelince dursun (histerezis). Her yeni dolumda diğer pompa çalışsın. 3 döngü.`,
+      `Two pumps (${A.p1}, ${A.p2}) take TURNS so they wear evenly. When the level (AIW0) drops to ${lo} a fill starts, at ${hi} it stops (hysteresis). Each new fill uses the other pump. 3 cycles.`),
+    hint:tx(`CMP ≤ ${lo} → (S) M0.0 · CMP ≥ ${hi} → (R) M0.0 · M0.0 · P → M0.2 · (M0.2 · KAPALI M0.1) ∥ (KAPALI M0.2 · M0.1) → M0.1 (sıra biti) · M0.0 · KAPALI M0.1 → ${A.p1} · M0.0 · M0.1 → ${A.p2}.`,`CMP ≤ ${lo} → (S) M0.0 · CMP ≥ ${hi} → (R) M0.0 · M0.0 · P → M0.2 · (M0.2 · NC M0.1) ∥ (NC M0.2 · M0.1) → M0.1 (turn bit) · M0.0 · NC M0.1 → ${A.p1} · M0.0 · M0.1 → ${A.p2}.`),
+    io,M:3,T:0,C:0,words:['AIW0'],wt:{AIW0:'SEVİYE'},pal:palOf({rungs:rs}),scene:sc,goals:[{k:'cnt',f:'cyc',n:3,l:T2('Dolum döngüsü','Fill cycle')}],sol:{rungs:rs},bot:()=>()=>{}};
+};
+/* ---------- OTO YIKAMA ---------- */
+const carWash=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['car'],['foam','brush','dry']); const a=pick(r,[1.5,2]), b=pick(r,[2,2.5,3]), c=pick(r,[1.5,2]);
+  const rs=[R(['NO '+A.car,'NC T3','COIL M0.0']),R(['NO M0.0','TON T1 '+a]),R(['NO T1','TON T2 '+b]),R(['NO T2','TON T3 '+c]),R(['NO M0.0','NC T1','COIL '+A.foam]),R(['NO T1','NC T2','COIL '+A.brush]),R(['NO T2','COIL '+A.dry])];
+  const D={[A.foam]:a,[A.brush]:b,[A.dry]:c}, NX={[A.foam]:A.brush,[A.brush]:A.dry,[A.dry]:null};
+  const sc=Object.assign({},MB,{mach:{kind:'wash',car:A.car,foam:A.foam,brush:A.brush,dry:A.dry,n:2},
+    rules:[(w,q,iv,dt,s)=>{ const on=[A.foam,A.brush,A.dry].find(x=>q[x])||null;
+      if(iv[A.car]&&!s.car) s.ct=w.t; s.car=!!iv[A.car];
+      if(s.car&&!on&&!s.c&&w.t-s.ct>0.35) return tx('Hata: Araç bölmeye girince köpükleme başlamalı!','Error: Foaming must start when the car enters the bay!');
+      if(on===(s.c||null)) return;
+      if(s.c){ const d=w.t-s.ts; if(Math.abs(d-D[s.c])>0.35) return tx(`Hata: Süreler yanlış! Köpük ${fx(a)} sn, fırça ${fx(b)} sn, kurutma ${fx(c)} sn.`,`Error: Wrong timing! Foam ${a} s, brush ${b} s, dry ${c} s.`);
+        if(on!==NX[s.c]) return tx('Hata: Sıra KÖPÜK → FIRÇA → KURUTMA olmalı!','Error: The order must be FOAM → BRUSH → DRY!'); }
+      else if(on!==A.foam) return tx('Hata: Yıkama KÖPÜK ile başlamalı!','Error: The wash must start with FOAM!');
+      s.c=on; s.ts=w.t; }]});
+  return {title:tx('Oto Yıkama Sırası','Car Wash Sequence'),
+    task:tx(`Araç bölmeye girince ARAÇ (${A.car}) sensörü görür. Sırayla: KÖPÜK (${A.foam}) ${fx(a)} sn → FIRÇA (${A.brush}) ${fx(b)} sn → KURUTMA (${A.dry}) ${fx(c)} sn. Aynı anda tek istasyon çalışsın; bitince araç çıkar, sıradaki gelir. 2 araç yıka.`,
+      `When a car enters the bay the CAR (${A.car}) sensor sees it. In order: FOAM (${A.foam}) ${a} s → BRUSH (${A.brush}) ${b} s → DRY (${A.dry}) ${c} s. One station at a time; when done the car leaves and the next arrives. Wash 2 cars.`),
+    hint:tx(`ARAÇ · KAPALI T3 → M0.0 · M0.0 → TON T1 (${fx(a)}) · T1 → TON T2 (${fx(b)}) · T2 → TON T3 (${fx(c)}) · M0.0 · KAPALI T1 → KÖPÜK · T1 · KAPALI T2 → FIRÇA · T2 → KURUTMA.`,`CAR · NC T3 → M0.0 · M0.0 → TON T1 (${a}) · T1 → TON T2 (${b}) · T2 → TON T3 (${c}) · M0.0 · NC T1 → FOAM · T1 · NC T2 → BRUSH · T2 → DRY.`),
+    io,M:1,T:3,C:0,pal:PAL_C,scene:sc,goals:[{k:'cnt',f:'washed',n:2,l:T2('Yıkanan araç','Cars washed')}],sol:{rungs:rs},bot:()=>()=>{}};
+};
+/* ---------- ÇİFT EL EMNİYETLİ PRES ---------- */
+const twoHand=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['left','right'],['press']);
+  const rs=[R(['NO '+A.left,'TON T1 0.5'],['NO '+A.right]),R(['NO '+A.left,'NO '+A.right,'NC T1','COIL '+A.press],[null,null,'NO '+A.press])];
+  const sc=Object.assign({},MB,{mach:{kind:'press',p:A.press,l:A.left,r:A.right},
+    rules:[(w,q,iv,dt,s)=>{ const L=!!iv[A.left], Rr=!!iv[A.right], p=!!q[A.press];
+      if(L&&!s.L) s.tl=w.t; if(Rr&&!s.R) s.tr=w.t; s.L=L; s.R=Rr;
+      if(p&&!s.p){ if(!(L&&Rr)) return tx('Hata: Pres iki el basılı değilken indi!','Error: The press came down without both hands!');
+        if(Math.abs(s.tl-s.tr)>0.6) return tx('Hata: İki buton 0,5 sn içinde basılmalı — bir eli sabitleyip hile yapılamaz!','Error: Both buttons must be pressed within 0.5 s — no tying one down!'); }
+      if(p&&!(L&&Rr)){ s.u=(s.u||0)+dt; if(s.u>0.12) return tx('Hata: El çekilince pres hemen durmalı!','Error: The press must stop the moment a hand is released!'); } else s.u=0;
+      if(L&&Rr&&Math.abs(s.tl-s.tr)>0.8&&!p){ s.k=(s.k||0)+dt; if(s.k>0.6) w.f.tie=true; } else s.k=0;
+      s.p=p; }]});
+  return {title:tx('Çift El Emniyetli Pres','Two-Hand Safety Press'),
+    task:tx(`Pres (${A.press}) yalnızca iki el butonu (${A.left}, ${A.right}) BİRLİKTE basılıyken insin. Butonlar 0,5 sn içinde basılmazsa (biri önceden bantlanmışsa) pres hiç çalışmasın. Bir el çekilince pres hemen dursun. Butonları basılı tutarak dene.`,
+      `The press (${A.press}) comes down only while BOTH hand buttons (${A.left}, ${A.right}) are held. If they are not pressed within 0.5 s of each other (one taped down), the press must not run. Releasing a hand stops it at once. Hold the buttons to try it.`),
+    hint:tx(`(SOL ∥ SAĞ) → TON T1 (0,5 sn) · SOL · SAĞ · (KAPALI T1 ∥ ${A.press}) → ${A.press}. T1, ilk butondan sonra 0,5 sn'lik pencereyi ölçer.`,`(LEFT ∥ RIGHT) → TON T1 (0.5 s) · LEFT · RIGHT · (NC T1 ∥ ${A.press}) → ${A.press}. T1 measures the 0.5 s window after the first button.`),
+    io,M:0,T:1,C:0,pal:PAL_C,scene:sc,goals:[{k:'cnt',f:'stroke',n:1,l:T2('İlk basış','First stroke')},{k:'tie',l:T2('Hile testi','Tie-down test')},{k:'cnt',f:'stroke',n:2,l:T2('Basış','Strokes')}],sol:{rungs:rs},
+    bot:holdAt([[0.5,A.left,true],[0.6,A.right,true],[2.5,A.left,false],[2.5,A.right,false],[3,A.right,true],[4.2,A.left,true],[5.2,A.left,false],[5.2,A.right,false],[5.8,A.left,true],[5.9,A.right,true],[7.6,A.left,false],[7.6,A.right,false]])};
+};
+/* ---------- SERA İKLİMİ ---------- */
+const greenhouse=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,[],['heat','fan'],{fan:'FAN'}); const lo=pick(r,[12000,13000]), hi=pick(r,[19000,20000]);
+  const rs=[R(['CMP AIW0 < '+lo,'COIL '+A.heat]),R(['CMP AIW0 > '+hi,'COIL '+A.fan])];
+  const sc=Object.assign({},MB,{proc:proc('green',A.heat,{v0:0.5,up:0.1,down:0,out:A.fan,outRate:0.1,drift:0.12,dw:0.55,min:0.15,max:0.85,
+      minMsg:tx('Hata: Sera çok soğudu, bitkiler dondu!','Error: The greenhouse got too cold, the plants froze!'),maxMsg:tx('Hata: Sera aşırı ısındı, bitkiler kurudu!','Error: The greenhouse overheated, the plants dried out!')}),
+    rules:[follow((w,q,iv)=>iv.AIW0<lo,(w,q)=>q[A.heat],tx(`Hata: Isıtıcı sıcaklık ${lo}'ün altındayken çalışmalı!`,`Error: The heater must run below ${lo}!`)),
+      follow((w,q,iv)=>iv.AIW0>hi,(w,q)=>q[A.fan],tx(`Hata: Fan sıcaklık ${hi}'ün üstündeyken çalışmalı!`,`Error: The fan must run above ${hi}!`)),
+      timeIf('hOn',(w,q)=>q[A.heat],0.5),timeIf('fOn',(w,q)=>q[A.fan],0.5)]});
+  return {title:tx('Sera İklim Kontrolü','Greenhouse Climate'),
+    task:tx(`Gün boyu sera ısınıp soğuyor (AIW0 = sıcaklık). Sıcaklık ${lo}'ün altına düşünce ISITICI (${A.heat}), ${hi}'ün üstüne çıkınca FAN (${A.fan}) çalışsın. Bitkileri hem soğuktan hem sıcaktan koru.`,
+      `The greenhouse warms and cools during the day (AIW0 = temperature). Below ${lo} the HEATER (${A.heat}) runs, above ${hi} the FAN (${A.fan}) runs. Protect the plants from both cold and heat.`),
+    hint:tx(`CMP AIW0 < ${lo} → ${A.heat} · CMP AIW0 > ${hi} → ${A.fan}.`,`CMP AIW0 < ${lo} → ${A.heat} · CMP AIW0 > ${hi} → ${A.fan}.`),
+    io,M:0,T:0,C:0,words:['AIW0'],wt:{AIW0:'SICAKLIK'},pal:palOf({rungs:rs}),scene:sc,goals:[{k:'fOn',l:T2('Fan ile soğut','Cool with fan')},{k:'hOn',l:T2('Isıtıcı ile ısıt','Warm with heater')}],sol:{rungs:rs},bot:()=>()=>{}};
+};
+/* ---------- ALARM ---------- */
+const alarmSys=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['arm','door','code'],['siren','lamp'],{lamp:'KURULU'}); const t=pick(r,[2,2.5,3]); const d1=2, d2=2+t+3;
+  const rs=[R(['NO '+A.arm,'COIL '+A.lamp]),R(['NO '+A.arm,'NO '+A.door,'SET M0.0']),R(['NO '+A.code,'RST M0.0']),R(['NO M0.0','TON T1 '+t]),R(['NO T1','COIL '+A.siren])];
+  const sc=Object.assign({},MB,{mach:{kind:'alarm',door:A.door,arm:A.arm,doors:[d1,d2]},lamps:[{a:A.siren,c:'red',n:'SİREN'},{a:A.lamp,c:'amber',n:'KURULU'}],
+    rules:[follow((w)=>!!w.sw[A.arm],(w,q)=>q[A.lamp],tx('Hata: KURULU lambası alarm kuruluyken yanmalı!','Error: The ARMED lamp must be on while armed!')),
+      (w,q,iv,dt,s)=>{ if(iv[A.door]&&!s.d&&w.sw[A.arm]&&!s.trig){ s.trig=true; s.tt=w.t; } s.d=!!iv[A.door];
+        if(iv[A.code]&&s.trig){ s.trig=false; if(!q[A.siren]) w.f.disarm=true; }
+        const exp=!!s.trig&&w.t-s.tt>=t; if(!!q[A.siren]!==exp){ s.b=(s.b||0)+dt; if(s.b>0.3) return exp?tx(`Hata: Şifre girilmedi — siren ${fx(t)} sn sonra çalmalıydı!`,`Error: No code entered — the siren should sound after ${t} s!`):tx(`Hata: Siren yanlış zamanda çaldı! Kapı açıldıktan ${fx(t)} sn sonra ve şifre girilmediyse çalmalı.`,`Error: The siren sounded at the wrong time! It sounds ${t} s after the door opens, unless the code is entered.`); } else s.b=0;
+        if(q[A.siren]){ s.sr=(s.sr||0)+dt; if(s.sr>0.6) w.f.siren=true; } }]});
+  return {title:tx(`Ev Alarmı (${fx(t)} sn giriş gecikmesi)`,`Home Alarm (${t} s entry delay)`),
+    task:tx(`KURMA (${A.arm}) anahtarı alarmı kursun, KURULU lambası (${A.lamp}) yansın. Kuruluyken KAPI (${A.door}) açılırsa alarm tetiklensin; ${fx(t)} sn içinde ŞİFRE (${A.code}) girilmezse SİREN (${A.siren}) çalsın. Şifre alarmı susturur.`,
+      `The ARM (${A.arm}) key arms the alarm and the ARMED lamp (${A.lamp}) lights. If the DOOR (${A.door}) opens while armed, the alarm triggers; if the CODE (${A.code}) is not entered within ${t} s the SIREN (${A.siren}) sounds. The code silences it.`),
+    hint:tx(`KURMA → ${A.lamp} · KURMA · KAPI → (S) M0.0 · ŞİFRE → (R) M0.0 · M0.0 → TON T1 (${fx(t)}) · T1 → ${A.siren}.`,`ARM → ${A.lamp} · ARM · DOOR → (S) M0.0 · CODE → (R) M0.0 · M0.0 → TON T1 (${t}) · T1 → ${A.siren}.`),
+    io,M:1,T:1,C:0,pal:PAL_C,scene:sc,goals:[{k:'disarm',l:T2('Şifreyle sustur','Disarm with code')},{k:'siren',l:T2('Hırsıza siren','Siren on intruder')}],sol:{rungs:rs},bot:at([[0.5,A.arm],[d1+t/2,A.code]])};
+};
+
+/* ---------- yol haritasına dağıt (havuzların sonuna eklenir; v1.1.5 uzunlukları kayıt taşıma için saklanır) ---------- */
+const LEN_115=TPL.map(p=>p.map(x=>x.length));
+TPL[0][1].push(motorDOL,reverseMotor,garage(false),lift(false));
+TPL[0][2].push(motorFault,garage(true));
+TPL[1][1].push(starDelta,twoHand,alarmSys);
+TPL[1][2].push(carWash);
+TPL[3][1].push(greenhouse); TPL[3][2].push(pumpsAlt);
+TPL[5][1].push(parking);
+TPL[6][2].push(lift(true));
+const MACH_SLOTS=[]; TPL.forEach((p,c)=>{ if(c<LEN_115.length-1) p.forEach((l,pool)=>{ for(let t=LEN_115[c][pool];t<l.length;t++) MACH_SLOTS.push({c,pool,t}); }); });
+const ROAD_END=10000;   // yol 10.000 bölümde biter
 /*==UI==*/
 const $=(s,r=document)=>r.querySelector(s);
-const VERSION='v1.1.5a';
+const VERSION='v1.1.6';
 const I=(n,c)=>'<span class="ms'+(c?' '+c.split(' ').map(x=>x==='f'?'f':'ms-'+x).join(' '):'')+'">'+n+'</span>';  // Material Symbols ikon
 const SKEY='ladderustasi_v2';
 let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1,theme:'auto',lang:null,seen:{}};
 try{const s=JSON.parse(localStorage.getItem(SKEY)||'null'); if(s) save=Object.assign(save,s);}catch(e){}
 delete save.unlock; if(!save.seen) save.seen={};
-if(save.v!==6){ save.done={}; save.draft={}; save.last=-1; save.v=6; }  // v1.1.3: oyun mantığı değişti, ilerleme sıfırdan
+if(save.v!==6&&save.v!==7){ save.done={}; save.draft={}; save.last=-1; save.v=7; }  // v1.1.3: oyun mantığı değişti, ilerleme sıfırdan
+if(save.v===6){ migrate115(save.done,save.draft||{}); save.v=7; }       // v1.1.6: yeni sistemler eklendi
 const persist=()=>{try{localStorage.setItem(SKEY,JSON.stringify(save));}catch(e){}};
 const S={id:0,lv:null,prog:null,tags:{},tool:null,running:false,speed:1,cw:70,view:false,redo:false,mscr:null};
 let world=null,plc=new PLC(),LIVE=[];
 const clone=o=>JSON.parse(JSON.stringify(o));
 const points=()=>Object.keys(save.done).length;
 const extraDone=()=>Object.keys(save.done).filter(k=>isExtra(+k)).length;
-const frontier=()=>{ let i=0; while(save.done[i]) i++; return i; };   // ilk çözülmemiş bölüm
+const frontier=()=>{ let i=0; while(save.done[i]&&i<ROAD_END-1) i++; return i; };   // ilk çözülmemiş bölüm
 const topicDone=c=>Object.keys(save.done).filter(k=>getLevel(+k).cat===c).length;
-const unlocked=id=>id===0||!!save.done[id-1]||!!save.done[id];
+const unlocked=id=>id<ROAD_END&&(id===0||!!save.done[id-1]||!!save.done[id]);
 /* ---------- TİTREŞİM (Haptics) ---------- */
 // Android: navigator.vibrate · iPhone (iOS 18+ Safari): gizli "switch" kutusu tıklaması dokunsal geri bildirim verir
 const Hap=(()=>{
@@ -2073,7 +2386,7 @@ function logout(){ NET.sess=null; saveSess(); }
 async function pullProgress(){
   if(!me()) return;
   const {j}=await sb(`/rest/v1/progress?id=eq.${me().id}&select=data`);
-  const dd=j&&j[0]&&j[0].data; const remote=(dd&&dd.v===6&&dd.done)||{};
+  const dd=j&&j[0]&&j[0].data; let remote=(dd&&(dd.v===6||dd.v===7)&&dd.done)||{}; if(dd&&dd.v===6) migrate115(remote);
   let added=0; for(const k in remote) if(!save.done[k]){ save.done[k]=remote[k]; delete save.draft[k]; added++; }
   persist(); await pushProgress(true); return added;
 }
@@ -2082,7 +2395,7 @@ function schedulePush(){ if(!me()) return; clearTimeout(pushT); pushT=setTimeout
 async function pushProgress(now){
   if(!me()) return; const id=me().id, ts=new Date().toISOString();
   await sb('/rest/v1/profiles?on_conflict=id',{method:'POST',body:{id,username:me().username,points:points(),updated_at:ts},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
-  await sb('/rest/v1/progress?on_conflict=id',{method:'POST',body:{id,data:{v:6,done:save.done},updated_at:ts},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
+  await sb('/rest/v1/progress?on_conflict=id',{method:'POST',body:{id,data:{v:7,done:save.done},updated_at:ts},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
   NET.lastPush=Date.now();
 }
 async function fetchBoard(){
@@ -2679,7 +2992,7 @@ function onWin(){
   save.done[S.id]={prog:{rungs:clone(S.prog.rungs)},tags:customTags(S.tags)}; delete save.draft[S.id]; persist();
   S.redo=false; S.view=true; refreshMode(); Snd.win(); Hap.win(); confetti(); schedulePush();
   setTimeout(()=>{ if(!world.done) return;
-    const nx=S.id+1;
+    const nx=S.id+1<ROAD_END?S.id+1:null;
     card(`<h3 style="color:var(--md-primary);font-size:24px">${tx('BÖLÜM TAMAM!','LEVEL COMPLETE!')}</h3><div class="gain">${first?tx('+1 PUAN','+1 POINT'):wasView?tx('Çözüm çalışıyor','Solution works'):tx('Çözüm güncellendi','Solution updated')}</div>
     <p class="t" style="text-align:center">${I('bolt','f sm')} <b style="color:var(--neon)">${points()}</b> ${tx('puan','points')}<br>${tx('Kullanılan blok','Blocks used')}: <b>${n}</b> · ${tx('referans','reference')} ${lv.opt}</p>
     ${nx!==null?'<div class="brow"><button class="btn pri wide" id="nx" style="height:56px;font-size:17px">'+tx('Sonraki Bölüm','Next Level')+I('arrow_forward')+'</button></div>':''}
@@ -2707,7 +3020,7 @@ function showMenu(scr,cat,diff){
   } else if(scr==='map'){
     h=`<div class="topbar mapbar">${back('main')}<h3>${tx('Yol Haritası','Level Map')}</h3><span class="pp">${I('bolt','f sm')} ${points()}</span></div><div id="road"></div>`;
   } else if(scr==='prog'){
-    h=`<div class="topbar">${back('main')}<h3>${tx('İlerleme','Progress')}</h3><span class="pp">${I('bolt','f sm')} ${points()}</span></div><p class="t">${tx('Her tamamlanan bölüm <b>1 puan</b>. Yol sonsuz — ne kadar ileri gidebilirsin?','Each completed level is worth <b>1 point</b>. The road is endless — how far can you go?')}</p>
+    h=`<div class="topbar">${back('main')}<h3>${tx('İlerleme','Progress')}</h3><span class="pp">${I('bolt','f sm')} ${points()}</span></div><p class="t">${tx('Her tamamlanan bölüm <b>1 puan</b>. Yol çok uzun — ne kadar ileri gidebilirsin?','Each completed level is worth <b>1 point</b>. The road is very long — how far can you go?')}</p>
     <div class="pcard"><div class="cstat big"><span>${I('map','sm')} ${tx('Bölüm','Level')} <b>${frontier()+1}</b></span><span>${I('check_circle','sm')} <b>${points()}</b></span><span>${I('local_fire_department','sm')} <b>${extraDone()}</b></span></div></div>
     <div class="grp">${tx('KONULARA GÖRE TAMAMLANAN','COMPLETED BY TOPIC')}</div>`+
     CATS.map((c,ci)=>`<div class="pcard" style="display:flex;align-items:center;gap:12px;border-color:color-mix(in srgb,${c.c} 40%,transparent)"><div class="pic" style="color:${c.c}">${palSym(c.ic)}</div><div style="flex:1"><b style="color:${c.c}">${c.n}</b><div style="font-size:12px;color:var(--dim)">${c.s}</div></div><b style="font-size:20px">${topicDone(ci)}</b></div>`).join('')+
@@ -2883,7 +3196,7 @@ function shape(k){ if(SHP[k]) return SHP[k];
   return SHP[k]=`polygon(${pts.join(',')})`; }
 function drawRoad(){ const c=0;
   const box=document.getElementById('road'); if(!box) return;
-  const f=frontier(), show=Math.max(f+10,14), STEP=92, W=box.clientWidth||360, H=show*STEP+150;
+  const f=frontier(), show=Math.min(ROAD_END,Math.max(f+10,14)), end=show>=ROAD_END, STEP=92, W=box.clientWidth||360, H=show*STEP+150;
   const xs=i=>W/2+Math.sin(i*0.85)*W*0.3, ys=i=>H-70-i*STEP;
   let d=`M${xs(0)} ${ys(0)}`; for(let i=1;i<show;i++){ const x0=xs(i-1),y0=ys(i-1),x1=xs(i),y1=ys(i); d+=` C${x0} ${y0-STEP/2},${x1} ${y1+STEP/2},${x1} ${y1}`; }
   let dn=`M${xs(0)} ${ys(0)}`; for(let i=1;i<=Math.min(f,show-1);i++){ const x0=xs(i-1),y0=ys(i-1),x1=xs(i),y1=ys(i); dn+=` C${x0} ${y0-STEP/2},${x1} ${y1+STEP/2},${x1} ${y1}`; }
@@ -2893,12 +3206,12 @@ function drawRoad(){ const c=0;
   for(let i=0;i<show;i++){ const id=i, done=!!save.done[id], cur=i===f, ex=isExtra(i), bn=isBonus(i), lock=!done&&!cur;
     const cls=['nd',done?'dn':'',cur?'cur':'',lock?'lk':'',ex?'ex':'',bn?'bn':''].join(' ');
     const shp=ex?shape('burst'):bn?shape('clover'):cur?shape('sunny'):done?shape(i%3===0?'clover':'cookie'):shape('round');
-    h+=`<button class="${cls}" data-go="lvl" data-id="${id}" style="left:${xs(i)}px;top:${ys(i)}px;--shp:${shp}">${lock?(ex?I('local_fire_department','f'):bn?I('celebration','f'):I('lock','f')):`<b>${i+1}</b>`}${done?'<i>'+I('check')+'</i>':''}${cur?'<em>'+tx('OYNA','PLAY')+'</em>':''}${ex&&!lock?'<u>'+I('local_fire_department','f')+'</u>':''}${bn&&!lock?'<u>'+I('celebration','f')+'</u>':''}${!lock&&!ex&&!bn?`<s class="tp" style="background:${CATS[getLevel(id).cat].c}"></s>`:''}</button>`;
+    h+=`<button class="${cls}" data-go="lvl" data-id="${id}" style="left:${xs(i)}px;top:${ys(i)}px;--shp:${shp}">${lock?(ex?I('local_fire_department','f'):bn?I('celebration','f'):I('lock','f')):`<b${i>=999?` style="font-size:${i>=9999?.7:.85}em"`:''}>${i+1}</b>`}${done?'<i>'+I('check')+'</i>':''}${cur?'<em>'+tx('OYNA','PLAY')+'</em>':''}${ex&&!lock?'<u>'+I('local_fire_department','f')+'</u>':''}${bn&&!lock?'<u>'+I('celebration','f')+'</u>':''}${!lock&&!ex&&!bn?`<s class="tp" style="background:${CATS[getLevel(id).cat].c}"></s>`:''}</button>`;
     if(i===TOPIC_START[1]&&!save.done[id]) h+=`<span class="exl" style="left:${xs(i)}px;top:${ys(i)+40}px;color:var(--amb)">${tx('YENİ: ZAMANLAYICILAR','NEW: TIMERS')}</span>`;
     if(i===TOPIC_START[2]&&!save.done[id]) h+=`<span class="exl" style="left:${xs(i)}px;top:${ys(i)+40}px;color:var(--pur)">${tx('YENİ: SAYICILAR','NEW: COUNTERS')}</span>`;
     if(ex&&(cur||lock)&&i<f+10) h+=`<span class="exl" style="left:${xs(i)}px;top:${ys(i)+36}px">${tx('EKSTRA ZOR','EXTRA HARD')}</span>`;
     if(bn&&(cur||lock)&&i<f+10) h+=`<span class="exl bnl" style="left:${xs(i)}px;top:${ys(i)+36}px">BONUS</span>`; }
-  h+=`<div class="fog" style="top:0;height:150px"><span>${I('cloud')} ${tx('Yol devam ediyor…','The road continues…')}</span></div></div>`;
+  h+=end?`<div class="fog end" style="top:0;height:150px"><span>${I('emoji_events')} ${tx('Yolun sonu! Gerçek bir PLC ustasısın.','End of the road! You are a true PLC master.')}</span></div></div>`:`<div class="fog" style="top:0;height:150px"><span>${I('cloud')} ${tx('Yol devam ediyor…','The road continues…')}</span></div></div>`;
   box.innerHTML=h;
   const cur=box.querySelector('.nd.cur'); if(cur){ const m=$('#menuIn'); m.scrollTop=Math.max(0,cur.offsetTop-m.clientHeight*0.55); }
 }
@@ -2975,10 +3288,13 @@ function clockBox(x,y,w,h,hour,P){ ctx.fillStyle=P.binBg; ctx.strokeStyle=P.binL
   else { ctx.fillStyle='#b9c7ff'; ctx.beginPath(); ctx.arc(cx,cy,r*1.2,0,7); ctx.fill(); ctx.fillStyle=P.binBg; ctx.beginPath(); ctx.arc(cx+r*0.7,cy-r*0.4,r*1.05,0,7); ctx.fill(); }
   ctx.fillStyle=P.strong; ctx.font=`800 ${Math.round(h*0.42)}px ui-monospace,monospace`; ctx.textAlign='center'; ctx.fillText(String(hour).padStart(2,'0')+':00',x+h*0.85+(w-h*0.85)/2,cy+h*0.15);
   ctx.fillStyle=P.txt; ctx.font='700 9px system-ui'; ctx.fillText('RTC',x+w/2,y+h+13); }
-function procBox(x,y,w,h,P){ const w0=world, pr=w0.sc.proc, v=Math.max(0,Math.min(1,w0.pv)), on=!!w0.q[pr.a], tank=pr.kind==='tank';
+function procBox(x,y,w,h,P){ const w0=world, pr=w0.sc.proc, v=Math.max(0,Math.min(1,w0.pv)), on=[].concat(pr.a).some(a=>w0.q[a]), tank=pr.kind==='tank', green=pr.kind==='green';
   ctx.fillStyle=P.binBg; ctx.strokeStyle=P.edge; ctx.lineWidth=2.5; rr(x,y,w,h,tank?10:6); ctx.fill(); ctx.stroke();
   ctx.save(); rr(x+3,y+3,w-6,h-6,tank?8:4); ctx.clip();
   if(tank){ const ly=y+h-(h-6)*v; ctx.fillStyle='rgba(64,150,255,.55)'; ctx.fillRect(x,ly,w,h); ctx.strokeStyle='rgba(140,200,255,.9)'; ctx.lineWidth=2; ctx.beginPath(); for(let i=0;i<=w;i+=4){ const yy=ly+Math.sin((i+w0.t*60)/9)*1.6; i?ctx.lineTo(x+i,yy):ctx.moveTo(x+i,yy); } ctx.stroke(); }
+  else if(green){ const t=v; ctx.fillStyle=`rgba(${Math.round(60+190*t)},${Math.round(170-40*t)},${Math.round(255-200*t)},.28)`; ctx.fillRect(x,y,w,h);
+    for(let i=0;i<4;i++){ const px=x+14+i*(w-28)/3, py=y+h-6; ctx.strokeStyle='#3fae4a'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,py-22); ctx.stroke(); ctx.fillStyle=t>0.8||t<0.2?'#9a8a3a':'#4cc65a'; ctx.beginPath(); ctx.ellipse(px-6,py-14,6,3,-0.5,0,7); ctx.ellipse(px+6,py-20,6,3,0.5,0,7); ctx.fill(); }
+    const fo=!!w0.q[pr.out]; ctx.save(); ctx.translate(x+w-16,y+16); ctx.rotate(fo?w0.t*14:0); ctx.fillStyle=fo?'#4dd2ff':P.dim; for(let i=0;i<4;i++){ ctx.rotate(Math.PI/2); ctx.beginPath(); ctx.ellipse(0,-6,3,6,0,0,7); ctx.fill(); } ctx.restore(); }
   else { const g=ctx.createLinearGradient(0,y+h,0,y); g.addColorStop(0,'rgba(255,150,40,.10)'); g.addColorStop(1,`rgba(255,${Math.round(160-120*v)},40,${0.15+v*0.5})`); ctx.fillStyle=g; ctx.fillRect(x,y,w,h);
     ctx.strokeStyle=on?'#ff6a2a':P.dim; ctx.lineWidth=3; if(on){ ctx.shadowColor='#ff6a2a'; ctx.shadowBlur=10; } ctx.beginPath(); for(let i=0;i<=6;i++){ const xx=x+10+i*(w-20)/6; i?ctx.lineTo(xx,y+h-14+(i%2?-6:0)):ctx.moveTo(xx,y+h-14); } ctx.stroke(); ctx.shadowBlur=0; }
   ctx.restore();
@@ -2988,9 +3304,9 @@ function procBox(x,y,w,h,P){ const w0=world, pr=w0.sc.proc, v=Math.max(0,Math.mi
   if(tank){ const px=x-22, py=y+h-16; ctx.strokeStyle=P.metal; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,y+8); ctx.lineTo(x+10,y+8); ctx.stroke();
     if(on){ ctx.strokeStyle='rgba(64,150,255,.9)'; ctx.lineWidth=3; ctx.setLineDash([4,4]); ctx.lineDashOffset=-w0.t*30; ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,y+8); ctx.lineTo(x+10,y+8); ctx.stroke(); ctx.setLineDash([]); }
     ctx.fillStyle=on?P.pri:P.metal; ctx.beginPath(); ctx.arc(px,py,10,0,7); ctx.fill(); ctx.save(); ctx.translate(px,py); ctx.rotate(on?w0.t*8:0); ctx.strokeStyle=P.bg1; ctx.lineWidth=2.5; for(let i=0;i<3;i++){ ctx.rotate(Math.PI*2/3); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-7); ctx.stroke(); } ctx.restore();
-    ctx.fillStyle=P.txt; ctx.font='700 9px ui-monospace,monospace'; ctx.textAlign='center'; ctx.fillText(pr.a,px,py+22);
+    ctx.fillStyle=P.txt; ctx.font='700 9px ui-monospace,monospace'; ctx.textAlign='center'; ctx.fillText([].concat(pr.a).filter(a=>!Array.isArray(pr.a)||w0.q[a]).join(' ')||[].concat(pr.a).join('/'),px,py+22);
     ctx.strokeStyle=P.metal; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(x+w/2,y+h); ctx.lineTo(x+w/2,y+h+8); ctx.stroke(); ctx.fillStyle='rgba(64,150,255,.8)'; const dy=(w0.t*40)%10; ctx.fillRect(x+w/2-1.5,y+h+8+dy,3,4); }
-  else { ctx.fillStyle=on?'#ff6a2a':P.dim; ctx.font='800 9px system-ui'; ctx.textAlign='center'; ctx.fillText((on?'🔥 ':'')+pr.a,x+w/2,y-6); }
+  else { ctx.fillStyle=on?'#ff6a2a':P.dim; ctx.font='800 9px system-ui'; ctx.textAlign='center'; ctx.fillText((on?'🔥 ':'')+pr.a+(green&&pr.out?'  ·  '+(w0.q[pr.out]?'💨 ':'')+pr.out:''),x+w/2,y-6); }
   ctx.fillStyle=P.strong; ctx.font='800 11px ui-monospace,monospace'; ctx.textAlign='center'; ctx.fillText(`${pr.ai} ${Math.round(v*32000)}`,x+w/2,y+h+(tank?26:16)); ctx.fillStyle=P.txt; ctx.font='700 9px system-ui'; ctx.fillText(`%${Math.round(v*100)}`,x+w/2,y+h+(tank?38:28)); }
 function lampRow(x,y,gap,P){ const sc=world.sc, n=sc.row.n;
   const DC=[['#ff4dd2','#3d1033'],['#4dd2ff','#0b2f3d'],['#c6ff4d','#2a3d0b'],['#ffb020','#3d2a07']];
@@ -3010,7 +3326,7 @@ function safeBox(x,y,w,h,P){ const open=!!world.q[world.sc.safe.a];
   ctx.fillStyle=open?P.pri:P.txt; ctx.font='800 10px system-ui'; ctx.textAlign='center'; ctx.fillText(open?tx('AÇIK!','OPEN!'):tx('KİLİTLİ','LOCKED'),x+w/2,y+h+16);
   const iv=world.iv||{}; world.lv.io.I.forEach((d,i)=>{ const bx=x+w+22+i*30, on=!!iv[d.a]; ctx.fillStyle=on?P.pri:P.binBg; ctx.strokeStyle=P.dim; ctx.lineWidth=2; rr(bx,y+h/2-13,26,26,6); ctx.fill(); ctx.stroke(); ctx.fillStyle=on?P.bg1:P.strong; ctx.font='800 13px system-ui'; ctx.fillText(d.n,bx+13,y+h/2+5); }); }
 function drawPanel(P){
-  const sc=world.sc, items=[];
+  const sc=world.sc, items=[]; const mi=typeof machItem==='function'?machItem(P):null; if(mi) items.push(mi);
   if(sc.traffic) items.push({w:Math.min(70,W*0.2)+50,h:Math.min(H-50,170),f:(x,y,w,h)=>trafficBox(x,y,w-50,h,P)});
   if(sc.safe) items.push({w:Math.min(110,W*0.3)+110,h:Math.min(H-60,110),f:(x,y,w,h)=>safeBox(x+30,y,w-110,h,P)});
   if(sc.proc) items.push({w:Math.min(120,W*0.3)+60,h:Math.min(H-70,150),f:(x,y,w,h)=>procBox(x+30,y,w-60,h,P)});
@@ -3090,14 +3406,16 @@ function drawScene(){
 /* ---------- Giriş panelı (DOM butonlar) ---------- */
 function buildIO(){
   const box=$('#io'); box.innerHTML='';
-  S.lv.io.I.filter(d=>d.k==='btn'||d.k==='sw').sort((a,b)=>{ const o=d=>d.n==='START'?0:d.n==='STOP'?1:2; return o(a)-o(b); }).forEach(d=>{
+  S.lv.io.I.filter(d=>d.k==='btn'||d.k==='sw'||d.k==='hold').sort((a,b)=>{ const o=d=>d.n==='START'?0:d.n==='STOP'?1:2; return o(a)-o(b); }).forEach(d=>{
     const col=d.n==='START'?'var(--md-primary)':d.n==='STOP'?'var(--md-error)':d.k==='sw'?'var(--md-ext-amber)':'var(--md-ext-blue)';
-    const b=document.createElement('button'); b.className='iob'+(d.k==='sw'?' sw':''); b.dataset.a=d.a; b.style.setProperty('--c',col);
+    const b=document.createElement('button'); b.className='iob'+(d.k==='sw'?' sw':'')+(d.k==='hold'?' hold':''); b.dataset.a=d.a; b.style.setProperty('--c',col);
     b.innerHTML=`<span class="lt"></span><span class="tx"><b>${d.n}</b><small>${d.a}</small></span>`; box.appendChild(b); });
 }
 $('#io').addEventListener('pointerdown',e=>{ const b=e.target.closest('.iob'); if(!b) return; e.preventDefault(); Snd.init(); Snd.click(); Hap.sw();
   if(!S.running){ toast(tx('Önce RUN ile simülasyonu başlat','Start the simulation with RUN first')); return; }
+  if(b.classList.contains('hold')){ world.hold[b.dataset.a]=true; try{ b.setPointerCapture(e.pointerId); }catch(_){} return; }
   world.press(b.dataset.a); flash[b.dataset.a]=0.25; });
+['pointerup','pointercancel','lostpointercapture'].forEach(ev=>$('#io').addEventListener(ev,e=>{ const b=e.target.closest&&e.target.closest('.iob.hold'); if(b&&world.hold) world.hold[b.dataset.a]=false; }));
 let goalKey='';
 function updatePanel(){
   const io=$('#io'); for(const b of io.children){ const a=b.dataset.a, on=!!(world.iv&&world.iv[a])||(flash[a]>0)||(b.classList.contains('sw')&&!!world.sw[a]);
@@ -3105,6 +3423,94 @@ function updatePanel(){
   const gl=world.goalList().map((g,i)=>({l:g.l,ok:!!world.gd[i]})), k=gl.map(g=>g.l+g.ok).join('|');
   if(k!==goalKey){ goalKey=k; $('#goals').innerHTML=gl.map(g=>`<span class="gl ${g.ok?'ok':''}">${g.ok?I('check'):I('radio_button_unchecked')} ${g.l}</span>`).join(''); }
 }
+/* ===== v1.1.6 MAKİNE ÇİZİMLERİ (bant dışı sahneler) ===== */
+const MLbl=(t,x,y,P,c,f)=>{ ctx.fillStyle=c||P.txt; ctx.font=f||'700 9px ui-monospace,monospace'; ctx.textAlign='center'; ctx.fillText(t,x,y); };
+function mMotor(cx,cy,r,ang,spd,on,P,lbl){
+  ctx.fillStyle=P.metal; rr(cx-r*1.15,cy+r*0.7,r*2.3,r*0.45,4); ctx.fill();
+  ctx.fillStyle=on?P.pri:P.binBg; ctx.strokeStyle=P.edge; ctx.lineWidth=2.5; if(on&&Math.abs(spd)>0.5){ ctx.shadowColor=P.pri; ctx.shadowBlur=12; }
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+  for(let i=0;i<8;i++){ const a=i*Math.PI/4; ctx.strokeStyle=P.dim; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r); ctx.lineTo(cx+Math.cos(a)*(r+4),cy+Math.sin(a)*(r+4)); ctx.stroke(); }
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(ang); ctx.strokeStyle=on?P.bg1:P.strong; ctx.lineWidth=3;
+  for(let i=0;i<3;i++){ ctx.rotate(Math.PI*2/3); ctx.beginPath(); ctx.moveTo(0,0); ctx.quadraticCurveTo(r*0.35,-r*0.3,r*0.15,-r*0.72); ctx.stroke(); } ctx.restore();
+  ctx.fillStyle=P.strong; ctx.beginPath(); ctx.arc(cx,cy,3.5,0,7); ctx.fill();
+  if(lbl) MLbl(lbl,cx,cy+r*1.15+16,P,P.strong,'800 10px system-ui');
+}
+function mK(x,y,a,n,on,P){ ctx.fillStyle=on?P.pri:P.binBg; ctx.strokeStyle=on?P.pri:P.dim; ctx.lineWidth=2; rr(x,y,40,30,6); ctx.fill(); ctx.stroke();
+  MLbl(n,x+20,y+13,P,on?P.bg1:P.strong,'800 10px system-ui'); MLbl(a,x+20,y+24,P,on?P.bg1:P.txt,'700 8px ui-monospace,monospace'); }
+function mIn(x,y,a,on,P,c){ c=c||'#ffb020'; ctx.fillStyle=on?c:P.binBg; ctx.strokeStyle=P.dim; ctx.lineWidth=1.5; if(on){ ctx.shadowColor=c; ctx.shadowBlur=10; } ctx.beginPath(); ctx.arc(x,y,5,0,7); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+  MLbl(a,x,y+15,P,P.txt,'700 8px ui-monospace,monospace'); }
+const MQ=a=>!!world.q[a], MI=a=>!!(world.iv&&world.iv[a]);
+const MDRAW={
+  motor:{w:220,h:130,f(x,y,w,h,P,m,s){ mMotor(x+60,y+52,34,s.ang,s.spd,MQ(m.k),P,'M 3~');
+    mK(x+128,y+14,m.k,'K1',MQ(m.k),P);
+    if(m.trip){ const t=s.trip>0||s.tripped; ctx.fillStyle=t?'#ff3b30':P.binBg; ctx.strokeStyle=P.dim; ctx.lineWidth=2; if(t){ ctx.shadowColor='#ff3b30'; ctx.shadowBlur=14; } rr(x+128,y+56,40,30,6); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+      MLbl(tx('TERMİK','THERM'),x+148,y+69,P,t?'#fff':P.strong,'800 8.5px system-ui'); MLbl(m.trip,x+148,y+80,P,t?'#fff':P.txt,'700 8px ui-monospace,monospace');
+      if(MQ(m.k)){ const p=Math.min(1,s.run/m.tripAt); ctx.fillStyle=P.binBg; rr(x+128,y+92,40,6,3); ctx.fill(); ctx.fillStyle=p>0.8?'#ff3b30':'#ffb020'; rr(x+128,y+92,40*p,6,3); ctx.fill(); MLbl('°C',x+178,y+98,P); } } }},
+  stardelta:{w:250,h:130,f(x,y,w,h,P,m,s){ const k1=MQ(m.k1),k2=MQ(m.k2),k3=MQ(m.k3);
+    mMotor(x+56,y+52,34,s.ang,s.spd,k1,P,k3?'Δ  '+tx('ÜÇGEN','DELTA'):k2?'Y  '+tx('YILDIZ','STAR'):'M 3~');
+    mK(x+120,y+8,m.k1,'K1',k1,P); mK(x+120,y+46,m.k2,'K2 Y',k2,P); mK(x+170,y+46,m.k3,'K3 Δ',k3,P);
+    ctx.strokeStyle=P.dim; ctx.lineWidth=1.5; ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(x+160,y+61); ctx.lineTo(x+170,y+61); ctx.stroke(); ctx.setLineDash([]); MLbl('⟂',x+165,y+92,P,P.err,'800 12px system-ui');
+    const p=Math.round(s.spd*1480); MLbl(p+' rpm',x+165,y+112,P,P.strong,'800 10px ui-monospace,monospace'); }},
+  reverse:{w:240,h:130,f(x,y,w,h,P,m,s){ const f=MQ(m.kf), r=MQ(m.kr);
+    mMotor(x+56,y+52,34,s.ang,s.spd,f||r,P,f?'⟳ '+tx('İLERİ','FWD'):r?'⟲ '+tx('GERİ','REV'):'M 3~');
+    mK(x+120,y+20,m.kf,'K →',f,P); mK(x+170,y+20,m.kr,'K ←',r,P);
+    // vinç kancası
+    const hy=y+70+Math.sin(s.ang*0.05)*0; ctx.strokeStyle=P.metal; ctx.lineWidth=2; const ly=y+64+((s.ang*2)%30+30)%30; ctx.beginPath(); ctx.moveTo(x+165,y+56); ctx.lineTo(x+165,ly); ctx.stroke();
+    ctx.strokeStyle=P.strong; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(x+165,ly+6,6,-Math.PI/2,Math.PI); ctx.stroke(); }},
+  garage:{w:230,h:150,f(x,y,w,h,P,m,s){ const gx=x+40, gw=120, gy=y+10, gh=120;
+    ctx.fillStyle=P.binBg; ctx.strokeStyle=P.edge; ctx.lineWidth=3; ctx.fillRect(gx-8,gy-8,gw+16,gh+8); ctx.strokeRect(gx-8,gy-8,gw+16,gh+8);
+    ctx.fillStyle=P.bg2; ctx.fillRect(gx,gy,gw,gh);
+    const dh=gh*(1-s.pos), ns=Math.max(1,Math.ceil(dh/16)); for(let i=0;i<ns;i++){ const py=gy+dh-(i+1)*16; ctx.fillStyle=i%2?P.metal:P.dim; ctx.fillRect(gx,Math.max(gy,py),gw,Math.min(16,py+16-gy)); }
+    ctx.fillStyle=P.strong; ctx.fillRect(gx,gy+dh-3,gw,3);
+    mIn(gx+gw+20,gy+4,m.top,MI(m.top),P,'#34e05a'); mIn(gx+gw+20,gy+gh-6,m.bot,MI(m.bot),P,'#34e05a');
+    const u=MQ(m.up), d=MQ(m.dn); MLbl(u?'▲':d?'▼':'■',gx-24,gy+gh/2,P,u||d?P.pri:P.dim,'800 18px system-ui'); MLbl(u?m.up:d?m.dn:'',gx-24,gy+gh/2+14,P);
+    if(m.eye){ const e=s.eye>0; ctx.strokeStyle=e?'#ff3b30':'rgba(255,60,48,.35)'; ctx.lineWidth=e?3:1.5; ctx.setLineDash(e?[]:[4,4]); ctx.beginPath(); ctx.moveTo(gx,gy+gh-14); ctx.lineTo(gx+gw,gy+gh-14); ctx.stroke(); ctx.setLineDash([]);
+      if(e){ ctx.fillStyle='#ffb020'; ctx.beginPath(); ctx.arc(gx+gw/2,gy+gh-14,9,0,7); ctx.fill(); MLbl('!',gx+gw/2,gy+gh-10,P,'#000','900 12px system-ui'); }
+      MLbl(m.eye,gx-24,gy+gh-10,P,e?'#ff3b30':P.txt); } }},
+  lift:{w:200,h:160,f(x,y,w,h,P,m,s){ const sx=x+60, sw=70, sy=y+8, sh=140, ch=46, cy=sy+sh-ch-(sh-ch)*s.pos;
+    ctx.fillStyle=P.binBg; ctx.strokeStyle=P.edge; ctx.lineWidth=2.5; ctx.fillRect(sx,sy,sw,sh); ctx.strokeRect(sx,sy,sw,sh);
+    ctx.strokeStyle=P.dim; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(sx+sw/2,sy); ctx.lineTo(sx+sw/2,cy); ctx.stroke();
+    ctx.fillStyle=P.metal; ctx.strokeStyle=P.strong; ctx.lineWidth=2; rr(sx+6,cy,sw-12,ch,4); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=P.bg2; ctx.fillRect(sx+12,cy+6,sw/2-14,ch-12); ctx.fillRect(sx+sw/2+2,cy+6,sw/2-14,ch-12);
+    [[m.f2,sy+ch/2,'2'],[m.f1,sy+sh-ch/2,'1']].forEach(([a,yy,n])=>{ MLbl(n,sx-18,yy+5,P,P.strong,'800 16px system-ui'); mIn(sx+sw+16,yy,a,MI(a),P,'#34e05a'); });
+    const u=MQ(m.up), d=MQ(m.dn); MLbl(u?'▲':d?'▼':'',sx+sw/2,cy+ch/2+5,P,P.pri,'800 14px system-ui');
+    if(world.sc.seg){ const v=qb(world.q,'Q1.')&127; segDigit(x+w-34,y+24,44,v,P,'QB1'); } }},
+  parking:{w:250,h:130,f(x,y,w,h,P,m,s){ const by=y+84, bx=x+120;
+    ctx.fillStyle=P.dim; ctx.fillRect(x,by+18,w,4);
+    ctx.fillStyle=P.metal; ctx.fillRect(bx-6,by-30,12,48); const a=-s.arm*Math.PI/2*0.95; ctx.save(); ctx.translate(bx,by-22); ctx.rotate(a);
+    for(let i=0;i<6;i++){ ctx.fillStyle=i%2?'#ff3b30':'#fff'; ctx.fillRect(i*16,-4,16,8); } ctx.restore();
+    if(s.car){ const cx=s.pass?bx-40+(1-s.pass/0.6)*130:bx-58; ctx.fillStyle='#4dd2ff'; rr(cx-24,by-6,48,20,6); ctx.fill(); ctx.fillStyle='#2a7fa8'; rr(cx-14,by-16,28,12,4); ctx.fill(); ctx.fillStyle='#222'; [cx-14,cx+14].forEach(wx=>{ ctx.beginPath(); ctx.arc(wx,by+15,5,0,7); ctx.fill(); }); }
+    mIn(bx-30,by+38,m.gate,MI(m.gate),P); mIn(bx+40,by+38,m.pass,MI(m.pass),P); mIn(x+w-20,by+38,m.exit,MI(m.exit),P);
+    ctx.fillStyle='#2d6cdf'; rr(x+w-60,y+4,52,44,8); ctx.fill(); MLbl('P',x+w-34,y+28,P,'#fff','900 20px system-ui'); MLbl(`${s.parked}/${m.cap}`,x+w-34,y+43,P,'#fff','800 10px ui-monospace,monospace');
+    for(let i=0;i<m.cap;i++){ ctx.fillStyle=i<s.parked?'#4dd2ff':P.binBg; ctx.strokeStyle=P.dim; ctx.lineWidth=1.5; rr(x+6+i*24,y+8,20,28,3); ctx.fill(); ctx.stroke(); }
+    MLbl(m.bar,bx,by-36,P,MQ(m.bar)?P.pri:P.txt); }},
+  wash:{w:260,h:130,f(x,y,w,h,P,m,s){ const bx=x+50, bw=160, by=y+20, bh=86;
+    ctx.strokeStyle=P.edge; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(bx,by+bh); ctx.lineTo(bx,by); ctx.lineTo(bx+bw,by); ctx.lineTo(bx+bw,by+bh); ctx.stroke(); ctx.fillStyle=P.dim; ctx.fillRect(x,by+bh,w,3);
+    const cx=bx+bw/2+s.x*(bw/2+60); if(s.st){ ctx.save(); ctx.beginPath(); ctx.rect(x,y,w,h); ctx.clip(); ctx.fillStyle='#e0533d'; rr(cx-40,by+bh-28,80,22,7); ctx.fill(); ctx.fillStyle='#a63a2a'; rr(cx-24,by+bh-44,48,18,6); ctx.fill(); ctx.fillStyle='#222'; [cx-24,cx+24].forEach(wx=>{ ctx.beginPath(); ctx.arc(wx,by+bh-4,7,0,7); ctx.fill(); }); ctx.restore(); }
+    const st=[[m.foam,tx('KÖPÜK','FOAM'),'#f0f8ff'],[m.brush,tx('FIRÇA','BRUSH'),'#4dd2ff'],[m.dry,tx('KURUTMA','DRY'),'#ffb020']];
+    st.forEach(([a,n,c],i)=>{ const sx=bx+28+i*52, on=MQ(a); ctx.fillStyle=on?c:P.metal; rr(sx-14,by+3,28,10,3); ctx.fill(); MLbl(n,sx,by-6,P,on?P.pri:P.txt,'800 8.5px system-ui'); MLbl(a,sx,by+28,P);
+      if(on){ ctx.fillStyle=c; for(let k=0;k<7;k++){ const yy=by+16+((world.t*90+k*14)%(bh-30)); ctx.globalAlpha=.75; ctx.beginPath(); ctx.arc(sx-10+((k*7)%20),yy,i===0?4:2.5,0,7); ctx.fill(); } ctx.globalAlpha=1;
+        if(i===1){ ctx.save(); ctx.translate(sx,by+bh-36); ctx.rotate(world.t*12); ctx.strokeStyle=c; ctx.lineWidth=3; for(let k=0;k<6;k++){ ctx.rotate(Math.PI/3); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,16); ctx.stroke(); } ctx.restore(); } } });
+    mIn(bx+bw/2,by+bh+16,m.car,MI(m.car),P); MLbl(`${s.washed}/${m.n}`,x+w-20,y+14,P,P.strong,'800 11px ui-monospace,monospace'); }},
+  press:{w:240,h:150,f(x,y,w,h,P,m,s){ const px=x+60, pw=90;
+    ctx.fillStyle=P.metal; ctx.fillRect(px-10,y+4,pw+20,14); ctx.fillRect(px-10,y+4,12,130); ctx.fillRect(px+pw-2,y+4,12,130); ctx.fillRect(px-10,y+122,pw+20,14);
+    const ry=y+20+s.pos*70; ctx.fillStyle=P.dim; ctx.fillRect(px+pw/2-6,y+18,12,ry-y-18); ctx.fillStyle=MQ(m.p)?P.pri:P.strong; rr(px+8,ry,pw-16,26,4); ctx.fill();
+    ctx.fillStyle='#ffb020'; ctx.fillRect(px+20,y+112,pw-40,10); MLbl(m.p,px+pw/2,ry+17,P,P.bg1,'800 9px ui-monospace,monospace');
+    [[m.l,x+20],[m.r,x+w-20]].forEach(([a,hx])=>{ const on=MI(a); ctx.fillStyle=on?'#34e05a':'#c0392b'; ctx.strokeStyle=P.edge; ctx.lineWidth=2; if(on){ ctx.shadowColor='#34e05a'; ctx.shadowBlur=14; } ctx.beginPath(); ctx.arc(hx,y+100,15,0,7); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+      MLbl('✋',hx,y+76,P,P.txt,'16px system-ui'); MLbl(a,hx,y+128,P); });
+    MLbl(`${tx('Basış','Strokes')}: ${world.cnt.stroke||0}`,px+pw/2,y+148,P,P.strong,'800 10px system-ui'); }},
+  alarm:{w:200,h:130,f(x,y,w,h,P,m,s){ const hx=x+40, hw=120, hy=y+46, hh=74;
+    ctx.fillStyle=P.binBg; ctx.strokeStyle=P.edge; ctx.lineWidth=2.5; ctx.beginPath(); ctx.moveTo(hx-8,hy); ctx.lineTo(hx+hw/2,y+8); ctx.lineTo(hx+hw+8,hy); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillRect(hx,hy,hw,hh); ctx.strokeRect(hx,hy,hw,hh);
+    const op=s.open>0, dx=hx+hw/2-14; ctx.fillStyle=P.bg2; ctx.fillRect(dx,hy+26,28,48); ctx.fillStyle='#8a5a32'; if(op){ ctx.beginPath(); ctx.moveTo(dx,hy+26); ctx.lineTo(dx+12,hy+30); ctx.lineTo(dx+12,hy+70); ctx.lineTo(dx,hy+74); ctx.fill(); } else ctx.fillRect(dx,hy+26,28,48);
+    if(op){ MLbl('🚶',dx+20,hy+64,P,P.txt,'22px system-ui'); }
+    ctx.fillStyle='#ffd34d'; ctx.globalAlpha=.6; ctx.fillRect(hx+10,hy+12,22,18); ctx.fillRect(hx+hw-32,hy+12,22,18); ctx.globalAlpha=1;
+    mIn(dx+14,hy+16,m.door,MI(m.door),P,'#ff3b30');
+    const ar=!!world.sw[m.arm]; MLbl(ar?'🔒 '+tx('KURULU','ARMED'):'🔓 '+tx('KAPALI','OFF'),hx+hw/2,y+h+4,P,ar?'#ffb020':P.txt,'800 10px system-ui'); }}
+};
+function machItem(P){ const m=world.sc.mach, d=m&&MDRAW[m.kind]; if(!d||!world.ms) return null;
+  const sc=Math.min(1.7,(W-(world.sc.lamps.length*44)-24)/d.w, (H-24)/d.h);
+  return {w:d.w*sc,h:d.h*sc,f:(x,y)=>{ ctx.save(); ctx.translate(x,y); ctx.scale(sc,sc); d.f(0,0,d.w,d.h,P,m,world.ms); ctx.restore(); }}; }
 /* ---------- Ana döngü ---------- */
 // bant uzun süre duruyor, kutular bekliyor ve START butonu varsa oyuncuya hatırlat
 let idleT=0;

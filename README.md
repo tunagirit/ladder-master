@@ -1,6 +1,6 @@
 # ⚡ Ladder Master — PLC Merdiven Mantığı Bulmacası
 
-*PLC ladder logic puzzle game for mobile — Türkçe / English* · **Sürüm v1.1.5a**
+*PLC ladder logic puzzle game for mobile — Türkçe / English* · **Sürüm v1.1.6**
 
 Telefon ekranı için tasarlanmış, tarayıcıda çalışan bir **PLC Ladder (merdiven) mantık bulmaca oyunu**.
 Tek bir HTML dosyası; harici kütüphane, görsel veya ses dosyası yok.
@@ -11,7 +11,8 @@ Tek bir HTML dosyası; harici kütüphane, görsel veya ses dosyası yok.
 Ya da `index.html` dosyasını tarayıcıda aç.
 
 ## Özellikler
-- **Yol haritası:** tek, sonsuz ve giderek zorlaşan bir yol. Temel mantıkla başlar; 16. bölümde zamanlayıcılar, 36. bölümde sayıcılar, sonra karşılaştırma (46), kenar ve özel bitler (56), taşıma ve matematik (66), 7-segment dönüştürme (81), kaydırma (91), bayt mantığı (101) ve saat (111) katılır. Sonra hepsi karışık gelir; her 10. bölüm 🔥 Ekstra Zor ve birden fazla komut ailesini birleştirir. Arada, ekstra zordan daha seyrek 🎉 Bonus bölümler gelir: trafik lambası, şifreli kasa, disko ışıkları, turbo bant rekoru
+- **Yol haritası:** 10.000 bölümlük, giderek zorlaşan tek bir yol. Temel mantıkla başlar; 16. bölümde zamanlayıcılar, 36. bölümde sayıcılar, sonra karşılaştırma (46), kenar ve özel bitler (56), taşıma ve matematik (66), 7-segment dönüştürme (81), kaydırma (91), bayt mantığı (101) ve saat (111) katılır. Sonra hepsi karışık gelir; her 10. bölüm 🔥 Ekstra Zor ve birden fazla komut ailesini birleştirir. Arada, ekstra zordan daha seyrek 🎉 Bonus bölümler gelir: trafik lambası, şifreli kasa, disko ışıkları, turbo bant rekoru
+- **Bant dışı sistemler (v1.1.6):** motor yol verme, termik arıza kilidi, yıldız-üçgen, ileri-geri (kilitlemeli) motor, garaj kapısı (+ fotosel), 2 katlı asansör (+ kat göstergesi), otopark bariyeri, oto yıkama, çift el emniyetli pres, sera iklimi, dönüşümlü pompalar ve ev alarmı. 60. bölümden sonra yolun yaklaşık %40'ı bu sistemlerden oluşur.
 - **Sanal PLC (S7-200 tarzı):** 20 ms scan cycle
   - Bit mantığı: Açık/Kapalı kontak, Bobin, Set/Reset, paralel kol (OR), kenar algılama P/N, NOT, özel bitler SM0.0 / SM0.1 / SM0.5
   - Zamanlayıcılar ve sayıcılar: TON, TOF, TONR, CTU, CTD
@@ -38,12 +39,16 @@ Kaynak `src/` klasöründe parçalar halinde durur:
 |---|---|
 | `logic.js` | PLC motoru (scan cycle) ve fabrika dünyası (`World`) |
 | `gen.js` | Bölüm üreticisi — temel şablonlar, adres düzeni |
+| `mach.js` | Bant dışı makinelerin fiziği (motor, kapı, asansör, otopark…) |
+| `gen3.js` | v1.1.6 makine bölümleri ve 10.000 bölümlük yol |
+| `mdraw.js` | Makine çizimleri |
 | `gen2.js` | Yeni komut aileleri şablonları, yol haritası (`TPL`), adres kuralları, eski kayıt taşıma |
 | `ui_*.js`, `part_*.js`, `canvas_part.js` | Arayüz, menüler, editör, canvas sahnesi |
 
 ```sh
 ./build.sh                      # src/ → index.html
-node tests/levels.test.js       # yolun ilk 1200 bölümünü referans çözümle simülasyonda doğrular
+node tests/levels.test.js       # 10.000 bölümün hepsini referans çözümle simülasyonda doğrular (FROM/TO ile aralık)
+node tests/negative.test.js     # yeni sistemlerde bozulmuş çözümlerin geçmediğini doğrular
 node tests/solutions.test.js    # çözümlerin editörde kurulabilir olduğunu (palet, adres, süre) doğrular
 ```
 

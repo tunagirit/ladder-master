@@ -1,8 +1,8 @@
 // Her bölümün referans çözümü, oyuncunun editörde gerçekten kurabileceği bir devre mi?
 const fs=require('fs');
-const code=['logic','gen','gen2'].map(f=>fs.readFileSync(__dirname+'/../src/'+f+'.js','utf8')).join('\n');
+const code=['logic','mach','gen','gen2','gen3'].map(f=>fs.readFileSync(__dirname+'/../src/'+f+'.js','utf8')).join('\n');
 const M=new Function(code+';return {getLevel,COLS,OUTC,isOut,branchSpan,addrList,NOADDR,OPS,isTim,isCnt};')();
-let bad=0; const N=+process.argv[2]||1200;
+let bad=0; const N=+process.argv[2]||10000;
 for(let id=0;id<N;id++){ const lv=M.getLevel(id); const errs=[];
   if(lv.sol.rungs.length>8) errs.push('8 satırdan fazla');
   lv.sol.rungs.forEach((rg,ri)=>{

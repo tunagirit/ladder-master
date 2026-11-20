@@ -1,18 +1,19 @@
 /*==UI==*/
 const $=(s,r=document)=>r.querySelector(s);
-const VERSION='v1.1.5a';
+const VERSION='v1.1.6';
 const I=(n,c)=>'<span class="ms'+(c?' '+c.split(' ').map(x=>x==='f'?'f':'ms-'+x).join(' '):'')+'">'+n+'</span>';  // Material Symbols ikon
 const SKEY='ladderustasi_v2';
 let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1,theme:'auto',lang:null,seen:{}};
 try{const s=JSON.parse(localStorage.getItem(SKEY)||'null'); if(s) save=Object.assign(save,s);}catch(e){}
 delete save.unlock; if(!save.seen) save.seen={};
-if(save.v!==6){ save.done={}; save.draft={}; save.last=-1; save.v=6; }  // v1.1.3: oyun mantığı değişti, ilerleme sıfırdan
+if(save.v!==6&&save.v!==7){ save.done={}; save.draft={}; save.last=-1; save.v=7; }  // v1.1.3: oyun mantığı değişti, ilerleme sıfırdan
+if(save.v===6){ migrate115(save.done,save.draft||{}); save.v=7; }       // v1.1.6: yeni sistemler eklendi
 const persist=()=>{try{localStorage.setItem(SKEY,JSON.stringify(save));}catch(e){}};
 const S={id:0,lv:null,prog:null,tags:{},tool:null,running:false,speed:1,cw:70,view:false,redo:false,mscr:null};
 let world=null,plc=new PLC(),LIVE=[];
 const clone=o=>JSON.parse(JSON.stringify(o));
 const points=()=>Object.keys(save.done).length;
 const extraDone=()=>Object.keys(save.done).filter(k=>isExtra(+k)).length;
-const frontier=()=>{ let i=0; while(save.done[i]) i++; return i; };   // ilk çözülmemiş bölüm
+const frontier=()=>{ let i=0; while(save.done[i]&&i<ROAD_END-1) i++; return i; };   // ilk çözülmemiş bölüm
 const topicDone=c=>Object.keys(save.done).filter(k=>getLevel(+k).cat===c).length;
-const unlocked=id=>id===0||!!save.done[id-1]||!!save.done[id];
+const unlocked=id=>id<ROAD_END&&(id===0||!!save.done[id-1]||!!save.done[id]);

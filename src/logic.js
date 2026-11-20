@@ -123,17 +123,19 @@ class World{
     this.startPressed=false; this.startFall=null; this.pS=false; this.noStart=0; this.pP=false; this.stopWatch=0; this.stopPressT=null;
     this.pc=false; this.pendB=null; this.parkT=0; this.lpT=0; this.pA=false; this.ackSeen=false; this.pl=false;
     this.lrT=0; this.loT=0; this.andT=0; this.orT=0; this.atT=0; this.oa=0; this.ob=0; this.pkS=null; this.pLd=false; this.pSrc=false; this.srcFall=null; this.pLt=false; this.pLc=false; this.startAt=null; this.sdLamp=0; this.mFall=null; this.prevSp=false; this.prevFan=false; this.sprayOffT=null; this.q={}; this.shake=0;
-    this.rs=this.sc.rules.map(()=>({})); this.cnt={}; this.pv=this.sc.proc?this.sc.proc.v0:0; this.hour=this.sc.clock?this.sc.clock.h0:0; this.spd=this.sc.speed;
+    this.rs=this.sc.rules.map(()=>({})); this.hold={}; this.mv={}; this.ms=this.sc.mach&&typeof MACH!=='undefined'?MACH[this.sc.mach.kind].init(this.sc.mach,this):null; this.cnt={}; this.pv=this.sc.proc?this.sc.proc.v0:0; this.hour=this.sc.clock?this.sc.clock.h0:0; this.spd=this.sc.speed;
   }
   fail(m){ if(!this.err&&!this.done) this.err=m; return false; }
   press(a){ const d=this.lv.io.I.find(x=>x.a===a); if(!d) return; if(d.k==='btn') this.pulse[a]=0.3; else if(d.k==='sw') this.sw[a]=!this.sw[a]; }
   sensorOn(a){ const s=this.sc.sensors.find(s=>s.a===a); if(!s) return false; return this.boxes.some(b=>b.st==='belt'&&Math.abs(b.x-s.x)<=BW); }
   sense(){
-    const iv={};
+    const iv={}; if(this.ms) MACH[this.sc.mach.kind].sense(this,this.sc.mach,this.ms);
     for(const d of this.lv.io.I){
       if(d.k==='btn') iv[d.a]=(this.pulse[d.a]||0)>0;
       else if(d.k==='sw') iv[d.a]=!!this.sw[d.a];
       else if(d.k==='sensor') iv[d.a]=this.sensorOn(d.a);
+      else if(d.k==='hold') iv[d.a]=!!this.hold[d.a];
+      else if(d.k==='m') iv[d.a]=!!this.mv[d.a];
       else if(d.k==='limit'){ const p=this.sc.pistons.find(p=>p.lim===d.a); iv[d.a]=!!p&&this.ext[p.a]>=0.98; }
     }
     if(this.sc.proc) iv[this.sc.proc.ai]=Math.round(Math.max(0,Math.min(1,this.pv))*32000);
@@ -147,7 +149,8 @@ class World{
     this.motor=!!q[sc.motor];
     if(sc.speedW){ this.spd=Math.max(0,Math.min(60,+q[sc.speedW]||0)); }
     if(sc.clock){ this.hour=Math.floor(sc.clock.h0+this.t*sc.clock.rate)%24; }
-    if(sc.proc){ const P=sc.proc; this.pv+=((q[P.a]?P.up:0)-P.down)*dt; if(P.out) this.pv-=(q[P.out]?P.outRate:0)*dt;
+    if(this.ms){ const m=MACH[sc.mach.kind].step(this,q,dt,sc.mach,this.ms); if(typeof m==='string') return this.fail(m); }
+    if(sc.proc){ const P=sc.proc, on=Array.isArray(P.a)?P.a.some(a=>q[a]):q[P.a]; this.pv+=((on?P.up:0)-P.down+(P.drift?P.drift*Math.sin(this.t*P.dw):0))*dt; if(P.out) this.pv-=(q[P.out]?P.outRate:0)*dt;
       if(this.pv>=P.max) return this.fail(P.maxMsg); if(this.pv<=P.min) return this.fail(P.minMsg); }
     for(const p of sc.pistons){ const tg=q[p.a]?1:0, e=this.ext[p.a], d=tg-e, st=PIST_V*dt; this.ext[p.a]=Math.abs(d)<=st?tg:e+Math.sign(d)*st; }
     if(this.motor){ const v=sc.speedW?this.spd:sc.speed; this.beltOff=(this.beltOff+v*dt)%1000; for(const b of this.boxes) if(b.st==='belt') b.x+=v*dt; }

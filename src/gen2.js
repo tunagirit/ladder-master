@@ -512,10 +512,11 @@ const OLD_LEN=[[9,6,4],[3,3,3],[3,3,3]];
 const NC_=TOPIC_START.length, BONUS_C=NC_;
 // bonus: ~15 bölümde bir (ekstra zordan nadir), konu tanıtımlarına ve ekstra zorlara denk gelmez
 const isBonus=i=>i>=10&&i%15===12&&!isExtra(i)&&!intro(i,false);
-function tplLen(c,pool,i,old){ return (old||i<NEW_FROM)&&c<3?OLD_LEN[c][pool]:TPL[c][pool].length; }
-function intro(i,old){ const n=old?3:NC_; for(let c=0;c<n;c++){ const k=i-TOPIC_START[c]; if(k>=0&&k<TPL[c][0].length&&(c===0||c>=3||k<3)) return {c,pool:0,t:k}; } return null; }
+// old: true = v1.1.1 yolu, 'v115' = v1.1.5 yolu (yeni sistemler eklenmeden önce), false = güncel
+function tplLen(c,pool,i,old){ return (old===true||i<NEW_FROM)&&c<3?OLD_LEN[c][pool]:old==='v115'?LEN_115[c][pool]:TPL[c][pool].length; }
+function intro(i,old){ const n=old===true?3:NC_; for(let c=0;c<n;c++){ const k=i-TOPIC_START[c]; if(k>=0&&k<TPL[c][0].length&&(c===0||c>=3||k<3)) return {c,pool:0,t:k}; } return null; }
 function pickTpl(i,old){
-  const r=mkRng(i*104729+17); const n=old?3:NC_;
+  const r=mkRng(i*104729+17); const n=old===true?3:NC_;
   const open=[...Array(n).keys()].filter(c=>i>=TOPIC_START[c]+Math.min(3,TPL[c][0].length));   // tanıtımı bitmiş konular
   if(isExtra(i)){ const c=open[Math.floor(r()*open.length)]; return {c,pool:2,t:Math.floor(r()*tplLen(c,2,i,old))}; }
   const fx=intro(i,old); if(fx) return fx;
@@ -523,10 +524,13 @@ function pickTpl(i,old){
   let x=r()*w.reduce((a,b)=>a+b,0), c=open[0]; for(let j=0;j<open.length;j++){ x-=w[j]; if(x<0){ c=open[j]; break; } }
   const pm=Math.max(0,Math.min(0.85,(i-TOPIC_START[c]-6)/50));       // konu içinde orta seviye olasılığı zamanla artar
   const pool=r()<pm?1:0;
-  return {c,pool,t:Math.floor(r()*tplLen(c,pool,i,old))};
+  const t=Math.floor(r()*tplLen(c,pool,i,old));
+  // v1.1.6: bant dışı sistemler (motor, kapı, asansör, otopark…) yolun ~%40'ını oluşturur
+  if(!old&&i>=60&&typeof MACH_SLOTS!=='undefined'&&r()<0.4){ const sl=MACH_SLOTS.filter(s=>open.includes(s.c)&&s.pool<=pool+1); if(sl.length) return Object.assign({},sl[Math.floor(r()*sl.length)]); }
+  return {c,pool,t};
 }
 function tplKey(n,old){
-  if(!old&&isBonus(n)){ const av=BONUS.map((_,j)=>j).filter(j=>n>=BONUS_MIN[j]); return {c:BONUS_C,pool:0,t:av[Math.floor(n/15)%av.length]}; }
+  if(old!==true&&isBonus(n)){ const av=BONUS.map((_,j)=>j).filter(j=>n>=BONUS_MIN[j]); return {c:BONUS_C,pool:0,t:av[Math.floor(n/15)%av.length]}; }
   let p=pickTpl(n,old);
   if(n>0&&!isExtra(n)){ const q=tplKey(n-1,old); if(q.c===p.c&&q.pool===p.pool&&q.t===p.t){ const L=tplLen(p.c,p.pool,n,old); p=Object.assign({},p,{t:(p.t+1)%L}); } }
   return p;
@@ -552,6 +556,9 @@ function remapProg(id,rec){
   if(rec.tags){ const t={}; for(const a in rec.tags) t[m[a]||a]=rec.tags[a]; rec.tags=t; }
   return rec;
 }
+/* v1.1.5 → v1.1.6: yeni sistemler havuzlara eklendi; şablonu değişen bölümün kayıtlı çözümü düşer, puanı kalır */
+function same115(id){ const a=tplKey(id,'v115'), b=tplKey(id,false); return a.c===b.c&&a.pool===b.pool&&a.t===b.t; }
+function migrate115(done,draft){ let n=0; for(const k in done){ if(!same115(+k)){ done[k]={prog:null,tags:{}}; n++; } } if(draft) for(const k in draft) if(!same115(+k)) delete draft[k]; return n; }
 function migrateDone(done){ const o={}; for(const k in done){ const id=+k; o[k]=sameTpl(id)?remapProg(id,done[k]):{prog:null,tags:{}}; } return o; }
 /* hangi adresler hangi alana konabilir (editör ve test ortak) */
 function addrGroups(lv,t,field){
