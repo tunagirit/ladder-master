@@ -1,6 +1,6 @@
 # ⚡ Ladder Master — PLC Merdiven Mantığı Bulmacası
 
-*PLC ladder logic puzzle game for mobile — Türkçe / English* · **Sürüm v1.1.6**
+*PLC ladder logic puzzle game for mobile — Türkçe / English* · **Sürüm v1.1.7**
 
 Telefon ekranı için tasarlanmış, tarayıcıda çalışan bir **PLC Ladder (merdiven) mantık bulmaca oyunu**.
 Tek bir HTML dosyası; harici kütüphane, görsel veya ses dosyası yok.
@@ -42,6 +42,7 @@ Kaynak `src/` klasöründe parçalar halinde durur:
 | `mach.js` | Bant dışı makinelerin fiziği (motor, kapı, asansör, otopark…) |
 | `gen3.js` | v1.1.6 makine bölümleri ve 10.000 bölümlük yol |
 | `mdraw.js` | Makine çizimleri |
+| `nav.js` | Geri tuşu: uygulama içinde bir adım geri (ana menüde iki kez basınca çıkar) |
 | `gen2.js` | Yeni komut aileleri şablonları, yol haritası (`TPL`), adres kuralları, eski kayıt taşıma |
 | `ui_*.js`, `part_*.js`, `canvas_part.js` | Arayüz, menüler, editör, canvas sahnesi |
 
