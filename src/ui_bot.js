@@ -144,12 +144,13 @@ function showMenu(scr,cat,diff){
   } else if(scr==='board'){
     h=`<div class="topbar">${back('main')}<h3>${tx('Liderlik Tablosu','Leaderboard')}</h3><button class="ib" data-go="board">${I('refresh')}</button></div><div id="brd"><p class="t" style="text-align:center">${tx('Yükleniyor…','Loading…')}</p></div>`;
   } else if(scr==='how'){
-    h=`<div class="topbar">${back('main')}<h3>${tx('Nasıl Oynanır?','How to Play')}</h3></div>${HOW()}<div class="cat">${tx('ELEMAN REHBERİ','ELEMENT GUIDE')}</div>${ELEM_ORDER.map(k=>`<div class="gcard">${elemHTML(k,true)}</div>`).join('')}<button class="bigbtn play" data-go="map" style="margin-top:12px">${tx('▶ OYNA','▶ PLAY')}</button>`;
+    h=`<div class="topbar">${back('main')}<h3>${tx('Nasıl Oynanır?','How to Play')}</h3></div>${HOW_PAGE()}<button class="bigbtn play" data-go="map" style="margin-top:12px">${tx('▶ OYNA','▶ PLAY')}</button>`;
   }
   $('#menuIn').innerHTML=h; $('#menuIn').scrollTop=0; $('#menu').classList.add('show');
   const mi=$('#menuIn'); mi.classList.remove('scrIn'); void mi.offsetWidth; mi.classList.add('scrIn');
   if(scr==='board') loadBoard();
   if(scr==='map') drawRoad();
+  if(scr==='how') demoWire($('#menuIn'));
   if(scr==='main') maybeAskInstall();
 }
 const HOW=()=>tx(`<p class="t"><b>Amaç:</b> Görevdeki fabrika makinesini ladder (merdiven) diyagramı ile programla.</p>
@@ -173,6 +174,7 @@ $('#menuIn').onclick=e=>{
   if(g==='main'||g==='cats'||g==='prog'||g==='set'||g==='how') showMenu(g);
   else if(g==='map') showMenu('map');
   else if(g==='install') installFlow(true);
+  else if(g==='tour') showTour(0);
   else if(g==='cont') loadLevel(save.last);
   else if(g==='lvl'){ const id=+b.dataset.id; if(!unlocked(id)){ toast(tx('Önce önceki bölümü tamamla','Complete the previous level first')); return; } loadLevel(id); }
   else if(g==='acct'){ S.mreg=false; showMenu('acct'); }

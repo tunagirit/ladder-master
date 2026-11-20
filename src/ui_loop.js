@@ -46,7 +46,7 @@ $('#bSnd').innerHTML=I(save.sound?'volume_up':'volume_off');
 LANG=save.lang||((navigator.language||'tr').toLowerCase().startsWith('tr')?'tr':'en'); save.lang=LANG; applyTheme(); applyStatic();
 resizeCanvas(); loadLevel(save.last>=0?save.last:0,true);
 showMenu('main');
-if(!save.intro){ card(`<h3>${tx('Ladder Master\'a hoş geldin!','Welcome to Ladder Master!')}</h3>${HOW()}<div class="brow"><button class="btn pri wide" id="ok">${tx('Başlayalım','Let\'s go')}</button></div>`,e=>{ if(e.target.id==='ok'){ save.intro=true; persist(); closeAll(); showMenu('main'); } }); }
+if(!save.intro) setTimeout(()=>showTour(0,()=>{ save.intro=true; persist(); showMenu('main'); }),250);   // v1.1.8: ilk girişte sayfa sayfa tanıtım
 requestAnimationFrame(frame);
 if(me()) pullProgress().catch(()=>{});
 if(isIOS()) setTimeout(maybeAskInstall,1500);
