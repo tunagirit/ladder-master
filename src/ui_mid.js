@@ -3,7 +3,7 @@ function loadLevel(id,quiet){
   S.id=id; const lv=S.lv=getLevel(id); save.last=id; persist();
   const dn=save.done[id]; S.redo=false; S.tool=null;
   if(dn&&dn.prog){ S.view=true; S.prog=clone(dn.prog); S.tags=Object.assign(defaultTags(lv),customTags(dn.tags)); }
-  else { S.view=false; const d=save.draft[id]; S.prog=d&&d.rungs&&d.rungs.length?{rungs:clone(d.rungs)}:{rungs:[mkRung()]}; S.tags=Object.assign(defaultTags(lv),customTags(d&&d.tags)); }
+  else { S.view=false; const d=save.draft[id]; S.prog=d&&d.rungs&&d.rungs.length?{rungs:clone(d.rungs)}:{rungs:[]}; S.tags=Object.assign(defaultTags(lv),customTags(d&&d.tags)); }
   world=new World(lv); plc.reset(); stopSim(true);
   setHeader();
   S.fresh=S.view?[]:freshElems(lv);
@@ -23,7 +23,7 @@ function refreshMode(){
 function saveDraft(){ if(S.view||S.redo) return; save.draft[S.id]={rungs:S.prog.rungs,tags:customTags(S.tags)}; persist(); }
 const saveProg=saveDraft;
 function guard(){ if(S.view){ toast(tx('Tamamlanmış bölüm — düzenlemek için alttaki Sıfırla\'ya bas','Level completed — tap Reset below to edit')); return true; } return false; }
-$('#bReset').onclick=()=>{ Snd.init(); Snd.click(); S.view=false; S.redo=true; S.prog={rungs:[mkRung()]}; S.tags=defaultTags(S.lv); S.tool=null;
+$('#bReset').onclick=()=>{ Snd.init(); Snd.click(); S.view=false; S.redo=true; S.prog={rungs:[]}; S.tags=defaultTags(S.lv); S.tool=null;
   stopSim(true); refreshMode(); renderLadder(); toast(tx('Sıfırlandı — çözmeden çıkarsan eski çözümün korunur','Reset — if you leave without solving, your old solution is kept')); };
 
 /* ---------- Palet ---------- */
@@ -48,8 +48,17 @@ function canPlace(t,i,r,c){
   const rg=S.prog.rungs[i]; if(!rg||rg.c[r][c]) return 'dolu'; if(r===1&&!rg.br) return 'x';
   if(isOut(t)){ if(c!==OUTC||r!==0) return r===1?tx('Paralel kolda yalnızca kontak olur','Only contacts go on a parallel branch'):tx('Bobin / zamanlayıcı / sayıcı en sağ sütuna konur','Coils / timers / counters go in the rightmost column'); }
   else if(c===OUTC) return tx('Kontaklar sol sütunlara konur','Contacts go in the left columns');
-  return '';
+  return posMsg(i,r,c);
 }
+/* soldan sağa kuralı: solu boşken sağa blok konmaz; çıkış, hatta en az bir kontak olunca gelir */
+function posMsg(i,r,c){ const rg=S.prog.rungs[i], row=rg.c[r];
+  if(r===0){ if(c<OUTC&&c>0&&!row[c-1]) return tx('Soldan sağa kur: önce soldaki boş yere blok koy','Build left to right: fill the empty spot on the left first');
+    if(c===OUTC&&!row[0]) return tx('Önce soldan bir kontak koy — çıkış en sona gelir','Place a contact on the left first — the output comes last'); return ''; }
+  if(c<OUTC&&row.some(Boolean)&&!row[c-1]&&!row[c+1]) return tx('Paralel kol bitişik olmalı: mevcut kol bloğunun yanına koy','A branch must be continuous: place it next to the existing branch block');
+  return ''; }
+const posOK=(i,r,c)=>{ const rg=S.prog.rungs[i]; if(!rg||rg.c[r][c]||(r===1&&!rg.br)) return false; return !posMsg(i,r,c); };
+// ana hatta silinen bloğun boşluğunu kapat (bloklar sola kayar)
+function compact(i){ const row=S.prog.rungs[i]&&S.prog.rungs[i].c[0]; if(!row) return; const k=row.slice(0,OUTC).filter(Boolean); for(let c=0;c<OUTC;c++) row[c]=k[c]||null; }
 
 /* ---------- Ladder etkileşimi ---------- */
 $('#rungs').addEventListener('click',e=>{
@@ -68,7 +77,7 @@ $('#rungs').addEventListener('click',e=>{
 let drag=null;
 function cellAt(x,y){ const el=document.elementFromPoint(x,y); return el&&el.closest?el.closest('#rungs .cell'):null; }
 function inPalette(x,y){ const el=document.elementFromPoint(x,y); return !!(el&&el.closest&&el.closest('#palette')); }
-function dragClean(){ document.querySelectorAll('.cell.dz,.dragsrc').forEach(x=>x.classList.remove('dz','sw','dragsrc')); $('#ghost').style.display='none'; $('#palette').classList.remove('trash','hot'); refreshTool(); }
+function dragClean(){ document.querySelectorAll('.cell.dz,.dragsrc').forEach(x=>x.classList.remove('dz','sw','dragsrc')); $('#ghost').style.display='none'; $('#ghost').classList.remove('lift'); document.body.classList.remove('dragging'); $('#palette').classList.remove('trash','hot'); refreshTool(); }
 // hedef hücre için eylem: 'move' | 'swap' | hata mesajı
 function dropAction(d,i,r,c){
   if(!d.from) return canPlace(d.t,i,r,c)||'new';
@@ -93,32 +102,40 @@ function showTip(el,t,extra){
   tp.style.setProperty('--ax',(r.left+r.width/2-x)+'px'); tp.classList.toggle('below',y>r.top);
   Hap.info(); Snd.init(); Snd.click();
 }
-function armTip(el,t,extra){ clearTimeout(tipT); tipT=setTimeout(()=>{ if(drag&&!drag.on){ drag.tip=true; showTip(el,t,extra); } },430); }
+const isMouse=e=>e&&e.pointerType==='mouse';
+function armTip(el,t,extra,e){ clearTimeout(tipT); if(isMouse(e)) return; tipT=setTimeout(()=>{ if(drag&&!drag.on){ drag.tip=true; showTip(el,t,extra); } },430); }
+// parçayı tutulduğu noktadan kaldır (hayalet, imleç/parmak altındaki noktayı korur)
+function grab(e,el,o){ const rc=el.getBoundingClientRect(); o.gx=(e.clientX-rc.left)/rc.width; o.gy=(e.clientY-rc.top)/rc.height; o.mouse=isMouse(e);
+  if(o.mouse){ e.preventDefault(); try{ el.setPointerCapture(e.pointerId); }catch(_){} } return o; }
+function placeGhost(x,y){ const g=$('#ghost'); g.style.left=(x-drag.gx*72)+'px'; g.style.top=(y-drag.gy*64)+'px'; }
 document.addEventListener('pointerdown',e=>{ if(!e.target.closest('#tip')) hideTip(); },true);
-$('#palette').addEventListener('pointerdown',e=>{ const b=e.target.closest('.pal'); if(!b) return; if(S.view){ drag={t:b.dataset.t,x:e.clientX,y:e.clientY,pid:e.pointerId,on:false,ro:true}; armTip(b,b.dataset.t); return; }
-  drag={t:b.dataset.t,x:e.clientX,y:e.clientY,pid:e.pointerId,on:false}; armTip(b,b.dataset.t); });
+$('#palette').addEventListener('pointerdown',e=>{ const b=e.target.closest('.pal'); if(!b||e.button>0) return;
+  drag=grab(e,b,{t:b.dataset.t,x:e.clientX,y:e.clientY,pid:e.pointerId,on:false,ro:S.view}); armTip(b,b.dataset.t,null,e); });
 $('#rungs').addEventListener('pointerdown',e=>{
-  const ce=e.target.closest('.cell'); if(!ce) return;
+  const ce=e.target.closest('.cell'); if(!ce||e.button>0) return;
   const i=+ce.closest('.rung').dataset.i, r=+ce.dataset.r, c=+ce.dataset.c, cell=S.prog.rungs[i].c[r][c]; if(!cell) return;
-  drag={t:cell.t,x:e.clientX,y:e.clientY,pid:e.pointerId,on:false,from:{i,r,c,el:ce},ro:S.view};
-  const ex=cellDesc(cell);
-  armTip(ce,cell.t,ex);
+  drag=grab(e,ce,{t:cell.t,x:e.clientX,y:e.clientY,pid:e.pointerId,on:false,from:{i,r,c,el:ce},ro:S.view});
+  armTip(ce,cell.t,cellDesc(cell),e);
 });
 window.addEventListener('pointermove',e=>{
   if(!drag||e.pointerId!==drag.pid) return;
   if(drag.tip||drag.ro) return;
   if(!drag.on){
     const dx=e.clientX-drag.x, dy=e.clientY-drag.y, dist=Math.hypot(dx,dy);
-    if(drag.from){ if(dist<7) return; drag.from.el.classList.add('dragsrc'); $('#palette').classList.add('trash'); }
-    else { if(dist<10) return; if(e.pointerType!=='mouse'&&Math.abs(dy)<Math.abs(dx)){ clearTimeout(tipT); drag=null; return; } }
-    clearTimeout(tipT); Hap.pick();
-    drag.on=true; const g=$('#ghost'); g.innerHTML=palSym(drag.t)+'<span>'+(drag.from?drag.from.el.querySelector('.ad,.bt')?.textContent||BS[drag.t]:BS[drag.t])+'</span>'; g.style.display='flex';
+    if(dist<(drag.mouse?4:drag.from?7:10)) return;
+    if(!drag.from&&!drag.mouse&&Math.abs(dy)<Math.abs(dx)*0.45){ clearTimeout(tipT); drag=null; return; }   // belirgin yatay hareket = palet kaydırma
+    if(drag.from){ drag.from.el.classList.add('dragsrc'); $('#palette').classList.add('trash'); }
+    clearTimeout(tipT); hideTip(); Hap.pick();
+    drag.on=true; const g=$('#ghost'); g.innerHTML=palSym(drag.t)+'<span>'+(drag.from?drag.from.el.querySelector('.ad,.bt')?.textContent||BS[drag.t]:BS[drag.t])+'</span>';
+    placeGhost(e.clientX,e.clientY); g.style.display='flex'; requestAnimationFrame(()=>g.classList.add('lift')); document.body.classList.add('dragging');
     $('#rungs').dataset.tool=isOut(drag.t)?'o':'c'; Snd.init(); Snd.click();
   }
   e.preventDefault();
-  $('#ghost').style.transform=`translate(${e.clientX-36}px,${e.clientY-32}px)`;
+  placeGhost(e.clientX,e.clientY);
   const rb=$('#rungs').getBoundingClientRect();
-  if(e.clientY<rb.top+28&&e.clientY>rb.top-40) $('#rungs').scrollTop-=7; else if(e.clientY>rb.bottom-28&&e.clientY<rb.bottom+4) $('#rungs').scrollTop+=7;
+  // kenar kaydırma yalnızca kenarda bir an bekleyince (paletten yukarı geçerken liste kaymasın)
+  const zone=(e.clientY<rb.top+28&&e.clientY>rb.top-40)?-1:(e.clientY>rb.bottom-28&&e.clientY<rb.bottom)?1:0, now=performance.now();
+  if(zone!==drag.zone){ drag.zone=zone; drag.zt=now; } if(zone&&now-drag.zt>350) $('#rungs').scrollTop+=zone*7;
   if(drag.from) $('#palette').classList.toggle('hot',inPalette(e.clientX,e.clientY));
   const ce=cellAt(e.clientX,e.clientY);
   document.querySelectorAll('.cell.dz').forEach(x=>{ if(x!==ce) x.classList.remove('dz','sw'); });
@@ -131,11 +148,15 @@ window.addEventListener('pointerup',e=>{
   if(d.tip){ justDragged=true; setTimeout(()=>justDragged=false,80); setTimeout(hideTip,2600); return; }
   if(!d.on) return; Hap.drop(); justDragged=true; setTimeout(()=>justDragged=false,60); Snd.init();
   const rs=S.prog.rungs;
-  if(d.from&&inPalette(e.clientX,e.clientY)){ rs[d.from.i].c[d.from.r][d.from.c]=null; saveDraft(); renderLadder(); Snd.click(); Hap.err(); toast(tx('Blok silindi','Block deleted')); return; }
-  const ce=cellAt(e.clientX,e.clientY); if(!ce) return;
+  if(d.from&&inPalette(e.clientX,e.clientY)){ rs[d.from.i].c[d.from.r][d.from.c]=null; if(d.from.r===0) compact(d.from.i); saveDraft(); renderLadder(); Snd.click(); Hap.err(); toast(tx('Blok silindi','Block deleted')); return; }
+  const ce=cellAt(e.clientX,e.clientY);
+  if(!ce){ const ad=document.elementFromPoint(e.clientX,e.clientY); if(!d.from&&ad&&ad.closest&&ad.closest('#addr')&&S.prog.rungs.length<8){   // "Oluştur" üstüne bırakınca satır açılır
+      if(isOut(d.t)){ toast(tx('Yeni satır bir kontakla başlar','A new rung starts with a contact')); return; }
+      S.prog.rungs.push(mkRung()); saveDraft(); renderLadder(); openEditor(S.prog.rungs.length-1,0,0,{t:d.t,a:null,pv:defPV(d.t)},true); }
+    return; }
   const i=+ce.closest('.rung').dataset.i, r=+ce.dataset.r, c=+ce.dataset.c, a=dropAction(d,i,r,c);
   if(a==='new') openEditor(i,r,c,{t:d.t,a:null,pv:defPV(d.t)},true);
-  else if(a==='move'){ rs[i].c[r][c]=rs[d.from.i].c[d.from.r][d.from.c]; rs[d.from.i].c[d.from.r][d.from.c]=null; S.popCell=[i,r,c]; saveDraft(); renderLadder(); Snd.place(); }
+  else if(a==='move'){ rs[i].c[r][c]=rs[d.from.i].c[d.from.r][d.from.c]; rs[d.from.i].c[d.from.r][d.from.c]=null; if(d.from.r===0&&!(d.from.i===i&&r===0)) compact(d.from.i); else if(d.from.r===0) compact(i); S.popCell=null; saveDraft(); renderLadder(); Snd.place(); }
   else if(a==='swap'){ const t=rs[i].c[r][c]; rs[i].c[r][c]=rs[d.from.i].c[d.from.r][d.from.c]; rs[d.from.i].c[d.from.r][d.from.c]=t; S.popCell=[i,r,c]; saveDraft(); renderLadder(); Snd.place(); toast(tx('Bloklar yer değiştirdi','Blocks swapped')); }
   else if(a!=='dolu'&&a!=='x') toast(a);
 });

@@ -294,3 +294,24 @@ html[data-theme=light] .mm-title{text-shadow:none}
 .nd.bn.cur::after{background:var(--md-tertiary)}
 .exl.bnl{color:var(--md-tertiary)}
 .nd.bn u .ms{color:var(--md-tertiary)}
+
+/* v1.1.5 sürükleme */
+.pal,#rungs,#ghost{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+@media (hover:hover) and (pointer:fine){ .pal{cursor:grab} .cell.full{cursor:grab} .cell.ec,.cell.eo{cursor:pointer} }
+body.dragging,body.dragging *{cursor:grabbing!important}
+#ghost{transform:none!important;animation:none!important;transition:scale .14s ease-out,box-shadow .14s;scale:1}
+#ghost.lift{scale:1.06;box-shadow:0 16px 32px rgba(0,0,0,.4)}
+/* v1.1.5 eleman / satır penceresi ekranın ortasında */
+#ovSheet{align-items:center;justify-content:center;padding:16px calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left))}
+#ovSheet .sheet{width:100%;max-width:440px;max-height:min(86%,720px);margin:auto;border-radius:var(--sh-xl);padding:22px 20px 18px;background:var(--md-surfaceContainerHigh);box-shadow:0 12px 40px rgba(0,0,0,.35);animation:cpop .38s var(--ease-sp)}
+#ovSheet .sheet::before{display:none}
+/* soldan sağa: henüz kullanılamayan yerler sönük */
+.cell.na .ph{opacity:.28}
+.cell.na .wl,.cell.na .wr{opacity:.55}
+/* ilk satırı oluştur butonu */
+#addr.mk{height:auto;min-height:76px;padding:12px 16px;gap:14px;justify-content:flex-start;text-align:left;border:2px dashed var(--md-primary);color:var(--md-primary);background:color-mix(in srgb,var(--md-primary) 7%,transparent);border-radius:var(--sh-l)}
+#addr.mk .ms{font-size:34px}
+#addr.mk span{display:flex;flex-direction:column;gap:3px}
+#addr.mk b{font:700 15px var(--font);color:var(--md-onSurface)}
+#addr.mk small{font:500 12px var(--font);color:var(--md-onSurfaceVariant)}
+#addr.mk.dz,#addr.hot{background:color-mix(in srgb,var(--md-primary) 20%,transparent)}

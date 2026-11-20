@@ -6,7 +6,7 @@ function cellSVG(cell,r,c,cw,inSpan,brEmpty){
   if(!cell){
     if(c<OUTC){
       if(r===0||inSpan) s+=`<path class="wl" d="M0 ${y}H${m}"/><path class="wr" d="M${m} ${y}H${cw}"/>`;
-      s+=`<path class="plus" d="M${m-4} ${y}H${m+4}M${m} ${y-4}V${y+4}"/>`;
+      if(!brEmpty) s+=`<path class="plus" d="M${m-4} ${y}H${m+4}M${m} ${y-4}V${y+4}"/>`;
     } else s+=`<path class="wl" d="M0 ${y}H${m-14}"/><path class="ph" d="M${m-5} 10Q${m-13} ${y} ${m-5} 34M${m+5} 10Q${m+13} ${y} ${m+5} 34"/>`;
     return s+'</svg>';
   }
@@ -50,14 +50,15 @@ function renderLadder(){
       const cell=rg.c[r][c]; const inSp=!!sp&&c>=sp.from&&c<=sp.to;
       const d=document.createElement('div'); d.dataset.r=r; d.dataset.c=c;
       d.style.cssText=`left:${4+c*cw}px;top:${r*44}px;width:${cw}px`;
-      d._b='cell'+(cell?' full':(c===OUTC?' eo':' ec')); d.className=d._b;
-      d.innerHTML=cellSVG(cell,r,c,cw,inSp); d._cell=cell; d._tv=d.querySelector('.bv'); if(d._tv) d._tv.textContent=tvStatic(cell);
+      const ok=!cell&&posOK(i,r,c); d._b='cell'+(cell?' full':ok?(c===OUTC?' eo':' ec'):' na'); d.className=d._b;
+      d.innerHTML=cellSVG(cell,r,c,cw,inSp,!cell&&!ok); d._cell=cell; d._tv=d.querySelector('.bv'); if(d._tv) d._tv.textContent=tvStatic(cell);
       g.appendChild(d); L.cells[r][c]=d;
     }
     if(sp){ for(const [k,x] of [['vl',sp.from*cw+4],['vr',(sp.to+1)*cw+4]]){ const v=document.createElement('div'); v.className='vw'; v.style.cssText=`left:${x-1.5}px;top:22px;height:44px`; g.appendChild(v); L[k]=v; } }
     box.appendChild(el); LIVE.push(L);
   });
-  if(S.prog.rungs.length<8&&!S.view){ const b=document.createElement('button'); b.id='addr'; b.innerHTML=I('add')+tx('Satır Ekle','Add Rung'); box.appendChild(b); }
+  if(S.prog.rungs.length<8&&!S.view){ const b=document.createElement('button'); b.id='addr'; const first=!S.prog.rungs.length; if(first) b.className='mk';
+    b.innerHTML=first?I('add_circle','f')+`<span><b>${tx('Satır Oluştur','Create Rung')}</b><small>${tx('Programa ilk satırı ekle, sonra blokları soldan sağa diz','Add the first rung, then line up blocks left to right')}</small></span>`:I('add')+tx('Satır Ekle','Add Rung'); box.appendChild(b); }
   box.scrollTop=sc; refreshTool();
   if(S.popCell){ const [pi,pr,pc]=S.popCell; S.popCell=null; const L=LIVE[pi]; const el=L&&L.cells[pr]&&L.cells[pr][pc]; if(el){ el.classList.add('pop'); setTimeout(()=>el.classList.remove('pop'),450); } }
 }

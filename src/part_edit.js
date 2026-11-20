@@ -11,7 +11,7 @@ function rungMenu(i){
     if(a==='br'){ rg.br=!rg.br; if(!rg.br) rg.c[1]=Array(COLS).fill(null); }
     else if(a==='up'&&i>0){ [rs[i-1],rs[i]]=[rs[i],rs[i-1]]; }
     else if(a==='dn'&&i<n-1){ [rs[i+1],rs[i]]=[rs[i],rs[i+1]]; }
-    else if(a==='del'){ rs.splice(i,1); if(!rs.length) rs.push(mkRung()); }
+    else if(a==='del'){ rs.splice(i,1); }
     Snd.click(); saveProg(); renderLadder(); closeAll(); };
 }
 const GLBL=()=>({I:tx('GİRİŞLER (I)','INPUTS (I)'),Q:tx('ÇIKIŞLAR (Q)','OUTPUTS (Q)'),M:tx('HAFIZA (M)','MEMORY (M)'),SM:tx('ÖZEL BİTLER (SM)','SPECIAL BITS (SM)'),T:tx('ZAMANLAYICI (T)','TIMERS (T)'),C:tx('SAYICI (C)','COUNTERS (C)'),
@@ -25,7 +25,7 @@ function openEditor(i,r,c,cell,isNew){
     if(isNew){ place({t}); return; }
     sh.innerHTML=`<div style="display:flex;align-items:center;gap:10px"><div class="pal sel" style="flex:0 0 62px;height:46px">${palSym(t)}</div><div><h3>${BN[t]}</h3><div style="font-size:11px;color:var(--dim)">${tx('Bu eleman adres almaz','This element takes no address')}</div></div></div>
       <p class="t">${tx(ELEM[t].d[0],ELEM[t].d[1])}</p><div class="brow"><button class="btn dan" id="mDel">${I('delete')}</button><button class="btn pri wide" id="mCan">${tx('Kapat','Close')}</button></div>`;
-    openSheet(); sh.onclick=e=>{ if(e.target.closest('#mDel')){ S.prog.rungs[i].c[r][c]=null; saveProg(); renderLadder(); Snd.click(); closeAll(); } else if(e.target.closest('#mCan')) closeAll(); }; return;
+    openSheet(); sh.onclick=e=>{ if(e.target.closest('#mDel')){ S.prog.rungs[i].c[r][c]=null; if(r===0) compact(i); saveProg(); renderLadder(); Snd.click(); closeAll(); } else if(e.target.closest('#mCan')) closeAll(); }; return;
   }
   const groups=allowed(t); let sel=cell.a||(groups[0]&&groups[0][1][0]);
   const tm=isTim(t), ct=isCnt(t), sh7=t==='SHL'||t==='SHR', mk=t==='WAND'||t==='WOR', hasSrc=t==='MOV'||t==='SEG';
@@ -63,7 +63,7 @@ function openEditor(i,r,c,cell,isNew){
       else pv=Math.max(-32768,Math.min(32767,pv+(up?stp():-stp())));
       Snd.click(); draw(); return; }
     if(e.target.closest('#mCan')){ closeAll(); return; }
-    if(e.target.closest('#mDel')){ S.prog.rungs[i].c[r][c]=null; saveProg(); renderLadder(); Snd.click(); closeAll(); return; }
+    if(e.target.closest('#mDel')){ S.prog.rungs[i].c[r][c]=null; if(r===0) compact(i); saveProg(); renderLadder(); Snd.click(); closeAll(); return; }
     if(e.target.closest('#mOk')){ keep();
       if(!sel){ toast(tx('Bu blok için kullanılabilir adres yok','No available address for this block')); return; }
       if(t==='SEG'&&!src){ toast(tx('Kaynak seç','Pick a source')); return; }

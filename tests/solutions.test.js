@@ -22,6 +22,9 @@ for(let id=0;id<N;id++){ const lv=M.getLevel(id); const errs=[];
       if((c.t==='CTU'||c.t==='CTD')&&!(c.pv>=1&&c.pv<=20&&Number.isInteger(c.pv))) errs.push(`R${ri+1}: PV ${c.pv} ayarlanamaz`);
     }));
     if(!rg.c[0][M.OUTC]) errs.push(`R${ri+1}: çıkışsız satır`);
+    const m=rg.c[0].slice(0,M.OUTC); const last=m.map(Boolean).lastIndexOf(true); for(let c=0;c<last;c++) if(!m[c]) errs.push(`R${ri+1}: ana hatta boşluk (soldan sağa kurulamaz)`);
+    if(!m[0]) errs.push(`R${ri+1}: kontaksız çıkış`);
+    if(rg.br&&rg.c[1]){ const b=rg.c[1].slice(0,M.OUTC).map(Boolean), f=b.indexOf(true), l=b.lastIndexOf(true); for(let c=f;c<l;c++) if(f>=0&&!b[c]) errs.push(`R${ri+1}: kolda boşluk`); }
   });
   if(errs.length){ bad++; if(bad<20) console.log(id+1, lv.title, '→', errs.join('; ')); }
 }
