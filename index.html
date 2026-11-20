@@ -3,7 +3,7 @@
 <meta name="theme-color" content="#0d1117">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,100..1000&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=account_circle,add,arrow_back,arrow_downward,arrow_forward,arrow_upward,bolt,brightness_auto,build,call_split,check,check_circle,close,cloud,dark_mode,delete,delete_history,delete_sweep,edit,electrical_services,factory,help,home,insights,install_mobile,inventory_2,ios_share,key,leaderboard,light_mode,lightbulb,local_fire_department,lock,lock_open,login,logout,map,menu,more_vert,new_releases,oil_barrel,play_arrow,precision_manufacturing,radio_button_unchecked,refresh,remove,restart_alt,resume,settings,stop,sync,vibration,visibility,volume_off,volume_up,workspace_premium&display=block">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=account_circle,add,arrow_back,arrow_downward,arrow_forward,arrow_upward,bolt,brightness_auto,build,call_split,celebration,check,check_circle,close,cloud,dark_mode,delete,delete_history,delete_sweep,edit,electrical_services,factory,help,home,insights,install_mobile,inventory_2,ios_share,key,leaderboard,light_mode,lightbulb,local_fire_department,lock,lock_open,login,logout,map,menu,more_vert,new_releases,oil_barrel,play_arrow,precision_manufacturing,radio_button_unchecked,refresh,remove,restart_alt,resume,settings,stop,sync,vibration,visibility,volume_off,volume_up,workspace_premium&display=block">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -644,6 +644,14 @@ html[data-theme=light] .mm-title{text-shadow:none}
 .pts .ms,.pp .ms{font-size:20px}
 .mi:disabled{opacity:.4}
 
+/* v1.1.3 bonus bölümler */
+.nd.bn{width:70px;height:70px}
+.nd.bn::before{background:var(--md-tertiaryContainer)}
+.nd.bn.dn,.nd.bn.cur{color:var(--md-onTertiary)}.nd.bn.dn::before,.nd.bn.cur::before{background:var(--md-tertiary)}
+.nd.bn.cur::after{background:var(--md-tertiary)}
+.exl.bnl{color:var(--md-tertiary)}
+.nd.bn u .ms{color:var(--md-tertiary)}
+
 /* ================= v1.1.1 — EKRAN / CİHAZ UYUMU ================= */
 /* sayfanın kendisi asla kaymaz, aşağı çekilmez, lastik efekti yok */
 html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:manipulation}
@@ -989,7 +997,7 @@ class World{
     if(!this.checks(q,dt)) return;
     this.pm=this.motor;
     // hedefler
-    const gl=this.goalList(); gl.forEach((g,i)=>{ if(g.ok) this.gd[i]=true; });
+    const gl=this.goalList(); for(let i=0;i<gl.length;i++){ if(this.gd[i]) continue; if(gl[i].live) this.gd[i]=true; else break; }   // hedefler ekrandaki sırayla tamamlanır
     if(this.gd.every(Boolean)){ this.done=true; return; }
     const active=this.boxes.some(b=>b.st==='belt'||b.st==='pushed');
     if(!sc.noBelt&&this.nid>=sc.boxes&&!active){ this.idleT+=dt; if(this.idleT>4.5) return this.fail(tx('Hedefe ulaşılamadı: kutular bitti. Programı gözden geçir.','Goal not reached: out of boxes. Review your program.')); } else this.idleT=0;
@@ -1048,7 +1056,7 @@ class World{
       this.prevSp=sp; this.prevFan=fn;
     }
     if(sc.motorAnd){ if(this.motor&&!sc.motorAnd.every(a=>iv[a])){ this.andT+=dt; if(this.andT>0.3) return this.fail(tx('Hata: Bant yalnızca iki şalter de açıkken çalışmalı!','Error: Belt must run only when BOTH switches are ON!')); } else this.andT=0; }
-    if(sc.motorAnd){ const on=sc.motorAnd.filter(a=>iv[a]).length; if(on===1&&!this.motor){ this.atT+=dt; if(this.atT>=0.8) this.f.andTest=true; } }
+    if(sc.motorAnd){ const on=sc.motorAnd.filter(a=>iv[a]).length; if(on===1&&!this.motor&&!sc.sensors.some(s=>this.sensorOn(s.a))){ this.atT+=dt; if(this.atT>=0.8) this.f.andTest=true; } }
     if(sc.motorOr){ const [a,b]=sc.motorOr; if(this.motor&&iv[a]&&!iv[b]) this.oa+=dt; if(this.motor&&iv[b]&&!iv[a]) this.ob+=dt; if(this.oa>=0.5&&this.ob>=0.5) this.f.orTest=true; }
     if(sc.motorOr){ const any=sc.motorOr.some(a=>iv[a]), sOn=sc.sensors.some(s=>this.sensorOn(s.a)); if(any&&!this.motor&&!sOn){ this.orT+=dt; if(this.orT>0.5) return this.fail(tx('Hata: Şalterlerden herhangi biri açıkken bant çalışmalı!','Error: Belt must run when EITHER switch is ON!')); } else this.orT=0; }
     if(sc.lampDelay){ const par=!this.motor&&this.sensorOn(sc.lampDelay.s); if(par&&this.pkS===null) this.pkS=this.t; if(!par) this.pkS=null;
@@ -1082,7 +1090,7 @@ class World{
         case 'cnt': l=tx(g.l[0],g.l[1])+' '+Math.min(this.cnt[g.f]||0,g.n)+'/'+g.n; ok=(this.cnt[g.f]||0)>=g.n; break;
         default: l=g.l?tx(g.l[0],g.l[1]):LB[g.k]?tx(LB[g.k][0],LB[g.k][1]):g.k; ok=!!this.f[g.f||g.k];
       }
-      if(this.gd[i]) ok=true; return {l,ok}; });
+      return {l,ok:ok||this.gd[i],live:ok}; });
   }
 }
 
@@ -1766,6 +1774,73 @@ const shiftBelt=lunch=>(r,k,n)=>{
     io,M:0,T:0,C:0,SM:true,words:['VW0'],wt:{VW0:'SAAT'},pal:palOf({rungs:rs},['MOV']),scene:sc,goals,sol:{rungs:rs},bot:at([[0.3,A.sw]])};
 };
 
+
+/* ===================== BONUS BÖLÜMLER (eğlenceli) ===================== */
+CATS.push(I18({n:['Bonus','Bonus'],s:['Eğlenceli özel bölümler','Fun special levels'],ic:'★',c:'var(--amb)'}));
+const traffic=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['start'],['lamp','lamp2','lamp3'],{lamp:'KIRMIZI',lamp2:'SARI',lamp3:'YEŞİL'}); const g=pick(r,[2,2.5,3]), y=pick(r,[1,1.5]), rd=pick(r,[2,2.5,3]);
+  const R_=A.lamp,Y=A.lamp2,G=A.lamp3;
+  const rs=[R(['NO '+A.start,null,null,null,'COIL M0.0'],['NO M0.0']),R(['NO M0.0','NC T3',null,null,'TON T1 '+g]),R(['NO T1',null,null,null,'TON T2 '+y]),R(['NO T2',null,null,null,'TON T3 '+rd]),
+    R(['NO M0.0','NC T1',null,null,'COIL '+G]),R(['NO T1','NC T2',null,null,'COIL '+Y]),R(['NO T2',null,null,null,'COIL '+R_])];
+  const D={[G]:g,[Y]:y,[R_]:rd}, NX={[G]:Y,[Y]:R_,[R_]:G};
+  const sc={noBelt:true,boxes:0,traffic:{r:R_,y:Y,g:G},
+    rules:[(w,q,iv,dt,s)=>{ if(w.t<0.06) return; const on=[R_,Y,G].filter(a=>q[a]);
+      if(on.length>1) return tx('Hata: Trafik lambasında aynı anda yalnızca BİR ışık yanmalı!','Error: Only ONE light may be on at a time!');
+      const c=on[0]||null; if(c===s.c||(!c&&!s.c)) return;
+      if(s.c&&!c) return tx('Hata: Işıklar sönmemeli; döngü kesintisiz dönmeli!','Error: The lights must not go dark; the cycle must loop without gaps!');
+      if(s.c){ if(c!==NX[s.c]) return tx('Hata: Sıra YEŞİL → SARI → KIRMIZI → YEŞİL olmalı!','Error: The order must be GREEN → AMBER → RED → GREEN!');
+        const d=w.t-s.ts; if(Math.abs(d-D[s.c])>0.35) return tx(`Hata: Süreler yanlış! Yeşil ${fx(g)} sn, sarı ${fx(y)} sn, kırmızı ${fx(rd)} sn yanmalı.`,`Error: Wrong timing! Green ${g} s, amber ${y} s, red ${rd} s.`);
+        w.cnt.step=(w.cnt.step||0)+1; }
+      else if(c!==G) return tx('Hata: Döngü YEŞİL ile başlamalı!','Error: The cycle must start with GREEN!');
+      s.c=c; s.ts=w.t; }]};
+  return {title:tx('🚦 Trafik Lambası','🚦 Traffic Light'),
+    task:tx(`Kavşağın trafik lambasını programla! START (${A.start}) basınca döngü başlasın ve sonsuza dek dönsün: YEŞİL (${G}) ${fx(g)} sn → SARI (${Y}) ${fx(y)} sn → KIRMIZI (${R_}) ${fx(rd)} sn → tekrar yeşil. Aynı anda tek ışık yansın.`,
+      `Program the junction's traffic light! START (${A.start}) starts a cycle that loops forever: GREEN (${G}) ${g} s → AMBER (${Y}) ${y} s → RED (${R_}) ${rd} s → green again. Only one light at a time.`),
+    hint:tx(`M0.0 mühür · M0.0 · KAPALI T3 → TON T1 (${fx(g)}) · T1 → TON T2 (${fx(y)}) · T2 → TON T3 (${fx(rd)}) · M0.0 · KAPALI T1 → yeşil · T1 · KAPALI T2 → sarı · T2 → kırmızı. T3 dolunca zincir kendini sıfırlar.`,`M0.0 seal-in · M0.0 · NC T3 → TON T1 (${g}) · T1 → TON T2 (${y}) · T2 → TON T3 (${rd}) · M0.0 · NC T1 → green · T1 · NC T2 → amber · T2 → red. When T3 is done the chain resets itself.`),
+    io,M:1,T:3,C:0,pal:palOf({rungs:rs},['TOF']),scene:sc,goals:[{k:'cnt',f:'step',n:5,l:T2('Işık değişimi','Light change')}],sol:{rungs:rs},bot:at([[0.5,A.start]])};
+};
+const safeLock=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['s1','s2','s3'],['lamp'],{lamp:'KASA_AÇIK'}); io.I.forEach((d,i)=>{ d.k='btn'; d.n=['A','B','C'][i]; });
+  const rs=[R(['NO '+A.s1,null,null,null,'SET M0.0']),R(['NO '+A.s2,'NO M0.0',null,null,'SET '+A.lamp]),R(['NO '+A.s3,null,null,null,'RST M0.0']),R(['NO '+A.s3,null,null,null,'RST '+A.lamp])];
+  const sc={noBelt:true,boxes:0,safe:{a:A.lamp},
+    rules:[(w,q,iv,dt,s)=>{ const a=!!iv[A.s1],b=!!iv[A.s2],c=!!iv[A.s3];
+      if(a&&!s.a) s.arm=true; if(c&&!s.c){ s.arm=false; s.open=false; if(s.wasOpen) w.f.relock=true; } if(b&&!s.b){ if(s.arm){ s.open=true; } else s.tried=true; }
+      s.a=a; s.b=b; s.c=c; if(w.t<0.06) return;
+      if(!!q[A.lamp]!==!!s.open){ s.bad=(s.bad||0)+dt; if(s.bad>0.2) return s.open?tx('Hata: Doğru şifre (önce A, sonra B) girildi ama kasa açılmadı!','Error: The right code (A, then B) was entered but the safe did not open!'):tx('Hata: Kasa yanlış şifreyle açıldı! Yalnızca önce A sonra B açar, C her şeyi sıfırlar.','Error: The safe opened with a wrong code! Only A then B opens it; C resets everything.'); }
+      else { s.bad=0; if(s.open){ w.f.open=true; s.wasOpen=true; } } }]};
+  return {title:tx('🔐 Şifreli Kasa','🔐 Code Safe'),
+    task:tx(`Kasanın şifresi: önce A (${A.s1}), sonra B (${A.s2}). Doğru sırayla basılınca KASA_AÇIK (${A.lamp}) yansın. Önce B'ye basmak açmasın. C (${A.s3}) girilen şifreyi ve açık kasayı sıfırlasın.`,
+      `The safe's code is A (${A.s1}) then B (${A.s2}). Pressed in the right order, SAFE_OPEN (${A.lamp}) lights. Pressing B first must not open it. C (${A.s3}) clears the entered code and closes the safe.`),
+    hint:tx(`A → (S) M0.0 (şifrenin ilk hanesi hatırlansın) · B · M0.0 → (S) ${A.lamp} · C → (R) M0.0 · C → (R) ${A.lamp}.`,`A → (S) M0.0 (remember the first digit) · B · M0.0 → (S) ${A.lamp} · C → (R) M0.0 · C → (R) ${A.lamp}.`),
+    io,M:1,T:0,C:0,pal:palOf({rungs:rs}),scene:sc,goals:[{k:'open',l:T2('Kasayı aç','Open the safe')},{k:'relock',l:T2('C ile kilitle','Lock with C')}],sol:{rungs:rs},
+    bot:at([[0.5,A.s2],[1.1,A.s1],[1.7,A.s3],[2.3,A.s2],[2.9,A.s1],[3.5,A.s2],[4.4,A.s3]])};
+};
+const disco=(r,k,n)=>{
+  const {io}=mkCtx(r,n,[],['l0','l1','l2','l3']); const st=pick(r,[5,10]);
+  const rs=[R(['NO SM0.1',null,null,null,'MOV QB0 '+st]),R(['NO SM0.5','P',null,null,'INV QB0'])];
+  const sc={noBelt:true,boxes:0,row:{pre:'Q0.',n:4},disco:true,
+    rules:[(w,q,iv,dt,s)=>{ if(w.t<0.06) return; const v=qb(q,'Q0.')&15;
+      if(v!==5&&v!==10){ s.b=(s.b||0)+dt; if(s.b>0.15) return tx('Hata: Lambalar dama gibi dönüşümlü yanmalı: 1-3 yanıkken 2-4 sönük, sonra tersi!','Error: The lamps must alternate like a checkerboard: 1-3 on with 2-4 off, then the opposite!'); return; }
+      s.b=0; if(s.v!=null&&v!==s.v){ const d=w.t-s.ts; if(s.k>=1&&(d<0.8||d>1.25)) return tx('Hata: Desen her 1 sn\'de bir değişmeli!','Error: The pattern must flip once per second!'); s.k=(s.k||0)+1; w.cnt.flip=s.k; s.ts=w.t; }
+      if(s.v==null) s.ts=w.t; s.v=v; }]};
+  return {title:tx('🪩 Disko Işıkları','🪩 Disco Lights'),
+    task:tx(`Parti zamanı! Butona gerek yok: ilk taramada (SM0.1) QB0'a ${st} yaz (${st===5?'0101':'1010'}: dama deseni). Sonra her saniye (SM0.5'in yükselen kenarı) tüm lambaları tersle (INV). Işıklar 1-3 / 2-4 diye dans etsin.`,
+      `Party time! No buttons needed: on the first scan (SM0.1) write ${st} to QB0 (${st===5?'0101':'1010'}: a checkerboard). Then every second (rising edge of SM0.5) invert all lamps (INV). The lights dance 1-3 / 2-4.`),
+    hint:tx(`SM0.1 → MOV QB0 ← ${st} · SM0.5 · P → INV QB0.`,`SM0.1 → MOV QB0 ← ${st} · SM0.5 · P → INV QB0.`),
+    io,M:0,T:0,C:0,SM:true,words:['QB0'],wt:{QB0:'LAMBALAR'},pal:palOf({rungs:rs},['SHL','N']),scene:sc,goals:[{k:'cnt',f:'flip',n:6,l:T2('Dans adımı','Dance step')}],sol:{rungs:rs},bot:()=>()=>{}};
+};
+const turbo=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['sw'],['motor']); const N=8, T=7, vmin=40;
+  const rs=[R(['NO SM0.1',null,null,null,'MOV VW0 50']),R(['NO '+A.sw,null,null,null,'COIL '+A.motor])];
+  const sc={motor:A.motor,speed:20,speedW:'VW0',gap:0.55,boxes:N+2,endDrop:'deliver',timer:T,
+    rules:[(w)=>{ if(w.t>T&&w.delivered<N) return tx(`Süre doldu! ${N} kutu ${T} sn'de yetişmedi — bandı hızlandır (VW0 ≥ ${vmin}).`,`Time's up! ${N} boxes didn't make it in ${T} s — speed the belt up (VW0 ≥ ${vmin}).`); }]};
+  return {title:tx('🏁 Turbo Bant Rekoru','🏁 Turbo Belt Record'),
+    task:tx(`Rekor denemesi! ${N} kutuyu ${T} saniye dolmadan depoya ulaştır. Bant hızı VW0'dan okunur (en fazla 60). İlk taramada (SM0.1) hızı yükselt, şalterle (${A.sw}) bandı çalıştır. Süre RUN'la başlar!`,
+      `Record attempt! Get ${N} boxes to the store before ${T} seconds run out. The belt speed is read from VW0 (max 60). Raise the speed on the first scan (SM0.1) and run the belt with the switch (${A.sw}). The clock starts with RUN!`),
+    hint:tx(`SM0.1 → MOV VW0 ← 50 · ${A.sw} → ${A.motor}. Hız en az ${vmin} olmalı.`,`SM0.1 → MOV VW0 ← 50 · ${A.sw} → ${A.motor}. The speed must be at least ${vmin}.`),
+    io,M:0,T:0,C:0,SM:true,words:['VW0'],wt:{VW0:'HIZ'},pal:palOf({rungs:rs},['ADD']),scene:sc,goals:[{k:'deliver',n:N}],sol:{rungs:rs},bot:at([[0.3,A.sw]])};
+};
+const BONUS=[safeLock,traffic,turbo,disco], BONUS_MIN=[10,18,68,103];   // her bonus, gereken konular öğretildikten sonra gelir
 /* ===================== YOL HARİTASI ===================== */
 const TPL=[
   [ [easyLogic('direct',0),easyLogic('direct',1),easyLogic('and',0),easyLogic('or',0),easyLogic('direct',2),easyLogic('and',1),easyLogic('or',1),easyLogic('and',2),easyLogic('or',2)],
@@ -1783,13 +1858,16 @@ const TPL=[
   [ [segCount(false),segCount(true)], [segDown], [hSegBatch] ],
   [ [chase(1,false),chase(-1,false)], [chase(1,true)], [chaseSM] ],
   [ [mirror(false),worWand,mirror(true)], [maskSel], [hPanelTest] ],
-  [ [shiftLamp(false),shiftLamp(true)], [shiftBelt(false)], [shiftBelt(true)] ]];
+  [ [shiftLamp(false),shiftLamp(true)], [shiftBelt(false)], [shiftBelt(true)] ],
+  [ BONUS, BONUS, BONUS ]];
 const LV_CACHE={};
 // TEK YOL: tüm konular bir arada. Konular sırayla tanıtılır, sonra karışık gelir.
 const TOPIC_START=[0,15,35,45,55,65,80,90,100,110];
 const NEW_FROM=45;                                   // bu bölümden önce yol v1.1.1 ile birebir aynı
 const OLD_LEN=[[9,6,4],[3,3,3],[3,3,3]];
-const NC_=TOPIC_START.length;
+const NC_=TOPIC_START.length, BONUS_C=NC_;
+// bonus: ~15 bölümde bir (ekstra zordan nadir), konu tanıtımlarına ve ekstra zorlara denk gelmez
+const isBonus=i=>i>=10&&i%15===12&&!isExtra(i)&&!intro(i,false);
 function tplLen(c,pool,i,old){ return (old||i<NEW_FROM)&&c<3?OLD_LEN[c][pool]:TPL[c][pool].length; }
 function intro(i,old){ const n=old?3:NC_; for(let c=0;c<n;c++){ const k=i-TOPIC_START[c]; if(k>=0&&k<TPL[c][0].length&&(c===0||c>=3||k<3)) return {c,pool:0,t:k}; } return null; }
 function pickTpl(i,old){
@@ -1804,8 +1882,9 @@ function pickTpl(i,old){
   return {c,pool,t:Math.floor(r()*tplLen(c,pool,i,old))};
 }
 function tplKey(n,old){
+  if(!old&&isBonus(n)){ const av=BONUS.map((_,j)=>j).filter(j=>n>=BONUS_MIN[j]); return {c:BONUS_C,pool:0,t:av[Math.floor(n/15)%av.length]}; }
   let p=pickTpl(n,old);
-  if(n>0&&!isExtra(n)){ const q=pickTpl(n-1,old); if(q.c===p.c&&q.pool===p.pool&&q.t===p.t){ const L=tplLen(p.c,p.pool,n,old); p=Object.assign({},p,{t:(p.t+1)%L}); } }
+  if(n>0&&!isExtra(n)){ const q=tplKey(n-1,old); if(q.c===p.c&&q.pool===p.pool&&q.t===p.t){ const L=tplLen(p.c,p.pool,n,old); p=Object.assign({},p,{t:(p.t+1)%L}); } }
   return p;
 }
 function getLevel(id){
@@ -1817,7 +1896,7 @@ function getLevel(id){
   const lv=TPL[p.c][p.pool][p.t](r,k,n);
   lv.amap=CTX_MAP||{};
   if(isExtra(n)&&!lv.scene.noBelt) lv.scene.speed=Math.round(lv.scene.speed*1.15);
-  Object.assign(lv,{id,cat:p.c,diff:p.pool,n,extra:isExtra(n)}); lv.opt=countBlocks(lv.sol);
+  Object.assign(lv,{id,cat:p.c,diff:p.pool,n,extra:isExtra(n),bonus:p.c===BONUS_C}); lv.opt=countBlocks(lv.sol);
   return LV_CACHE[id]=lv;
 }
 /* v1.1.1 kayıtlarını taşı: aynı şablon → adresleri yeni sıraya çevir; değişen bölüm → çözüm gösterimi düşer, puan kalır */
@@ -1855,14 +1934,13 @@ function addrGroups(lv,t,field){
 const addrList=(lv,t,f)=>addrGroups(lv,t,f).reduce((a,g)=>a.concat(g[1]),[]);
 /*==UI==*/
 const $=(s,r=document)=>r.querySelector(s);
-const VERSION='v1.1.2';
+const VERSION='v1.1.3';
 const I=(n,c)=>'<span class="ms'+(c?' '+c.split(' ').map(x=>x==='f'?'f':'ms-'+x).join(' '):'')+'">'+n+'</span>';  // Material Symbols ikon
 const SKEY='ladderustasi_v2';
 let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1,theme:'auto',lang:null,seen:{}};
 try{const s=JSON.parse(localStorage.getItem(SKEY)||'null'); if(s) save=Object.assign(save,s);}catch(e){}
 delete save.unlock; if(!save.seen) save.seen={};
-if(save.v===4){ save.done=migrateDone(save.done||{}); const d={}; for(const k in save.draft||{}) if(sameTpl(+k)) d[k]=remapProg(+k,save.draft[k]); save.draft=d; save.v=5; }  // v1.1.2: sıralı adresler
-else if(save.v!==5){ save.done={}; save.draft={}; save.last=-1; save.v=5; }  // v1.0.5: tek birleşik yol, eski bölüm numaraları geçersiz
+if(save.v!==6){ save.done={}; save.draft={}; save.last=-1; save.v=6; }  // v1.1.3: oyun mantığı değişti, ilerleme sıfırdan
 const persist=()=>{try{localStorage.setItem(SKEY,JSON.stringify(save));}catch(e){}};
 const S={id:0,lv:null,prog:null,tags:{},tool:null,running:false,speed:1,cw:70,view:false,redo:false,mscr:null};
 let world=null,plc=new PLC(),LIVE=[];
@@ -1966,7 +2044,7 @@ function logout(){ NET.sess=null; saveSess(); }
 async function pullProgress(){
   if(!me()) return;
   const {j}=await sb(`/rest/v1/progress?id=eq.${me().id}&select=data`);
-  const dd=j&&j[0]&&j[0].data; const remote=(dd&&dd.v===5&&dd.done)||(dd&&dd.v===4&&dd.done&&migrateDone(dd.done))||{};
+  const dd=j&&j[0]&&j[0].data; const remote=(dd&&dd.v===6&&dd.done)||{};
   let added=0; for(const k in remote) if(!save.done[k]){ save.done[k]=remote[k]; delete save.draft[k]; added++; }
   persist(); await pushProgress(true); return added;
 }
@@ -1975,7 +2053,7 @@ function schedulePush(){ if(!me()) return; clearTimeout(pushT); pushT=setTimeout
 async function pushProgress(now){
   if(!me()) return; const id=me().id, ts=new Date().toISOString();
   await sb('/rest/v1/profiles?on_conflict=id',{method:'POST',body:{id,username:me().username,points:points(),updated_at:ts},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
-  await sb('/rest/v1/progress?on_conflict=id',{method:'POST',body:{id,data:{v:5,done:save.done},updated_at:ts},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
+  await sb('/rest/v1/progress?on_conflict=id',{method:'POST',body:{id,data:{v:6,done:save.done},updated_at:ts},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
   NET.lastPush=Date.now();
 }
 async function fetchBoard(){
@@ -2163,8 +2241,9 @@ function loadLevel(id,quiet){
   buildPalette(); buildIO(); goalKey=''; refreshMode(); renderLadder(); closeAll();
   if(!quiet&&S.fresh.length) setTimeout(()=>showIntro(S.fresh),150);
   else if(!quiet&&lv.extra&&!S.view) toast(tx('Ekstra zor bölüm — bol şans!','Extra hard level — good luck!'));
+  else if(!quiet&&lv.bonus&&!S.view) toast(tx('🎉 Bonus bölüm — keyfini çıkar!','🎉 Bonus level — have fun!'));
 }
-function lvLabel(lv){ return `${tx('Bölüm','Level')} ${lv.n+1} · ${CATS[lv.cat].n}`; }
+function lvLabel(lv){ return `${tx('Bölüm','Level')} ${lv.n+1} · ${lv.bonus?'🎉 Bonus':CATS[lv.cat].n}`; }
 function setHeader(){ const lv=S.lv, C=CATS[lv.cat]; $('#task').dataset.lbl=tx('GÖREV','TASK');
   $('#title').innerHTML=`<small style="color:${lv.extra?'var(--red)':C.c}">${lvLabel(lv).toUpperCase()}${lv.extra?' · '+tx('EKSTRA ZOR','EXTRA HARD'):''}</small>${lv.title}`;
   $('#task').innerHTML=esc(lv.task).replace(/\b((?:SM|[IQM])\d\.\d|[TC]\d|VW\d|AIW\d|[QI]B\d)\b/g,'<b>$1</b>'); }
@@ -2559,7 +2638,7 @@ function showMenu(scr,cat,diff){
     <div class="mm-chips"><div class="pts">${I('bolt','f sm')} ${points()} ${tx('puan','points')}</div>
     <button class="acct" data-go="acct">${me()?`<span class="av2">${esc(me().username[0].toUpperCase())}</span><b>${esc(me().username)}</b>`:I('account_circle')+tx('Giriş yap / Kayıt ol','Sign in / Sign up')}</button></div></div>
     <div class="mm-act"><button class="bigbtn play" data-go="map">${I('play_arrow','f')}${tx('OYNA','PLAY')}</button>
-    ${L?`<button class="bigbtn" data-go="cont">${I('resume')}<span style="flex:1;text-align:left">${tx('Devam Et','Continue')}<br><small>${lvLabel(L)}</small></span></button>`:''}
+    ${L?`<button class="bigbtn" data-go="cont">${I('resume')}<span style="flex:1;text-align:left">${tx('Devam Et','Continue')}<br><small>${tx('Bölüm','Level')} ${L.n+1}</small></span></button>`:''}
     <div class="brow2"><button class="bigbtn" data-go="board">${I('leaderboard')}${tx('Liderlik','Leaderboard')}</button><button class="bigbtn" data-go="prog">${I('insights')}${tx('İlerleme','Progress')}</button></div>
     ${canInstall()?`<button class="bigbtn instb" data-go="install">${I('install_mobile')}${tx('Uygulamayı Yükle','Install App')}</button>`:''}
     <div class="brow3"><button class="bigbtn" data-go="how">${I('help')}${tx('Nasıl Oynanır','How to Play')}</button>
@@ -2724,13 +2803,14 @@ function drawRoad(){ const c=0;
   const deco=['settings','factory','build','inventory_2','electrical_services','oil_barrel','bolt','precision_manufacturing'];
   let h=`<div class="rd" style="height:${H}px"><svg class="rdp" width="${W}" height="${H}"><path d="${d}" class="rb"/><path d="${d}" class="rl"/>${f>0?`<path d="${dn}" class="rdn"/>`:''}</svg>`;
   for(let i=0;i<show;i++){ if(i%3===1){ const side=Math.sin(i*0.85)>0?-1:1; h+=`<span class="dec" style="left:${W/2+side*W*0.36-14}px;top:${ys(i)-14}px">${I(deco[(i*7+c*3)%deco.length],'xl')}</span>`; } }
-  for(let i=0;i<show;i++){ const id=i, done=!!save.done[id], cur=i===f, ex=isExtra(i), lock=!done&&!cur;
-    const cls=['nd',done?'dn':'',cur?'cur':'',lock?'lk':'',ex?'ex':''].join(' ');
-    const shp=ex?shape('burst'):cur?shape('sunny'):done?shape(i%3===0?'clover':'cookie'):shape('round');
-    h+=`<button class="${cls}" data-go="lvl" data-id="${id}" style="left:${xs(i)}px;top:${ys(i)}px;--shp:${shp}">${lock?(ex?I('local_fire_department','f'):I('lock','f')):`<b>${i+1}</b>`}${done?'<i>'+I('check')+'</i>':''}${cur?'<em>'+tx('OYNA','PLAY')+'</em>':''}${ex&&!lock?'<u>'+I('local_fire_department','f')+'</u>':''}${!lock&&!ex?`<s class="tp" style="background:${CATS[getLevel(id).cat].c}"></s>`:''}</button>`;
+  for(let i=0;i<show;i++){ const id=i, done=!!save.done[id], cur=i===f, ex=isExtra(i), bn=isBonus(i), lock=!done&&!cur;
+    const cls=['nd',done?'dn':'',cur?'cur':'',lock?'lk':'',ex?'ex':'',bn?'bn':''].join(' ');
+    const shp=ex?shape('burst'):bn?shape('clover'):cur?shape('sunny'):done?shape(i%3===0?'clover':'cookie'):shape('round');
+    h+=`<button class="${cls}" data-go="lvl" data-id="${id}" style="left:${xs(i)}px;top:${ys(i)}px;--shp:${shp}">${lock?(ex?I('local_fire_department','f'):bn?I('celebration','f'):I('lock','f')):`<b>${i+1}</b>`}${done?'<i>'+I('check')+'</i>':''}${cur?'<em>'+tx('OYNA','PLAY')+'</em>':''}${ex&&!lock?'<u>'+I('local_fire_department','f')+'</u>':''}${bn&&!lock?'<u>'+I('celebration','f')+'</u>':''}${!lock&&!ex&&!bn?`<s class="tp" style="background:${CATS[getLevel(id).cat].c}"></s>`:''}</button>`;
     if(i===TOPIC_START[1]&&!save.done[id]) h+=`<span class="exl" style="left:${xs(i)}px;top:${ys(i)+40}px;color:var(--amb)">${tx('YENİ: ZAMANLAYICILAR','NEW: TIMERS')}</span>`;
     if(i===TOPIC_START[2]&&!save.done[id]) h+=`<span class="exl" style="left:${xs(i)}px;top:${ys(i)+40}px;color:var(--pur)">${tx('YENİ: SAYICILAR','NEW: COUNTERS')}</span>`;
-    if(ex&&(cur||lock)&&i<f+10) h+=`<span class="exl" style="left:${xs(i)}px;top:${ys(i)+36}px">${tx('EKSTRA ZOR','EXTRA HARD')}</span>`; }
+    if(ex&&(cur||lock)&&i<f+10) h+=`<span class="exl" style="left:${xs(i)}px;top:${ys(i)+36}px">${tx('EKSTRA ZOR','EXTRA HARD')}</span>`;
+    if(bn&&(cur||lock)&&i<f+10) h+=`<span class="exl bnl" style="left:${xs(i)}px;top:${ys(i)+36}px">BONUS</span>`; }
   h+=`<div class="fog" style="top:0;height:150px"><span>${I('cloud')} ${tx('Yol devam ediyor…','The road continues…')}</span></div></div>`;
   box.innerHTML=h;
   const cur=box.querySelector('.nd.cur'); if(cur){ const m=$('#menuIn'); m.scrollTop=Math.max(0,cur.offsetTop-m.clientHeight*0.55); }
@@ -2826,12 +2906,26 @@ function procBox(x,y,w,h,P){ const w0=world, pr=w0.sc.proc, v=Math.max(0,Math.mi
   else { ctx.fillStyle=on?'#ff6a2a':P.dim; ctx.font='800 9px system-ui'; ctx.textAlign='center'; ctx.fillText((on?'🔥 ':'')+pr.a,x+w/2,y-6); }
   ctx.fillStyle=P.strong; ctx.font='800 11px ui-monospace,monospace'; ctx.textAlign='center'; ctx.fillText(`${pr.ai} ${Math.round(v*32000)}`,x+w/2,y+h+(tank?26:16)); ctx.fillStyle=P.txt; ctx.font='700 9px system-ui'; ctx.fillText(`%${Math.round(v*100)}`,x+w/2,y+h+(tank?38:28)); }
 function lampRow(x,y,gap,P){ const sc=world.sc, n=sc.row.n;
-  for(let i=0;i<n;i++){ const a=sc.row.pre+i, on=!!world.q[a], lx=x+i*gap, c=LC.amber; ctx.fillStyle=P.metal; ctx.fillRect(lx-3,y+12,6,12);
+  const DC=[['#ff4dd2','#3d1033'],['#4dd2ff','#0b2f3d'],['#c6ff4d','#2a3d0b'],['#ffb020','#3d2a07']];
+  for(let i=0;i<n;i++){ const a=sc.row.pre+i, on=!!world.q[a], lx=x+i*gap, c=sc.disco?DC[i%4]:LC.amber; ctx.fillStyle=P.metal; ctx.fillRect(lx-3,y+12,6,12);
     ctx.fillStyle=on?c[0]:c[1]; ctx.strokeStyle=P.dim; ctx.lineWidth=2; if(on){ctx.shadowColor=c[0];ctx.shadowBlur=18;} ctx.beginPath(); ctx.arc(lx,y,13,0,7); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
     ctx.fillStyle=P.txt; ctx.font='700 9px ui-monospace,monospace'; ctx.textAlign='center'; ctx.fillText(a,lx,y+36); ctx.font='600 8px system-ui'; ctx.fillText(String(i+1),lx,y+4); }
   ctx.fillStyle=P.txt; ctx.font='700 9px system-ui'; ctx.fillText('QB0 = '+bitsTxt(qb(world.q,sc.row.pre)&15),x+gap*(n-1)/2,y+52); }
+function trafficBox(x,y,w,h,P){ const t=world.sc.traffic, q=world.q, L=[[t.r,'#ff3b30'],[t.y,'#ffb020'],[t.g,'#34e05a']];
+  ctx.fillStyle=P.metal; ctx.fillRect(x+w/2-5,y+h-6,10,30); ctx.fillStyle='#1b211d'; ctx.strokeStyle=P.edge; ctx.lineWidth=2.5; rr(x,y,w,h,14); ctx.fill(); ctx.stroke();
+  L.forEach(([a,c],i)=>{ const cy=y+h*(i*2+1)/6, on=!!q[a], r=Math.min(w*0.32,h/7.5); ctx.fillStyle=on?c:'#2c332e'; if(on){ ctx.shadowColor=c; ctx.shadowBlur=22; } ctx.beginPath(); ctx.arc(x+w/2,cy,r,0,7); ctx.fill(); ctx.shadowBlur=0;
+    ctx.fillStyle=P.txt; ctx.font='700 9px ui-monospace,monospace'; ctx.textAlign='left'; ctx.fillText(a,x+w+8,cy+3); }); }
+function safeBox(x,y,w,h,P){ const open=!!world.q[world.sc.safe.a];
+  ctx.fillStyle=P.binBg; ctx.strokeStyle=P.edge; ctx.lineWidth=3; rr(x,y,w,h,8); ctx.fill(); ctx.stroke();
+  if(open){ ctx.fillStyle='#ffd34d'; for(let i=0;i<5;i++){ rr(x+12+i*((w-36)/4),y+h-30-(i%2)*8,14,10,2); ctx.fill(); } ctx.fillStyle=P.metal; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-w*0.35,y+12); ctx.lineTo(x-w*0.35,y+h-12); ctx.lineTo(x,y+h); ctx.fill(); }
+  else { ctx.fillStyle=P.metal; rr(x+6,y+6,w-12,h-12,6); ctx.fill(); const cx=x+w/2, cy=y+h/2; ctx.strokeStyle=P.strong; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(cx,cy,h*0.18,0,7); ctx.stroke();
+    for(let i=0;i<8;i++){ const a=i*Math.PI/4+world.t*0.4; ctx.beginPath(); ctx.moveTo(cx+Math.cos(a)*h*0.18,cy+Math.sin(a)*h*0.18); ctx.lineTo(cx+Math.cos(a)*h*0.24,cy+Math.sin(a)*h*0.24); ctx.stroke(); } }
+  ctx.fillStyle=open?P.pri:P.txt; ctx.font='800 10px system-ui'; ctx.textAlign='center'; ctx.fillText(open?tx('AÇIK!','OPEN!'):tx('KİLİTLİ','LOCKED'),x+w/2,y+h+16);
+  const iv=world.iv||{}; world.lv.io.I.forEach((d,i)=>{ const bx=x+w+22+i*30, on=!!iv[d.a]; ctx.fillStyle=on?P.pri:P.binBg; ctx.strokeStyle=P.dim; ctx.lineWidth=2; rr(bx,y+h/2-13,26,26,6); ctx.fill(); ctx.stroke(); ctx.fillStyle=on?P.bg1:P.strong; ctx.font='800 13px system-ui'; ctx.fillText(d.n,bx+13,y+h/2+5); }); }
 function drawPanel(P){
   const sc=world.sc, items=[];
+  if(sc.traffic) items.push({w:Math.min(70,W*0.2)+50,h:Math.min(H-50,170),f:(x,y,w,h)=>trafficBox(x,y,w-50,h,P)});
+  if(sc.safe) items.push({w:Math.min(110,W*0.3)+110,h:Math.min(H-60,110),f:(x,y,w,h)=>safeBox(x+30,y,w-110,h,P)});
   if(sc.proc) items.push({w:Math.min(120,W*0.3)+60,h:Math.min(H-70,150),f:(x,y,w,h)=>procBox(x+30,y,w-60,h,P)});
   if(sc.row) items.push({w:Math.min(W*0.7,260),h:60,f:(x,y,w,h)=>lampRow(x+20,y+16,(w-40)/(sc.row.n-1),P)});
   if(sc.clock) items.push({w:Math.min(170,W*0.45),h:56,f:(x,y,w,h)=>clockBox(x,y,w,h,world.hour,P)});
@@ -2900,6 +2994,7 @@ function drawScene(){
   { let ox=40; const top=8, room=by-bh/2-24-top;
     if(sc.seg&&room>20){ const h=Math.min(44,room-14); segDigit(ox+8,top+8,h,qb(w.q,sc.seg.pre)&127,P); ctx.fillStyle=P.txt; ctx.font='700 9px ui-monospace,monospace'; ctx.textAlign='left'; ctx.fillText('QB1',ox+h*0.56+22,top+8+h/2+3); ox+=h*0.56+56; }
     if(sc.clock&&room>24){ const h=Math.min(40,room-10); clockBox(ox,top,h*3,h,w.hour,P); ox+=h*3+16; }
+    if(sc.timer){ const left=Math.max(0,sc.timer-w.t); ctx.fillStyle=left<2?P.err:P.strong; ctx.font='800 13px ui-monospace,monospace'; ctx.textAlign='right'; ctx.fillText('⏱ '+fx(left.toFixed(1))+' '+tx('sn','s'),W-70,top+14); }
     if(sc.speedW){ ctx.fillStyle=P.strong; ctx.font='800 12px ui-monospace,monospace'; ctx.textAlign='left'; ctx.fillText(`${tx('HIZ','SPEED')} ${sc.speedW} = ${w.spd}`,ox,top+14); ctx.fillStyle=P.txt; ctx.font='700 9px system-ui';
       const bw=Math.min(120,W*0.3); ctx.fillStyle=P.binBg; rr(ox,top+22,bw,7,3.5); ctx.fill(); ctx.fillStyle=P.pri; rr(ox,top+22,bw*Math.min(1,w.spd/60),7,3.5); ctx.fill(); } }
   if(w.err){ ctx.strokeStyle=P.err; ctx.lineWidth=5; ctx.strokeRect(2,2,W-4,H-4); }
@@ -2920,7 +3015,7 @@ let goalKey='';
 function updatePanel(){
   const io=$('#io'); for(const b of io.children){ const a=b.dataset.a, on=!!(world.iv&&world.iv[a])||(flash[a]>0)||(b.classList.contains('sw')&&!!world.sw[a]);
     b.classList.toggle('on',on); b.classList.toggle('idle',!S.running); }
-  const gl=world.goalList(), k=gl.map(g=>g.l+g.ok).join('|');
+  const gl=world.goalList().map((g,i)=>({l:g.l,ok:!!world.gd[i]})), k=gl.map(g=>g.l+g.ok).join('|');
   if(k!==goalKey){ goalKey=k; $('#goals').innerHTML=gl.map(g=>`<span class="gl ${g.ok?'ok':''}">${g.ok?I('check'):I('radio_button_unchecked')} ${g.l}</span>`).join(''); }
 }
 /* ---------- Ana döngü ---------- */

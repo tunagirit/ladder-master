@@ -45,12 +45,26 @@ function procBox(x,y,w,h,P){ const w0=world, pr=w0.sc.proc, v=Math.max(0,Math.mi
   else { ctx.fillStyle=on?'#ff6a2a':P.dim; ctx.font='800 9px system-ui'; ctx.textAlign='center'; ctx.fillText((on?'🔥 ':'')+pr.a,x+w/2,y-6); }
   ctx.fillStyle=P.strong; ctx.font='800 11px ui-monospace,monospace'; ctx.textAlign='center'; ctx.fillText(`${pr.ai} ${Math.round(v*32000)}`,x+w/2,y+h+(tank?26:16)); ctx.fillStyle=P.txt; ctx.font='700 9px system-ui'; ctx.fillText(`%${Math.round(v*100)}`,x+w/2,y+h+(tank?38:28)); }
 function lampRow(x,y,gap,P){ const sc=world.sc, n=sc.row.n;
-  for(let i=0;i<n;i++){ const a=sc.row.pre+i, on=!!world.q[a], lx=x+i*gap, c=LC.amber; ctx.fillStyle=P.metal; ctx.fillRect(lx-3,y+12,6,12);
+  const DC=[['#ff4dd2','#3d1033'],['#4dd2ff','#0b2f3d'],['#c6ff4d','#2a3d0b'],['#ffb020','#3d2a07']];
+  for(let i=0;i<n;i++){ const a=sc.row.pre+i, on=!!world.q[a], lx=x+i*gap, c=sc.disco?DC[i%4]:LC.amber; ctx.fillStyle=P.metal; ctx.fillRect(lx-3,y+12,6,12);
     ctx.fillStyle=on?c[0]:c[1]; ctx.strokeStyle=P.dim; ctx.lineWidth=2; if(on){ctx.shadowColor=c[0];ctx.shadowBlur=18;} ctx.beginPath(); ctx.arc(lx,y,13,0,7); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
     ctx.fillStyle=P.txt; ctx.font='700 9px ui-monospace,monospace'; ctx.textAlign='center'; ctx.fillText(a,lx,y+36); ctx.font='600 8px system-ui'; ctx.fillText(String(i+1),lx,y+4); }
   ctx.fillStyle=P.txt; ctx.font='700 9px system-ui'; ctx.fillText('QB0 = '+bitsTxt(qb(world.q,sc.row.pre)&15),x+gap*(n-1)/2,y+52); }
+function trafficBox(x,y,w,h,P){ const t=world.sc.traffic, q=world.q, L=[[t.r,'#ff3b30'],[t.y,'#ffb020'],[t.g,'#34e05a']];
+  ctx.fillStyle=P.metal; ctx.fillRect(x+w/2-5,y+h-6,10,30); ctx.fillStyle='#1b211d'; ctx.strokeStyle=P.edge; ctx.lineWidth=2.5; rr(x,y,w,h,14); ctx.fill(); ctx.stroke();
+  L.forEach(([a,c],i)=>{ const cy=y+h*(i*2+1)/6, on=!!q[a], r=Math.min(w*0.32,h/7.5); ctx.fillStyle=on?c:'#2c332e'; if(on){ ctx.shadowColor=c; ctx.shadowBlur=22; } ctx.beginPath(); ctx.arc(x+w/2,cy,r,0,7); ctx.fill(); ctx.shadowBlur=0;
+    ctx.fillStyle=P.txt; ctx.font='700 9px ui-monospace,monospace'; ctx.textAlign='left'; ctx.fillText(a,x+w+8,cy+3); }); }
+function safeBox(x,y,w,h,P){ const open=!!world.q[world.sc.safe.a];
+  ctx.fillStyle=P.binBg; ctx.strokeStyle=P.edge; ctx.lineWidth=3; rr(x,y,w,h,8); ctx.fill(); ctx.stroke();
+  if(open){ ctx.fillStyle='#ffd34d'; for(let i=0;i<5;i++){ rr(x+12+i*((w-36)/4),y+h-30-(i%2)*8,14,10,2); ctx.fill(); } ctx.fillStyle=P.metal; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-w*0.35,y+12); ctx.lineTo(x-w*0.35,y+h-12); ctx.lineTo(x,y+h); ctx.fill(); }
+  else { ctx.fillStyle=P.metal; rr(x+6,y+6,w-12,h-12,6); ctx.fill(); const cx=x+w/2, cy=y+h/2; ctx.strokeStyle=P.strong; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(cx,cy,h*0.18,0,7); ctx.stroke();
+    for(let i=0;i<8;i++){ const a=i*Math.PI/4+world.t*0.4; ctx.beginPath(); ctx.moveTo(cx+Math.cos(a)*h*0.18,cy+Math.sin(a)*h*0.18); ctx.lineTo(cx+Math.cos(a)*h*0.24,cy+Math.sin(a)*h*0.24); ctx.stroke(); } }
+  ctx.fillStyle=open?P.pri:P.txt; ctx.font='800 10px system-ui'; ctx.textAlign='center'; ctx.fillText(open?tx('AÇIK!','OPEN!'):tx('KİLİTLİ','LOCKED'),x+w/2,y+h+16);
+  const iv=world.iv||{}; world.lv.io.I.forEach((d,i)=>{ const bx=x+w+22+i*30, on=!!iv[d.a]; ctx.fillStyle=on?P.pri:P.binBg; ctx.strokeStyle=P.dim; ctx.lineWidth=2; rr(bx,y+h/2-13,26,26,6); ctx.fill(); ctx.stroke(); ctx.fillStyle=on?P.bg1:P.strong; ctx.font='800 13px system-ui'; ctx.fillText(d.n,bx+13,y+h/2+5); }); }
 function drawPanel(P){
   const sc=world.sc, items=[];
+  if(sc.traffic) items.push({w:Math.min(70,W*0.2)+50,h:Math.min(H-50,170),f:(x,y,w,h)=>trafficBox(x,y,w-50,h,P)});
+  if(sc.safe) items.push({w:Math.min(110,W*0.3)+110,h:Math.min(H-60,110),f:(x,y,w,h)=>safeBox(x+30,y,w-110,h,P)});
   if(sc.proc) items.push({w:Math.min(120,W*0.3)+60,h:Math.min(H-70,150),f:(x,y,w,h)=>procBox(x+30,y,w-60,h,P)});
   if(sc.row) items.push({w:Math.min(W*0.7,260),h:60,f:(x,y,w,h)=>lampRow(x+20,y+16,(w-40)/(sc.row.n-1),P)});
   if(sc.clock) items.push({w:Math.min(170,W*0.45),h:56,f:(x,y,w,h)=>clockBox(x,y,w,h,world.hour,P)});
@@ -119,6 +133,7 @@ function drawScene(){
   { let ox=40; const top=8, room=by-bh/2-24-top;
     if(sc.seg&&room>20){ const h=Math.min(44,room-14); segDigit(ox+8,top+8,h,qb(w.q,sc.seg.pre)&127,P); ctx.fillStyle=P.txt; ctx.font='700 9px ui-monospace,monospace'; ctx.textAlign='left'; ctx.fillText('QB1',ox+h*0.56+22,top+8+h/2+3); ox+=h*0.56+56; }
     if(sc.clock&&room>24){ const h=Math.min(40,room-10); clockBox(ox,top,h*3,h,w.hour,P); ox+=h*3+16; }
+    if(sc.timer){ const left=Math.max(0,sc.timer-w.t); ctx.fillStyle=left<2?P.err:P.strong; ctx.font='800 13px ui-monospace,monospace'; ctx.textAlign='right'; ctx.fillText('⏱ '+fx(left.toFixed(1))+' '+tx('sn','s'),W-70,top+14); }
     if(sc.speedW){ ctx.fillStyle=P.strong; ctx.font='800 12px ui-monospace,monospace'; ctx.textAlign='left'; ctx.fillText(`${tx('HIZ','SPEED')} ${sc.speedW} = ${w.spd}`,ox,top+14); ctx.fillStyle=P.txt; ctx.font='700 9px system-ui';
       const bw=Math.min(120,W*0.3); ctx.fillStyle=P.binBg; rr(ox,top+22,bw,7,3.5); ctx.fill(); ctx.fillStyle=P.pri; rr(ox,top+22,bw*Math.min(1,w.spd/60),7,3.5); ctx.fill(); } }
   if(w.err){ ctx.strokeStyle=P.err; ctx.lineWidth=5; ctx.strokeRect(2,2,W-4,H-4); }
@@ -139,6 +154,6 @@ let goalKey='';
 function updatePanel(){
   const io=$('#io'); for(const b of io.children){ const a=b.dataset.a, on=!!(world.iv&&world.iv[a])||(flash[a]>0)||(b.classList.contains('sw')&&!!world.sw[a]);
     b.classList.toggle('on',on); b.classList.toggle('idle',!S.running); }
-  const gl=world.goalList(), k=gl.map(g=>g.l+g.ok).join('|');
+  const gl=world.goalList().map((g,i)=>({l:g.l,ok:!!world.gd[i]})), k=gl.map(g=>g.l+g.ok).join('|');
   if(k!==goalKey){ goalKey=k; $('#goals').innerHTML=gl.map(g=>`<span class="gl ${g.ok?'ok':''}">${g.ok?I('check'):I('radio_button_unchecked')} ${g.l}</span>`).join(''); }
 }

@@ -418,6 +418,73 @@ const shiftBelt=lunch=>(r,k,n)=>{
     io,M:0,T:0,C:0,SM:true,words:['VW0'],wt:{VW0:'SAAT'},pal:palOf({rungs:rs},['MOV']),scene:sc,goals,sol:{rungs:rs},bot:at([[0.3,A.sw]])};
 };
 
+
+/* ===================== BONUS BÖLÜMLER (eğlenceli) ===================== */
+CATS.push(I18({n:['Bonus','Bonus'],s:['Eğlenceli özel bölümler','Fun special levels'],ic:'★',c:'var(--amb)'}));
+const traffic=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['start'],['lamp','lamp2','lamp3'],{lamp:'KIRMIZI',lamp2:'SARI',lamp3:'YEŞİL'}); const g=pick(r,[2,2.5,3]), y=pick(r,[1,1.5]), rd=pick(r,[2,2.5,3]);
+  const R_=A.lamp,Y=A.lamp2,G=A.lamp3;
+  const rs=[R(['NO '+A.start,null,null,null,'COIL M0.0'],['NO M0.0']),R(['NO M0.0','NC T3',null,null,'TON T1 '+g]),R(['NO T1',null,null,null,'TON T2 '+y]),R(['NO T2',null,null,null,'TON T3 '+rd]),
+    R(['NO M0.0','NC T1',null,null,'COIL '+G]),R(['NO T1','NC T2',null,null,'COIL '+Y]),R(['NO T2',null,null,null,'COIL '+R_])];
+  const D={[G]:g,[Y]:y,[R_]:rd}, NX={[G]:Y,[Y]:R_,[R_]:G};
+  const sc={noBelt:true,boxes:0,traffic:{r:R_,y:Y,g:G},
+    rules:[(w,q,iv,dt,s)=>{ if(w.t<0.06) return; const on=[R_,Y,G].filter(a=>q[a]);
+      if(on.length>1) return tx('Hata: Trafik lambasında aynı anda yalnızca BİR ışık yanmalı!','Error: Only ONE light may be on at a time!');
+      const c=on[0]||null; if(c===s.c||(!c&&!s.c)) return;
+      if(s.c&&!c) return tx('Hata: Işıklar sönmemeli; döngü kesintisiz dönmeli!','Error: The lights must not go dark; the cycle must loop without gaps!');
+      if(s.c){ if(c!==NX[s.c]) return tx('Hata: Sıra YEŞİL → SARI → KIRMIZI → YEŞİL olmalı!','Error: The order must be GREEN → AMBER → RED → GREEN!');
+        const d=w.t-s.ts; if(Math.abs(d-D[s.c])>0.35) return tx(`Hata: Süreler yanlış! Yeşil ${fx(g)} sn, sarı ${fx(y)} sn, kırmızı ${fx(rd)} sn yanmalı.`,`Error: Wrong timing! Green ${g} s, amber ${y} s, red ${rd} s.`);
+        w.cnt.step=(w.cnt.step||0)+1; }
+      else if(c!==G) return tx('Hata: Döngü YEŞİL ile başlamalı!','Error: The cycle must start with GREEN!');
+      s.c=c; s.ts=w.t; }]};
+  return {title:tx('🚦 Trafik Lambası','🚦 Traffic Light'),
+    task:tx(`Kavşağın trafik lambasını programla! START (${A.start}) basınca döngü başlasın ve sonsuza dek dönsün: YEŞİL (${G}) ${fx(g)} sn → SARI (${Y}) ${fx(y)} sn → KIRMIZI (${R_}) ${fx(rd)} sn → tekrar yeşil. Aynı anda tek ışık yansın.`,
+      `Program the junction's traffic light! START (${A.start}) starts a cycle that loops forever: GREEN (${G}) ${g} s → AMBER (${Y}) ${y} s → RED (${R_}) ${rd} s → green again. Only one light at a time.`),
+    hint:tx(`M0.0 mühür · M0.0 · KAPALI T3 → TON T1 (${fx(g)}) · T1 → TON T2 (${fx(y)}) · T2 → TON T3 (${fx(rd)}) · M0.0 · KAPALI T1 → yeşil · T1 · KAPALI T2 → sarı · T2 → kırmızı. T3 dolunca zincir kendini sıfırlar.`,`M0.0 seal-in · M0.0 · NC T3 → TON T1 (${g}) · T1 → TON T2 (${y}) · T2 → TON T3 (${rd}) · M0.0 · NC T1 → green · T1 · NC T2 → amber · T2 → red. When T3 is done the chain resets itself.`),
+    io,M:1,T:3,C:0,pal:palOf({rungs:rs},['TOF']),scene:sc,goals:[{k:'cnt',f:'step',n:5,l:T2('Işık değişimi','Light change')}],sol:{rungs:rs},bot:at([[0.5,A.start]])};
+};
+const safeLock=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['s1','s2','s3'],['lamp'],{lamp:'KASA_AÇIK'}); io.I.forEach((d,i)=>{ d.k='btn'; d.n=['A','B','C'][i]; });
+  const rs=[R(['NO '+A.s1,null,null,null,'SET M0.0']),R(['NO '+A.s2,'NO M0.0',null,null,'SET '+A.lamp]),R(['NO '+A.s3,null,null,null,'RST M0.0']),R(['NO '+A.s3,null,null,null,'RST '+A.lamp])];
+  const sc={noBelt:true,boxes:0,safe:{a:A.lamp},
+    rules:[(w,q,iv,dt,s)=>{ const a=!!iv[A.s1],b=!!iv[A.s2],c=!!iv[A.s3];
+      if(a&&!s.a) s.arm=true; if(c&&!s.c){ s.arm=false; s.open=false; if(s.wasOpen) w.f.relock=true; } if(b&&!s.b){ if(s.arm){ s.open=true; } else s.tried=true; }
+      s.a=a; s.b=b; s.c=c; if(w.t<0.06) return;
+      if(!!q[A.lamp]!==!!s.open){ s.bad=(s.bad||0)+dt; if(s.bad>0.2) return s.open?tx('Hata: Doğru şifre (önce A, sonra B) girildi ama kasa açılmadı!','Error: The right code (A, then B) was entered but the safe did not open!'):tx('Hata: Kasa yanlış şifreyle açıldı! Yalnızca önce A sonra B açar, C her şeyi sıfırlar.','Error: The safe opened with a wrong code! Only A then B opens it; C resets everything.'); }
+      else { s.bad=0; if(s.open){ w.f.open=true; s.wasOpen=true; } } }]};
+  return {title:tx('🔐 Şifreli Kasa','🔐 Code Safe'),
+    task:tx(`Kasanın şifresi: önce A (${A.s1}), sonra B (${A.s2}). Doğru sırayla basılınca KASA_AÇIK (${A.lamp}) yansın. Önce B'ye basmak açmasın. C (${A.s3}) girilen şifreyi ve açık kasayı sıfırlasın.`,
+      `The safe's code is A (${A.s1}) then B (${A.s2}). Pressed in the right order, SAFE_OPEN (${A.lamp}) lights. Pressing B first must not open it. C (${A.s3}) clears the entered code and closes the safe.`),
+    hint:tx(`A → (S) M0.0 (şifrenin ilk hanesi hatırlansın) · B · M0.0 → (S) ${A.lamp} · C → (R) M0.0 · C → (R) ${A.lamp}.`,`A → (S) M0.0 (remember the first digit) · B · M0.0 → (S) ${A.lamp} · C → (R) M0.0 · C → (R) ${A.lamp}.`),
+    io,M:1,T:0,C:0,pal:palOf({rungs:rs}),scene:sc,goals:[{k:'open',l:T2('Kasayı aç','Open the safe')},{k:'relock',l:T2('C ile kilitle','Lock with C')}],sol:{rungs:rs},
+    bot:at([[0.5,A.s2],[1.1,A.s1],[1.7,A.s3],[2.3,A.s2],[2.9,A.s1],[3.5,A.s2],[4.4,A.s3]])};
+};
+const disco=(r,k,n)=>{
+  const {io}=mkCtx(r,n,[],['l0','l1','l2','l3']); const st=pick(r,[5,10]);
+  const rs=[R(['NO SM0.1',null,null,null,'MOV QB0 '+st]),R(['NO SM0.5','P',null,null,'INV QB0'])];
+  const sc={noBelt:true,boxes:0,row:{pre:'Q0.',n:4},disco:true,
+    rules:[(w,q,iv,dt,s)=>{ if(w.t<0.06) return; const v=qb(q,'Q0.')&15;
+      if(v!==5&&v!==10){ s.b=(s.b||0)+dt; if(s.b>0.15) return tx('Hata: Lambalar dama gibi dönüşümlü yanmalı: 1-3 yanıkken 2-4 sönük, sonra tersi!','Error: The lamps must alternate like a checkerboard: 1-3 on with 2-4 off, then the opposite!'); return; }
+      s.b=0; if(s.v!=null&&v!==s.v){ const d=w.t-s.ts; if(s.k>=1&&(d<0.8||d>1.25)) return tx('Hata: Desen her 1 sn\'de bir değişmeli!','Error: The pattern must flip once per second!'); s.k=(s.k||0)+1; w.cnt.flip=s.k; s.ts=w.t; }
+      if(s.v==null) s.ts=w.t; s.v=v; }]};
+  return {title:tx('🪩 Disko Işıkları','🪩 Disco Lights'),
+    task:tx(`Parti zamanı! Butona gerek yok: ilk taramada (SM0.1) QB0'a ${st} yaz (${st===5?'0101':'1010'}: dama deseni). Sonra her saniye (SM0.5'in yükselen kenarı) tüm lambaları tersle (INV). Işıklar 1-3 / 2-4 diye dans etsin.`,
+      `Party time! No buttons needed: on the first scan (SM0.1) write ${st} to QB0 (${st===5?'0101':'1010'}: a checkerboard). Then every second (rising edge of SM0.5) invert all lamps (INV). The lights dance 1-3 / 2-4.`),
+    hint:tx(`SM0.1 → MOV QB0 ← ${st} · SM0.5 · P → INV QB0.`,`SM0.1 → MOV QB0 ← ${st} · SM0.5 · P → INV QB0.`),
+    io,M:0,T:0,C:0,SM:true,words:['QB0'],wt:{QB0:'LAMBALAR'},pal:palOf({rungs:rs},['SHL','N']),scene:sc,goals:[{k:'cnt',f:'flip',n:6,l:T2('Dans adımı','Dance step')}],sol:{rungs:rs},bot:()=>()=>{}};
+};
+const turbo=(r,k,n)=>{
+  const {A,io}=mkCtx(r,n,['sw'],['motor']); const N=8, T=7, vmin=40;
+  const rs=[R(['NO SM0.1',null,null,null,'MOV VW0 50']),R(['NO '+A.sw,null,null,null,'COIL '+A.motor])];
+  const sc={motor:A.motor,speed:20,speedW:'VW0',gap:0.55,boxes:N+2,endDrop:'deliver',timer:T,
+    rules:[(w)=>{ if(w.t>T&&w.delivered<N) return tx(`Süre doldu! ${N} kutu ${T} sn'de yetişmedi — bandı hızlandır (VW0 ≥ ${vmin}).`,`Time's up! ${N} boxes didn't make it in ${T} s — speed the belt up (VW0 ≥ ${vmin}).`); }]};
+  return {title:tx('🏁 Turbo Bant Rekoru','🏁 Turbo Belt Record'),
+    task:tx(`Rekor denemesi! ${N} kutuyu ${T} saniye dolmadan depoya ulaştır. Bant hızı VW0'dan okunur (en fazla 60). İlk taramada (SM0.1) hızı yükselt, şalterle (${A.sw}) bandı çalıştır. Süre RUN'la başlar!`,
+      `Record attempt! Get ${N} boxes to the store before ${T} seconds run out. The belt speed is read from VW0 (max 60). Raise the speed on the first scan (SM0.1) and run the belt with the switch (${A.sw}). The clock starts with RUN!`),
+    hint:tx(`SM0.1 → MOV VW0 ← 50 · ${A.sw} → ${A.motor}. Hız en az ${vmin} olmalı.`,`SM0.1 → MOV VW0 ← 50 · ${A.sw} → ${A.motor}. The speed must be at least ${vmin}.`),
+    io,M:0,T:0,C:0,SM:true,words:['VW0'],wt:{VW0:'HIZ'},pal:palOf({rungs:rs},['ADD']),scene:sc,goals:[{k:'deliver',n:N}],sol:{rungs:rs},bot:at([[0.3,A.sw]])};
+};
+const BONUS=[safeLock,traffic,turbo,disco], BONUS_MIN=[10,18,68,103];   // her bonus, gereken konular öğretildikten sonra gelir
 /* ===================== YOL HARİTASI ===================== */
 const TPL=[
   [ [easyLogic('direct',0),easyLogic('direct',1),easyLogic('and',0),easyLogic('or',0),easyLogic('direct',2),easyLogic('and',1),easyLogic('or',1),easyLogic('and',2),easyLogic('or',2)],
@@ -435,13 +502,16 @@ const TPL=[
   [ [segCount(false),segCount(true)], [segDown], [hSegBatch] ],
   [ [chase(1,false),chase(-1,false)], [chase(1,true)], [chaseSM] ],
   [ [mirror(false),worWand,mirror(true)], [maskSel], [hPanelTest] ],
-  [ [shiftLamp(false),shiftLamp(true)], [shiftBelt(false)], [shiftBelt(true)] ]];
+  [ [shiftLamp(false),shiftLamp(true)], [shiftBelt(false)], [shiftBelt(true)] ],
+  [ BONUS, BONUS, BONUS ]];
 const LV_CACHE={};
 // TEK YOL: tüm konular bir arada. Konular sırayla tanıtılır, sonra karışık gelir.
 const TOPIC_START=[0,15,35,45,55,65,80,90,100,110];
 const NEW_FROM=45;                                   // bu bölümden önce yol v1.1.1 ile birebir aynı
 const OLD_LEN=[[9,6,4],[3,3,3],[3,3,3]];
-const NC_=TOPIC_START.length;
+const NC_=TOPIC_START.length, BONUS_C=NC_;
+// bonus: ~15 bölümde bir (ekstra zordan nadir), konu tanıtımlarına ve ekstra zorlara denk gelmez
+const isBonus=i=>i>=10&&i%15===12&&!isExtra(i)&&!intro(i,false);
 function tplLen(c,pool,i,old){ return (old||i<NEW_FROM)&&c<3?OLD_LEN[c][pool]:TPL[c][pool].length; }
 function intro(i,old){ const n=old?3:NC_; for(let c=0;c<n;c++){ const k=i-TOPIC_START[c]; if(k>=0&&k<TPL[c][0].length&&(c===0||c>=3||k<3)) return {c,pool:0,t:k}; } return null; }
 function pickTpl(i,old){
@@ -456,8 +526,9 @@ function pickTpl(i,old){
   return {c,pool,t:Math.floor(r()*tplLen(c,pool,i,old))};
 }
 function tplKey(n,old){
+  if(!old&&isBonus(n)){ const av=BONUS.map((_,j)=>j).filter(j=>n>=BONUS_MIN[j]); return {c:BONUS_C,pool:0,t:av[Math.floor(n/15)%av.length]}; }
   let p=pickTpl(n,old);
-  if(n>0&&!isExtra(n)){ const q=pickTpl(n-1,old); if(q.c===p.c&&q.pool===p.pool&&q.t===p.t){ const L=tplLen(p.c,p.pool,n,old); p=Object.assign({},p,{t:(p.t+1)%L}); } }
+  if(n>0&&!isExtra(n)){ const q=tplKey(n-1,old); if(q.c===p.c&&q.pool===p.pool&&q.t===p.t){ const L=tplLen(p.c,p.pool,n,old); p=Object.assign({},p,{t:(p.t+1)%L}); } }
   return p;
 }
 function getLevel(id){
@@ -469,7 +540,7 @@ function getLevel(id){
   const lv=TPL[p.c][p.pool][p.t](r,k,n);
   lv.amap=CTX_MAP||{};
   if(isExtra(n)&&!lv.scene.noBelt) lv.scene.speed=Math.round(lv.scene.speed*1.15);
-  Object.assign(lv,{id,cat:p.c,diff:p.pool,n,extra:isExtra(n)}); lv.opt=countBlocks(lv.sol);
+  Object.assign(lv,{id,cat:p.c,diff:p.pool,n,extra:isExtra(n),bonus:p.c===BONUS_C}); lv.opt=countBlocks(lv.sol);
   return LV_CACHE[id]=lv;
 }
 /* v1.1.1 kayıtlarını taşı: aynı şablon → adresleri yeni sıraya çevir; değişen bölüm → çözüm gösterimi düşer, puan kalır */

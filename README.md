@@ -1,6 +1,6 @@
 # ⚡ Ladder Master — PLC Merdiven Mantığı Bulmacası
 
-*PLC ladder logic puzzle game for mobile — Türkçe / English* · **Sürüm v1.1.2**
+*PLC ladder logic puzzle game for mobile — Türkçe / English* · **Sürüm v1.1.3**
 
 Telefon ekranı için tasarlanmış, tarayıcıda çalışan bir **PLC Ladder (merdiven) mantık bulmaca oyunu**.
 Tek bir HTML dosyası; harici kütüphane, görsel veya ses dosyası yok.
@@ -11,7 +11,7 @@ Tek bir HTML dosyası; harici kütüphane, görsel veya ses dosyası yok.
 Ya da `index.html` dosyasını tarayıcıda aç.
 
 ## Özellikler
-- **Yol haritası:** tek, sonsuz ve giderek zorlaşan bir yol. Temel mantıkla başlar; 16. bölümde zamanlayıcılar, 36. bölümde sayıcılar, sonra karşılaştırma (46), kenar ve özel bitler (56), taşıma ve matematik (66), 7-segment dönüştürme (81), kaydırma (91), bayt mantığı (101) ve saat (111) katılır. Sonra hepsi karışık gelir; her 10. bölüm 🔥 Ekstra Zor ve birden fazla komut ailesini birleştirir
+- **Yol haritası:** tek, sonsuz ve giderek zorlaşan bir yol. Temel mantıkla başlar; 16. bölümde zamanlayıcılar, 36. bölümde sayıcılar, sonra karşılaştırma (46), kenar ve özel bitler (56), taşıma ve matematik (66), 7-segment dönüştürme (81), kaydırma (91), bayt mantığı (101) ve saat (111) katılır. Sonra hepsi karışık gelir; her 10. bölüm 🔥 Ekstra Zor ve birden fazla komut ailesini birleştirir. Arada, ekstra zordan daha seyrek 🎉 Bonus bölümler gelir: trafik lambası, şifreli kasa, disko ışıkları, turbo bant rekoru
 - **Sanal PLC (S7-200 tarzı):** 20 ms scan cycle
   - Bit mantığı: Açık/Kapalı kontak, Bobin, Set/Reset, paralel kol (OR), kenar algılama P/N, NOT, özel bitler SM0.0 / SM0.1 / SM0.5
   - Zamanlayıcılar ve sayıcılar: TON, TOF, TONR, CTU, CTD

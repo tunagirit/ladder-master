@@ -182,7 +182,7 @@ class World{
     if(!this.checks(q,dt)) return;
     this.pm=this.motor;
     // hedefler
-    const gl=this.goalList(); gl.forEach((g,i)=>{ if(g.ok) this.gd[i]=true; });
+    const gl=this.goalList(); for(let i=0;i<gl.length;i++){ if(this.gd[i]) continue; if(gl[i].live) this.gd[i]=true; else break; }   // hedefler ekrandaki sırayla tamamlanır
     if(this.gd.every(Boolean)){ this.done=true; return; }
     const active=this.boxes.some(b=>b.st==='belt'||b.st==='pushed');
     if(!sc.noBelt&&this.nid>=sc.boxes&&!active){ this.idleT+=dt; if(this.idleT>4.5) return this.fail(tx('Hedefe ulaşılamadı: kutular bitti. Programı gözden geçir.','Goal not reached: out of boxes. Review your program.')); } else this.idleT=0;
@@ -241,7 +241,7 @@ class World{
       this.prevSp=sp; this.prevFan=fn;
     }
     if(sc.motorAnd){ if(this.motor&&!sc.motorAnd.every(a=>iv[a])){ this.andT+=dt; if(this.andT>0.3) return this.fail(tx('Hata: Bant yalnızca iki şalter de açıkken çalışmalı!','Error: Belt must run only when BOTH switches are ON!')); } else this.andT=0; }
-    if(sc.motorAnd){ const on=sc.motorAnd.filter(a=>iv[a]).length; if(on===1&&!this.motor){ this.atT+=dt; if(this.atT>=0.8) this.f.andTest=true; } }
+    if(sc.motorAnd){ const on=sc.motorAnd.filter(a=>iv[a]).length; if(on===1&&!this.motor&&!sc.sensors.some(s=>this.sensorOn(s.a))){ this.atT+=dt; if(this.atT>=0.8) this.f.andTest=true; } }
     if(sc.motorOr){ const [a,b]=sc.motorOr; if(this.motor&&iv[a]&&!iv[b]) this.oa+=dt; if(this.motor&&iv[b]&&!iv[a]) this.ob+=dt; if(this.oa>=0.5&&this.ob>=0.5) this.f.orTest=true; }
     if(sc.motorOr){ const any=sc.motorOr.some(a=>iv[a]), sOn=sc.sensors.some(s=>this.sensorOn(s.a)); if(any&&!this.motor&&!sOn){ this.orT+=dt; if(this.orT>0.5) return this.fail(tx('Hata: Şalterlerden herhangi biri açıkken bant çalışmalı!','Error: Belt must run when EITHER switch is ON!')); } else this.orT=0; }
     if(sc.lampDelay){ const par=!this.motor&&this.sensorOn(sc.lampDelay.s); if(par&&this.pkS===null) this.pkS=this.t; if(!par) this.pkS=null;
@@ -275,7 +275,7 @@ class World{
         case 'cnt': l=tx(g.l[0],g.l[1])+' '+Math.min(this.cnt[g.f]||0,g.n)+'/'+g.n; ok=(this.cnt[g.f]||0)>=g.n; break;
         default: l=g.l?tx(g.l[0],g.l[1]):LB[g.k]?tx(LB[g.k][0],LB[g.k][1]):g.k; ok=!!this.f[g.f||g.k];
       }
-      if(this.gd[i]) ok=true; return {l,ok}; });
+      return {l,ok:ok||this.gd[i],live:ok}; });
   }
 }
 
