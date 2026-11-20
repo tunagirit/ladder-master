@@ -1,12 +1,13 @@
 /*==UI==*/
 const $=(s,r=document)=>r.querySelector(s);
-const VERSION='v1.1.1';
+const VERSION='v1.1.2';
 const I=(n,c)=>'<span class="ms'+(c?' '+c.split(' ').map(x=>x==='f'?'f':'ms-'+x).join(' '):'')+'">'+n+'</span>';  // Material Symbols ikon
 const SKEY='ladderustasi_v2';
 let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1,theme:'auto',lang:null,seen:{}};
 try{const s=JSON.parse(localStorage.getItem(SKEY)||'null'); if(s) save=Object.assign(save,s);}catch(e){}
 delete save.unlock; if(!save.seen) save.seen={};
-if(save.v!==4){ save.done={}; save.draft={}; save.last=-1; save.v=4; }  // v1.0.5: tek birleşik yol, eski bölüm numaraları geçersiz
+if(save.v===4){ save.done=migrateDone(save.done||{}); const d={}; for(const k in save.draft||{}) if(sameTpl(+k)) d[k]=remapProg(+k,save.draft[k]); save.draft=d; save.v=5; }  // v1.1.2: sıralı adresler
+else if(save.v!==5){ save.done={}; save.draft={}; save.last=-1; save.v=5; }  // v1.0.5: tek birleşik yol, eski bölüm numaraları geçersiz
 const persist=()=>{try{localStorage.setItem(SKEY,JSON.stringify(save));}catch(e){}};
 const S={id:0,lv:null,prog:null,tags:{},tool:null,running:false,speed:1,cw:70,view:false,redo:false,mscr:null};
 let world=null,plc=new PLC(),LIVE=[];

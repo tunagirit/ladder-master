@@ -2,7 +2,7 @@
 function loadLevel(id,quiet){
   S.id=id; const lv=S.lv=getLevel(id); save.last=id; persist();
   const dn=save.done[id]; S.redo=false; S.tool=null;
-  if(dn){ S.view=true; S.prog=clone(dn.prog); S.tags=Object.assign(defaultTags(lv),customTags(dn.tags)); }
+  if(dn&&dn.prog){ S.view=true; S.prog=clone(dn.prog); S.tags=Object.assign(defaultTags(lv),customTags(dn.tags)); }
   else { S.view=false; const d=save.draft[id]; S.prog=d&&d.rungs&&d.rungs.length?{rungs:clone(d.rungs)}:{rungs:[mkRung()]}; S.tags=Object.assign(defaultTags(lv),customTags(d&&d.tags)); }
   world=new World(lv); plc.reset(); stopSim(true);
   setHeader();
@@ -14,7 +14,7 @@ function loadLevel(id,quiet){
 function lvLabel(lv){ return `${tx('Bölüm','Level')} ${lv.n+1} · ${CATS[lv.cat].n}`; }
 function setHeader(){ const lv=S.lv, C=CATS[lv.cat]; $('#task').dataset.lbl=tx('GÖREV','TASK');
   $('#title').innerHTML=`<small style="color:${lv.extra?'var(--red)':C.c}">${lvLabel(lv).toUpperCase()}${lv.extra?' · '+tx('EKSTRA ZOR','EXTRA HARD'):''}</small>${lv.title}`;
-  $('#task').innerHTML=esc(lv.task).replace(/\b([IQMTC]\d\.\d|[TC]\d)\b/g,'<b>$1</b>'); }
+  $('#task').innerHTML=esc(lv.task).replace(/\b((?:SM|[IQM])\d\.\d|[TC]\d|VW\d|AIW\d|[QI]B\d)\b/g,'<b>$1</b>'); }
 function refreshMode(){
   $('#palette').style.display=S.view?'none':'flex'; $('#doneBar').style.display=S.view?'flex':'none';
   $('#bClear').style.visibility=S.view?'hidden':'visible'; updInfo();
@@ -84,8 +84,8 @@ function dropAction(d,i,r,c){
 let tipT=null;
 function hideTip(){ const t=$('#tip'); if(t) t.classList.remove('show'); }
 function showTip(el,t,extra){
-  const E=ELEM[t]; if(!E) return; const tp=$('#tip');
-  tp.innerHTML=`<div class="th">${palSym(t)}<b>${tx(E.t[0],E.t[1])}</b></div>${extra?`<div class="tx2">${extra}</div>`:''}<p>${tx(E.d[0],E.d[1])}</p><small>${tx(E.e[0],E.e[1])}</small>`;
+  const E=ELEM[ELEM_OF(t)]; if(!E) return; const tp=$('#tip');
+  tp.innerHTML=`<div class="th">${palSym(t)}<b>${E===ELEM[t]?tx(E.t[0],E.t[1]):BN[t]}</b></div>${extra?`<div class="tx2">${extra}</div>`:''}<p>${tx(E.d[0],E.d[1])}</p><small>${tx(E.e[0],E.e[1])}</small>`;
   const r=el.getBoundingClientRect(), app=$('#app').getBoundingClientRect(); tp.style.left='0px'; tp.style.top='0px'; tp.classList.add('show');
   const w=tp.offsetWidth, h=tp.offsetHeight; let x=r.left+r.width/2-w/2; x=Math.max(app.left+8,Math.min(app.right-w-8,x));
   let y=r.top-h-12; if(y<app.top+8) y=r.bottom+12; tp.style.left=x+'px'; tp.style.top=y+'px';
@@ -100,7 +100,7 @@ $('#rungs').addEventListener('pointerdown',e=>{
   const ce=e.target.closest('.cell'); if(!ce) return;
   const i=+ce.closest('.rung').dataset.i, r=+ce.dataset.r, c=+ce.dataset.c, cell=S.prog.rungs[i].c[r][c]; if(!cell) return;
   drag={t:cell.t,x:e.clientX,y:e.clientY,pid:e.pointerId,on:false,from:{i,r,c,el:ce},ro:S.view};
-  const ex=`<code>${cell.a}</code>${S.tags[cell.a]?' · '+esc(S.tags[cell.a]):''}${cell.pv!==undefined?' · '+((cell.t==='TON'||cell.t==='TOF')?fx(cell.pv)+' '+tx('sn','s'):'PV '+cell.pv):''}`;
+  const ex=cellDesc(cell);
   armTip(ce,cell.t,ex);
 });
 window.addEventListener('pointermove',e=>{

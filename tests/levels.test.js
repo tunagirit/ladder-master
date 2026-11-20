@@ -1,5 +1,5 @@
 const fs=require('fs');
-const code=fs.readFileSync(__dirname+'/../src/logic.js','utf8')+fs.readFileSync(__dirname+'/../src/gen.js','utf8');
+const code=['logic','gen','gen2'].map(f=>fs.readFileSync(__dirname+'/../src/'+f+'.js','utf8')).join('\n');
 const M=new Function(code+';return {PLC,World,getLevel,SCAN,ROAD,R,countBlocks};')();
 function run(lv,prog,maxT=200){ const w=new M.World(lv),p=new M.PLC(),bot=lv.bot(); let t=0;
   for(;t<maxT;t+=M.SCAN){ bot(w,a=>w.press(a),t); const iv=w.sense(); for(const k in iv)p.b[k]=iv[k]; p.scan(prog,20); w.advance(p.b,M.SCAN); if(w.err||w.done)break; }

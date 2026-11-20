@@ -20,15 +20,21 @@ const pick=(r,a)=>a[Math.floor(r()*a.length)];
 function shuf(a,r){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(r()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 const spd=(r,k)=>Math.round(18+k*9+ri(r,0,3));
 const gp=k=>+(1.4-k*0.22).toFixed(2);
-const INDEF={start:['START','btn'],stop:['STOP','btn'],sw:['ŞALTER','sw'],sw2:['ŞALTER_2','sw'],gate:['ONAY_ANAH','sw'],ack:['ONAY','btn'],sen:['SENSÖR','sensor'],lim:['PİSTON_İLERİ','limit']};
-const QDEF={motor:'BANT_MOTOR',pist:'PİSTON',lamp:'LAMBA',fan:'EGZOZ_FAN',valve:'VALF'};
+const INDEF={start:['START','btn'],stop:['STOP','btn'],sw:['ŞALTER','sw'],sw2:['ŞALTER_2','sw'],gate:['ONAY_ANAH','sw'],ack:['ONAY','btn'],sen:['SENSÖR','sensor'],lim:['PİSTON_İLERİ','limit'],
+  tog:['AÇ/KAPA','btn'],slow:['YAVAŞ','btn'],fast:['HIZLI','btn'],on:['YAK','btn'],off:['SÖNDÜR','btn'],test:['TEST','btn'],s1:['ANAH_1','sw'],s2:['ANAH_2','sw'],s3:['ANAH_3','sw'],s4:['ANAH_4','sw']};
+const QDEF={motor:'BANT_MOTOR',pist:'PİSTON',lamp:'LAMBA',lamp2:'LAMBA_2',fan:'EGZOZ_FAN',valve:'VALF',pump:'POMPA',heat:'ISITICI',l0:'LAMBA_1',l1:'LAMBA_2',l2:'LAMBA_3',l3:'LAMBA_4'};
 const TAGEN={'ŞALTER':'SWITCH','ŞALTER_2':'SWITCH_2','ONAY_ANAH':'APPROVE_KEY','ONAY':'ACK','SENSÖR':'SENSOR','PİSTON_İLERİ':'PISTON_FWD','BANT_MOTOR':'BELT_MOTOR','PİSTON':'PISTON','LAMBA':'LAMP','EGZOZ_FAN':'EXHAUST_FAN','VALF':'VALVE',
- 'ÇALIŞIYOR':'RUNNING','ARIZA':'FAULT','AYIRMA':'DIVERT','HAZIR':'READY','UYARI':'WARNING','KALKIŞ_İKAZ':'START_WARN','İKAZ':'WARN','DOLUM_VALF':'FILL_VALVE','BOYA_VALF':'PAINT_VALVE','PARTİ_TAMAM':'BATCH_DONE','PARTİ':'BATCH','SAYAÇ_DOLU':'COUNT_DONE','SAYAÇ':'COUNT','PALET_DOLU':'PALLET_FULL','PALET':'PALLET','AYIRMA_LAMBA':'DIVERT_LAMP'};
+ 'ÇALIŞIYOR':'RUNNING','ARIZA':'FAULT','AYIRMA':'DIVERT','HAZIR':'READY','UYARI':'WARNING','KALKIŞ_İKAZ':'START_WARN','İKAZ':'WARN','DOLUM_VALF':'FILL_VALVE','BOYA_VALF':'PAINT_VALVE','PARTİ_TAMAM':'BATCH_DONE','PARTİ':'BATCH','SAYAÇ_DOLU':'COUNT_DONE','SAYAÇ':'COUNT','PALET_DOLU':'PALLET_FULL','PALET':'PALLET','AYIRMA_LAMBA':'DIVERT_LAMP',
+ 'AÇ/KAPA':'ON/OFF','YAVAŞ':'SLOW','HIZLI':'FAST','YAK':'LIGHT','SÖNDÜR':'CLEAR','TEST':'TEST','ANAH_1':'KEY_1','ANAH_2':'KEY_2','ANAH_3':'KEY_3','ANAH_4':'KEY_4','POMPA':'PUMP','ISITICI':'HEATER',
+ 'LAMBA_1':'LAMP_1','LAMBA_2':'LAMP_2','LAMBA_3':'LAMP_3','LAMBA_4':'LAMP_4','YARIM':'HALF','TAMAM':'DONE','BEKLİYOR':'IDLE','DOLUYOR':'FILLING','MESAİ':'SHIFT','GECE':'NIGHT','BAKIM':'SERVICE','STOK_BİTTİ':'NO_STOCK',
+ 'SEVİYE':'LEVEL','SICAKLIK':'TEMP','HIZ':'SPEED','PARÇA':'PARTS','STOK':'STOCK','GÖSTERGE':'DISPLAY','SAAT':'HOUR','SAYI':'COUNT','DOLU':'FULL','LAMBALAR':'LAMPS','ANAHTARLAR':'KEYS','YÜZDE':'PERCENT','DÖNGÜ':'CYCLE'};
 const tg=n=>LANG==='en'?(TAGEN[n]||n):n;
+let CTX_MAP=null;
 function mkCtx(r,n,iN,qN,qt){
+  // v1.1.2: adresler sıralı (I0.0, I0.1… / Q0.0, Q0.1…). Eski karışık düzen yalnızca kayıtları taşımak için hesaplanır.
   const I=['I0.0','I0.1','I0.2','I0.3','I0.4','I0.5','I0.6','I0.7'], Q=['Q0.0','Q0.1','Q0.2','Q0.3','Q0.4','Q0.5'];
-  if(n>=6){ shuf(I,r); shuf(Q,r); }
-  const A={}; iN.forEach((k,i)=>A[k]=I[i]); qN.forEach((k,i)=>A[k]=Q[i]);
+  const Io=I.slice(), Qo=Q.slice(); if(n>=6){ shuf(Io,r); shuf(Qo,r); }
+  const A={}, amap={}; iN.forEach((k,i)=>{ A[k]=I[i]; amap[Io[i]]=I[i]; }); qN.forEach((k,i)=>{ A[k]=Q[i]; amap[Qo[i]]=Q[i]; }); CTX_MAP=amap;
   const srt=(x,y)=>x.a<y.a?-1:1;
   const io={I:iN.map(k=>IN(A[k],tg(INDEF[k][0]),INDEF[k][1])).sort(srt),Q:qN.map(k=>O(A[k],tg((qt&&qt[k])||QDEF[k]))).sort(srt)};
   return {A,io};
@@ -252,40 +258,3 @@ const hFinal=(r,k,n)=>{
     hint:tx(`Mühürlü motor · ${A.sen}→CTU C1 (${N}) · C1→${A.pist} · ${A.lim}→(R) C1 · ${A.pist}→${A.lamp}.`,`Sealed motor · ${A.sen}→CTU C1 (${N}) · C1→${A.pist} · ${A.lim}→(R) C1 · ${A.pist}→${A.lamp}.`),io,M:2,T:0,C:1,pal:PAL_D,scene:sc,goals:[{k:'seal'},{k:'divert',n:2},{k:'lampPush'}],sol,bot:at([[0.5,A.start]])};
 };
 
-const TPL=[
-  [ [easyLogic('direct',0),easyLogic('direct',1),easyLogic('and',0),easyLogic('or',0),easyLogic('direct',2),easyLogic('and',1),easyLogic('or',1),easyLogic('and',2),easyLogic('or',2)],
-    [mSeal(0),mSR(0),mSeal(1),mSR(1),mSeal(2),mPist],
-    [hArriza,hPistLamp,hAckLatch,hGate] ],
-  [ [tPush,tLampDelay,tLampTof],
-    [tStopDelay,tFill,tStartDelay],
-    [hBooth,hDelays,hTonTof] ],
-  [ [cBatch(false),cLampCount,cBatch(true)],
-    [mDivert,mCtdTwo(false),mRestart(false)],
-    [hFinal,mCtdTwo(true),mRestart(true)] ]];
-const LV_CACHE={};
-// TEK YOL: tüm konular bir arada. Konular sırayla tanıtılır, sonra karışık gelir.
-const TOPIC_START=[0,15,35];          // temel mantık, zamanlayıcılar, sayıcılar ilk kez bu bölümde
-function intro(i){ for(let c=0;c<3;c++){ const k=i-TOPIC_START[c]; if(k>=0&&k<TPL[c][0].length&&(c===0||k<3)) return {c,pool:0,t:k}; } return null; }
-function pickTpl(i){
-  const r=mkRng(i*104729+17);
-  const open=[0,1,2].filter(c=>i>=TOPIC_START[c]+3);                 // tanıtımı bitmiş konular
-  if(isExtra(i)){ const c=open[Math.floor(r()*open.length)]; return {c,pool:2,t:Math.floor(r()*TPL[c][2].length)}; }
-  const fx=intro(i); if(fx) return fx;
-  const w=open.map(c=>i-TOPIC_START[c]<28?2:1);                       // yeni açılan konu ilk bölümlerinde biraz daha sık gelsin
-  let x=r()*w.reduce((a,b)=>a+b,0), c=open[0]; for(let j=0;j<open.length;j++){ x-=w[j]; if(x<0){ c=open[j]; break; } }
-  const pm=Math.max(0,Math.min(0.85,(i-TOPIC_START[c]-6)/50));       // konu içinde orta seviye olasılığı zamanla artar
-  const pool=r()<pm?1:0, P=TPL[c][pool];
-  return {c,pool,t:Math.floor(r()*P.length)};
-}
-function getLevel(id){
-  if(LV_CACHE[id]) return LV_CACHE[id];
-  const n=id;
-  let p=pickTpl(n);
-  if(n>0&&!isExtra(n)){ const q=pickTpl(n-1); if(q.c===p.c&&q.pool===p.pool&&q.t===p.t){ const L=TPL[p.c][p.pool].length; p=Object.assign({},p,{t:(p.t+1)%L}); } }
-  const r=mkRng(id*7919+13);
-  const k=isExtra(n)?Math.min(1,0.45+n/200):Math.min(1,n/160);
-  const lv=TPL[p.c][p.pool][p.t](r,k,n);
-  if(isExtra(n)) lv.scene.speed=Math.round(lv.scene.speed*1.15);
-  Object.assign(lv,{id,cat:p.c,diff:p.pool,n,extra:isExtra(n)}); lv.opt=countBlocks(lv.sol);
-  return LV_CACHE[id]=lv;
-}

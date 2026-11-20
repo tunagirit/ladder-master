@@ -82,7 +82,7 @@ function logout(){ NET.sess=null; saveSess(); }
 async function pullProgress(){
   if(!me()) return;
   const {j}=await sb(`/rest/v1/progress?id=eq.${me().id}&select=data`);
-  const dd=j&&j[0]&&j[0].data; const remote=(dd&&dd.v===4&&dd.done)||{};
+  const dd=j&&j[0]&&j[0].data; const remote=(dd&&dd.v===5&&dd.done)||(dd&&dd.v===4&&dd.done&&migrateDone(dd.done))||{};
   let added=0; for(const k in remote) if(!save.done[k]){ save.done[k]=remote[k]; delete save.draft[k]; added++; }
   persist(); await pushProgress(true); return added;
 }
@@ -91,7 +91,7 @@ function schedulePush(){ if(!me()) return; clearTimeout(pushT); pushT=setTimeout
 async function pushProgress(now){
   if(!me()) return; const id=me().id, ts=new Date().toISOString();
   await sb('/rest/v1/profiles?on_conflict=id',{method:'POST',body:{id,username:me().username,points:points(),updated_at:ts},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
-  await sb('/rest/v1/progress?on_conflict=id',{method:'POST',body:{id,data:{v:4,done:save.done},updated_at:ts},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
+  await sb('/rest/v1/progress?on_conflict=id',{method:'POST',body:{id,data:{v:5,done:save.done},updated_at:ts},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
   NET.lastPush=Date.now();
 }
 async function fetchBoard(){

@@ -29,9 +29,11 @@ function solLadder(lv){
     let g=`<text class="rn" x="2" y="11">R${ri+1}</text><path class="rl" d="M${x0-4} 4V${H-4}M${W-x0+4} 4V${H-4}"/><path class="w" d="M${x0-4} ${y}H${W-x0+4}"/>`;
     if(sp){ const xa=x0+sp.from*cw, xb=x0+(sp.to+1)*cw, yb=y+BR; g+=`<path class="w" d="M${xa} ${y}V${yb}H${xb}V${y}"/>`; }
     const cell=(c,col,yy)=>{ if(!c) return ''; const cx=x0+col*cw+cw/2;
-      if(c.t==='TON'||c.t==='TOF'||c.t==='CTU'||c.t==='CTD'){
-        const v=(c.t==='TON'||c.t==='TOF')?`${fx(c.pv)} ${tx('sn','s')}`:`PV ${c.pv}`;
-        return `<rect class="bx" x="${cx-27}" y="${yy-17}" width="54" height="34" rx="4"/><text class="bt" x="${cx}" y="${yy-3}">${c.t} ${c.a}</text><text class="bv" x="${cx}" y="${yy+11}">${v}</text>`; }
+      if(isOut(c.t)&&!['COIL','SET','RST'].includes(c.t)){
+        const L=cellTxt(c), v=isTim(c.t)?`${fx(c.pv)} ${tx('sn','s')}`:L[1];
+        return `<rect class="bx" x="${cx-28}" y="${yy-17}" width="56" height="34" rx="4"/><text class="bt" x="${cx}" y="${yy-3}"${L[0].length>8?' style="font-size:8px"':''}>${L[0]}</text><text class="bv" x="${cx}" y="${yy+11}"${v.length>8?' style="font-size:8px"':''}>${v}</text>`; }
+      if(NOADDR.includes(c.t)) return `<rect class="bg" x="${cx-19}" y="${yy-13}" width="38" height="26"/><svg x="${cx-17}" y="${yy-12}" width="34" height="24" viewBox="0 0 34 24" class="sy">${inner(c.t)}</svg>`;
+      if(c.t==='CMP') return `<rect class="bg" x="${cx-19}" y="${yy-13}" width="38" height="26"/><svg x="${cx-17}" y="${yy-12}" width="34" height="24" viewBox="0 0 34 24" class="sy"><path d="M0 12H8M26 12H34M8 3V21M26 3V21"/><text x="17" y="17" font-size="12">${OPSYM[c.op]}</text></svg><text class="ad" x="${cx}" y="${yy-17}">${c.a}</text><text class="ad" x="${cx}" y="${yy+24}" style="font-size:8.5px">${OPSYM[c.op]} ${c.pv}</text>`;
       return `<rect class="bg" x="${cx-19}" y="${yy-13}" width="38" height="26"/><svg x="${cx-17}" y="${yy-12}" width="34" height="24" viewBox="0 0 34 24" class="sy">${inner(c.t)}</svg><text class="ad" x="${cx}" y="${yy-17}">${c.a}</text><text class="tg" x="${cx}" y="${yy+24}">${lbl(c.a)}</text>`; };
     for(let col=0;col<COLS;col++) g+=cell(rg.c[0][col],col,y);
     if(sp) for(let col=sp.from;col<=sp.to;col++) g+=cell(rg.c[1][col],col,y+BR);
