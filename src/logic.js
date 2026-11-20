@@ -3,7 +3,8 @@ let LANG='tr';
 const tx=(a,b)=>LANG==='en'?b:a;
 const fx=x=>LANG==='en'?String(x):String(x).replace('.',',');
 /* ===== PLC LADDER BULMACA — MANTIK ÇEKİRDEĞİ ===== */
-const COLS=5, OUTC=4, SCAN=0.02, BW=4, PIST_V=3;
+const COLS=7, OUTC=6,   /* bir satırda en fazla 6 kontak + 1 çıkış; görünümde satır koydukça uzar */
+      SCAN=0.02, BW=4, PIST_V=3;
 const OUTT=['COIL','SET','RST','TON','TOF','TONR','CTU','CTD','MOV','ADD','SUB','MUL','DIV','INC','DEC','SHL','SHR','WAND','WOR','INV','SEG','RTC'];
 const isOut=t=>OUTT.indexOf(t)>=0;
 const NOADDR=['P','N','NOT'];                       // adressiz kontaklar
@@ -20,7 +21,10 @@ function parseCell(s){ if(!s) return null; const p=s.split(' '); const o={t:p[0]
   if(p[2]!==undefined){ if(/^[A-Z]/.test(p[2])) o.src=p[2]; else o.pv=parseFloat(p[2]); }
   return o; }
 function mkRung(){ return {br:false,c:[Array(COLS).fill(null),Array(COLS).fill(null)]}; }
-function R(row0,row1){ const rg=mkRung(); rg.br=!!row1; row0.forEach((s,i)=>{rg.c[0][i]=parseCell(s);}); if(row1) row1.forEach((s,i)=>{rg.c[1][i]=parseCell(s);}); return rg; }
+function R(row0,row1){ const rg=mkRung(); rg.br=!!row1; row0.forEach((s,i)=>{ const c=parseCell(s); if(c&&isOut(c.t)) rg.c[0][OUTC]=c; else rg.c[0][i]=c; }); if(row1) row1.forEach((s,i)=>{rg.c[1][i]=parseCell(s);}); return rg; }
+/* eski (5 sütunlu) kayıtları yeni düzene çevir: çıkış son sütuna */
+function fixRung(rg){ if(!rg||!rg.c) return rg; rg.c=rg.c.map((row,r)=>{ if(row.length===COLS) return row; const a=Array(COLS).fill(null); const oc=row.length-1;
+    for(let c=0;c<oc;c++) a[c]=row[c]; if(r===0) a[OUTC]=row[oc]; return a; }); while(rg.c.length<2) rg.c.push(Array(COLS).fill(null)); return rg; }
 function countBlocks(p){ let n=0; for(const rg of p.rungs) for(const row of rg.c) for(const c of row) if(c) n++; return n; }
 function branchSpan(rg){ let f=-1,t=-1; if(rg.br) for(let c=0;c<OUTC;c++) if(rg.c[1][c]){ if(f<0) f=c; t=c; } return f<0?null:{from:f,to:t}; }
 const cmpOk=(v,op,w)=>op==='=='?v===w:op==='<>'?v!==w:op==='>='?v>=w:op==='<='?v<=w:op==='>'?v>w:v<w;

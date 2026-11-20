@@ -1,5 +1,5 @@
 /* ---------- Ladder çizimi ---------- */
-function calcCW(){ const w=$('#rungs').clientWidth-12-30-10; return Math.max(54,Math.min(150,Math.floor(w/COLS))); }
+function calcCW(V){ const w=$('#rungs').clientWidth-12-30-10, c=Math.min(150,Math.floor(w/5)); return Math.max(46,(V||5)*c>w?Math.floor(w/V):c); }
 function cellSVG(cell,r,c,cw,inSpan,brEmpty){
   const m=cw/2,y=22; let s=`<svg width="${cw}" height="44" viewBox="0 0 ${cw} 44">`;
   const tag=cell&&S.tags[cell.a]?S.tags[cell.a]:'';
@@ -37,29 +37,36 @@ function tvLive(o){ if(isTim(o.t)){ const st=plc.T[o.a]; return `${(st?st.et/100
   if(o.t==='CMP') return `${plc.wv(o.a)} ${OPSYM[o.op]} ${o.pv}`;
   if(o.t==='SEG') return `← ${o.src}=${plc.wv(o.src)}`;
   return '= '+(isByte(o.a)?bitsTxt(plc.wv(o.a)&255):plc.wv(o.a)); }
+/* satırın görünür düzeni: kontaklar → (sıradaki boş yer) → çıkış. Çıkış en sağa sabit değil, son kontağın arkasından gelir. */
+function rungLayout(rg){ const row=rg.c[0]; let n=0; while(n<OUTC&&row[n]) n++;
+  const slot=!S.view&&n<OUTC, out=n>0||!!row[OUTC], vo=n+(slot?1:0); return {n,slot,out,vo,V:out?vo+1:Math.max(1,vo)}; }
 function renderLadder(){
-  const box=$('#rungs'); const sc=box.scrollTop; box.innerHTML=''; LIVE=[];
-  const cw=S.cw=calcCW();
+  const box=$('#rungs'); const sc=box.scrollTop, sl=box.scrollLeft; box.innerHTML=''; LIVE=[];
+  const lays=S.prog.rungs.map(rungLayout), V=Math.max(5,...lays.map(l=>l.V));
+  const cw=S.cw=calcCW(V);
   S.prog.rungs.forEach((rg,i)=>{
-    const rows=rg.br?2:1, sp=branchSpan(rg);
+    const ly=lays[i], rows=rg.br?2:1, sp=branchSpan(rg), GW=ly.V*cw+8;
     const el=document.createElement('div'); el.className='rung'; el.dataset.i=i;
-    el.innerHTML=`<div class="gut"><span class="rn">R${i+1}</span><button class="rm">${I('more_vert')}</button></div><div class="grid" style="width:${cw*COLS+8}px;height:${rows*44}px"><div class="rail" style="left:0"></div><div class="rail" style="left:${cw*COLS+4}px"></div></div>`;
+    el.innerHTML=`<div class="gut"><span class="rn">R${i+1}</span><button class="rm">${I('more_vert')}</button></div><div class="grid" style="width:${GW}px;height:${rows*44}px"><div class="rail" style="left:0"></div><div class="rail" style="left:${ly.V*cw+4}px"></div></div>`;
     const g=el.querySelector('.grid'); const L={cells:[[],[]],vl:null,vr:null,grid:g};
-    for(let r=0;r<rows;r++) for(let c=0;c<COLS;c++){
-      if(r===1&&c===OUTC) continue;
-      const cell=rg.c[r][c]; const inSp=!!sp&&c>=sp.from&&c<=sp.to;
+    const put=(r,c,vx)=>{ const cell=rg.c[r][c], inSp=r===0||(!!sp&&c>=sp.from&&c<=sp.to);
       const d=document.createElement('div'); d.dataset.r=r; d.dataset.c=c;
-      d.style.cssText=`left:${4+c*cw}px;top:${r*44}px;width:${cw}px`;
-      const ok=!cell&&posOK(i,r,c); d._b='cell'+(cell?' full':ok?(c===OUTC?' eo':' ec'):' na'); d.className=d._b;
-      d.innerHTML=cellSVG(cell,r,c,cw,inSp,!cell&&!ok); d._cell=cell; d._tv=d.querySelector('.bv'); if(d._tv) d._tv.textContent=tvStatic(cell);
-      g.appendChild(d); L.cells[r][c]=d;
-    }
+      d.style.cssText=`left:${4+vx*cw}px;top:${r*44}px;width:${cw}px`;
+      const ok=!cell&&posOK(i,r,c), hid=ok&&r===1&&c>0&&!rg.c[1].some(Boolean);   // boş kolda yalnız ilk yer görünür, diğerleri sürüklerken işaretlenir
+      d._b='cell'+(cell?' full':ok?(c===OUTC?' eo':' ec')+(hid?' hid':''):' na'); d.className=d._b;
+      d.innerHTML=cellSVG(cell,r,c,cw,inSp||ok,!cell&&!ok); d._cell=cell; d._tv=d.querySelector('.bv'); if(d._tv) d._tv.textContent=tvStatic(cell);
+      g.appendChild(d); L.cells[r][c]=d; };
+    for(let c=0;c<ly.n;c++) put(0,c,c);
+    if(ly.slot) put(0,ly.n,ly.n);
+    if(ly.out) put(0,OUTC,ly.vo);
+    else if(!ly.slot){ /* boş satır, görünüm modu */ }
+    if(rows===2) for(let c=0;c<Math.max(ly.n,1);c++) put(1,c,c);
     if(sp){ for(const [k,x] of [['vl',sp.from*cw+4],['vr',(sp.to+1)*cw+4]]){ const v=document.createElement('div'); v.className='vw'; v.style.cssText=`left:${x-1.5}px;top:22px;height:44px`; g.appendChild(v); L[k]=v; } }
     box.appendChild(el); LIVE.push(L);
   });
   if(S.prog.rungs.length<8&&!S.view){ const b=document.createElement('button'); b.id='addr'; const first=!S.prog.rungs.length; if(first) b.className='mk';
     b.innerHTML=first?I('add_circle','f')+`<span><b>${tx('Satır Oluştur','Create Rung')}</b><small>${tx('Programa ilk satırı ekle, sonra blokları soldan sağa diz','Add the first rung, then line up blocks left to right')}</small></span>`:I('add')+tx('Satır Ekle','Add Rung'); box.appendChild(b); }
-  box.scrollTop=sc; refreshTool();
+  box.scrollTop=sc; box.scrollLeft=sl; refreshTool();
   if(S.popCell){ const [pi,pr,pc]=S.popCell; S.popCell=null; const L=LIVE[pi]; const el=L&&L.cells[pr]&&L.cells[pr][pc]; if(el){ el.classList.add('pop'); setTimeout(()=>el.classList.remove('pop'),450); } }
 }
 function updateLive(){

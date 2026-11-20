@@ -315,3 +315,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 #addr.mk b{font:700 15px var(--font);color:var(--md-onSurface)}
 #addr.mk small{font:500 12px var(--font);color:var(--md-onSurfaceVariant)}
 #addr.mk.dz,#addr.hot{background:color-mix(in srgb,var(--md-primary) 20%,transparent)}
+
+/* v1.1.5a: boş paralel kolda gizli yerler — yalnızca sürüklerken / araç seçiliyken görünür */
+.cell.ec.hid .plus{opacity:0}
+#rungs[data-tool="c"] .cell.ec.hid .plus{opacity:1}

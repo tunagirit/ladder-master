@@ -94,7 +94,7 @@ html,body{margin:0;height:100%;background:var(--app);color:var(--tx);font-family
 #ehead .sp{flex:1;line-height:1.25}
 #ehead .sp b{color:var(--tx)}
 .sm{background:var(--p2);border:1px solid var(--ln);color:var(--tx);border-radius:7px;height:28px;padding:0 9px;font-size:12px}
-#rungs{flex:1;overflow-y:auto;overflow-x:hidden;padding:6px 6px 14px;-webkit-overflow-scrolling:touch}
+#rungs{flex:1;overflow-y:auto;overflow-x:auto;padding:6px 6px 14px;-webkit-overflow-scrolling:touch}
 .rung{display:flex;align-items:flex-start;margin-bottom:5px}
 .gut{width:30px;flex:0 0 30px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:1px 0}
 .rn{font-size:10px;color:var(--dim);font-family:ui-monospace,monospace}
@@ -673,6 +673,10 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 #addr.mk small{font:500 12px var(--font);color:var(--md-onSurfaceVariant)}
 #addr.mk.dz,#addr.hot{background:color-mix(in srgb,var(--md-primary) 20%,transparent)}
 
+/* v1.1.5a: boş paralel kolda gizli yerler — yalnızca sürüklerken / araç seçiliyken görünür */
+.cell.ec.hid .plus{opacity:0}
+#rungs[data-tool="c"] .cell.ec.hid .plus{opacity:1}
+
 /* ================= v1.1.1 — EKRAN / CİHAZ UYUMU ================= */
 /* sayfanın kendisi asla kaymaz, aşağı çekilmez, lastik efekti yok */
 html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:manipulation}
@@ -839,7 +843,8 @@ let LANG='tr';
 const tx=(a,b)=>LANG==='en'?b:a;
 const fx=x=>LANG==='en'?String(x):String(x).replace('.',',');
 /* ===== PLC LADDER BULMACA — MANTIK ÇEKİRDEĞİ ===== */
-const COLS=5, OUTC=4, SCAN=0.02, BW=4, PIST_V=3;
+const COLS=7, OUTC=6,   /* bir satırda en fazla 6 kontak + 1 çıkış; görünümde satır koydukça uzar */
+      SCAN=0.02, BW=4, PIST_V=3;
 const OUTT=['COIL','SET','RST','TON','TOF','TONR','CTU','CTD','MOV','ADD','SUB','MUL','DIV','INC','DEC','SHL','SHR','WAND','WOR','INV','SEG','RTC'];
 const isOut=t=>OUTT.indexOf(t)>=0;
 const NOADDR=['P','N','NOT'];                       // adressiz kontaklar
@@ -856,7 +861,10 @@ function parseCell(s){ if(!s) return null; const p=s.split(' '); const o={t:p[0]
   if(p[2]!==undefined){ if(/^[A-Z]/.test(p[2])) o.src=p[2]; else o.pv=parseFloat(p[2]); }
   return o; }
 function mkRung(){ return {br:false,c:[Array(COLS).fill(null),Array(COLS).fill(null)]}; }
-function R(row0,row1){ const rg=mkRung(); rg.br=!!row1; row0.forEach((s,i)=>{rg.c[0][i]=parseCell(s);}); if(row1) row1.forEach((s,i)=>{rg.c[1][i]=parseCell(s);}); return rg; }
+function R(row0,row1){ const rg=mkRung(); rg.br=!!row1; row0.forEach((s,i)=>{ const c=parseCell(s); if(c&&isOut(c.t)) rg.c[0][OUTC]=c; else rg.c[0][i]=c; }); if(row1) row1.forEach((s,i)=>{rg.c[1][i]=parseCell(s);}); return rg; }
+/* eski (5 sütunlu) kayıtları yeni düzene çevir: çıkış son sütuna */
+function fixRung(rg){ if(!rg||!rg.c) return rg; rg.c=rg.c.map((row,r)=>{ if(row.length===COLS) return row; const a=Array(COLS).fill(null); const oc=row.length-1;
+    for(let c=0;c<oc;c++) a[c]=row[c]; if(r===0) a[OUTC]=row[oc]; return a; }); while(rg.c.length<2) rg.c.push(Array(COLS).fill(null)); return rg; }
 function countBlocks(p){ let n=0; for(const rg of p.rungs) for(const row of rg.c) for(const c of row) if(c) n++; return n; }
 function branchSpan(rg){ let f=-1,t=-1; if(rg.br) for(let c=0;c<OUTC;c++) if(rg.c[1][c]){ if(f<0) f=c; t=c; } return f<0?null:{from:f,to:t}; }
 const cmpOk=(v,op,w)=>op==='=='?v===w:op==='<>'?v!==w:op==='>='?v>=w:op==='<='?v<=w:op==='>'?v>w:v<w;
@@ -1955,7 +1963,7 @@ function addrGroups(lv,t,field){
 const addrList=(lv,t,f)=>addrGroups(lv,t,f).reduce((a,g)=>a.concat(g[1]),[]);
 /*==UI==*/
 const $=(s,r=document)=>r.querySelector(s);
-const VERSION='v1.1.5';
+const VERSION='v1.1.5a';
 const I=(n,c)=>'<span class="ms'+(c?' '+c.split(' ').map(x=>x==='f'?'f':'ms-'+x).join(' '):'')+'">'+n+'</span>';  // Material Symbols ikon
 const SKEY='ladderustasi_v2';
 let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1,theme:'auto',lang:null,seen:{}};
@@ -2256,6 +2264,7 @@ function loadLevel(id,quiet){
   const dn=save.done[id]; S.redo=false; S.tool=null;
   if(dn&&dn.prog){ S.view=true; S.prog=clone(dn.prog); S.tags=Object.assign(defaultTags(lv),customTags(dn.tags)); }
   else { S.view=false; const d=save.draft[id]; S.prog=d&&d.rungs&&d.rungs.length?{rungs:clone(d.rungs)}:{rungs:[]}; S.tags=Object.assign(defaultTags(lv),customTags(d&&d.tags)); }
+  S.prog.rungs.forEach(fixRung);
   world=new World(lv); plc.reset(); stopSim(true);
   setHeader();
   S.fresh=S.view?[]:freshElems(lv);
@@ -2306,6 +2315,7 @@ function canPlace(t,i,r,c){
 function posMsg(i,r,c){ const rg=S.prog.rungs[i], row=rg.c[r];
   if(r===0){ if(c<OUTC&&c>0&&!row[c-1]) return tx('Soldan sağa kur: önce soldaki boş yere blok koy','Build left to right: fill the empty spot on the left first');
     if(c===OUTC&&!row[0]) return tx('Önce soldan bir kontak koy — çıkış en sona gelir','Place a contact on the left first — the output comes last'); return ''; }
+  if(c<OUTC&&!rg.c[0][c]) return tx('Paralel kol, üstteki bir kontağın altına konur','A branch block goes under a contact on the main line');
   if(c<OUTC&&row.some(Boolean)&&!row[c-1]&&!row[c+1]) return tx('Paralel kol bitişik olmalı: mevcut kol bloğunun yanına koy','A branch must be continuous: place it next to the existing branch block');
   return ''; }
 const posOK=(i,r,c)=>{ const rg=S.prog.rungs[i]; if(!rg||rg.c[r][c]||(r===1&&!rg.br)) return false; return !posMsg(i,r,c); };
@@ -2415,7 +2425,7 @@ window.addEventListener('pointerup',e=>{
 window.addEventListener('pointercancel',e=>{ if(drag&&e.pointerId===drag.pid){ clearTimeout(tipT); drag=null; dragClean(); } });
 $('#palette').addEventListener('contextmenu',e=>e.preventDefault()); $('#rungs').addEventListener('contextmenu',e=>e.preventDefault());
 /* ---------- Ladder çizimi ---------- */
-function calcCW(){ const w=$('#rungs').clientWidth-12-30-10; return Math.max(54,Math.min(150,Math.floor(w/COLS))); }
+function calcCW(V){ const w=$('#rungs').clientWidth-12-30-10, c=Math.min(150,Math.floor(w/5)); return Math.max(46,(V||5)*c>w?Math.floor(w/V):c); }
 function cellSVG(cell,r,c,cw,inSpan,brEmpty){
   const m=cw/2,y=22; let s=`<svg width="${cw}" height="44" viewBox="0 0 ${cw} 44">`;
   const tag=cell&&S.tags[cell.a]?S.tags[cell.a]:'';
@@ -2453,29 +2463,36 @@ function tvLive(o){ if(isTim(o.t)){ const st=plc.T[o.a]; return `${(st?st.et/100
   if(o.t==='CMP') return `${plc.wv(o.a)} ${OPSYM[o.op]} ${o.pv}`;
   if(o.t==='SEG') return `← ${o.src}=${plc.wv(o.src)}`;
   return '= '+(isByte(o.a)?bitsTxt(plc.wv(o.a)&255):plc.wv(o.a)); }
+/* satırın görünür düzeni: kontaklar → (sıradaki boş yer) → çıkış. Çıkış en sağa sabit değil, son kontağın arkasından gelir. */
+function rungLayout(rg){ const row=rg.c[0]; let n=0; while(n<OUTC&&row[n]) n++;
+  const slot=!S.view&&n<OUTC, out=n>0||!!row[OUTC], vo=n+(slot?1:0); return {n,slot,out,vo,V:out?vo+1:Math.max(1,vo)}; }
 function renderLadder(){
-  const box=$('#rungs'); const sc=box.scrollTop; box.innerHTML=''; LIVE=[];
-  const cw=S.cw=calcCW();
+  const box=$('#rungs'); const sc=box.scrollTop, sl=box.scrollLeft; box.innerHTML=''; LIVE=[];
+  const lays=S.prog.rungs.map(rungLayout), V=Math.max(5,...lays.map(l=>l.V));
+  const cw=S.cw=calcCW(V);
   S.prog.rungs.forEach((rg,i)=>{
-    const rows=rg.br?2:1, sp=branchSpan(rg);
+    const ly=lays[i], rows=rg.br?2:1, sp=branchSpan(rg), GW=ly.V*cw+8;
     const el=document.createElement('div'); el.className='rung'; el.dataset.i=i;
-    el.innerHTML=`<div class="gut"><span class="rn">R${i+1}</span><button class="rm">${I('more_vert')}</button></div><div class="grid" style="width:${cw*COLS+8}px;height:${rows*44}px"><div class="rail" style="left:0"></div><div class="rail" style="left:${cw*COLS+4}px"></div></div>`;
+    el.innerHTML=`<div class="gut"><span class="rn">R${i+1}</span><button class="rm">${I('more_vert')}</button></div><div class="grid" style="width:${GW}px;height:${rows*44}px"><div class="rail" style="left:0"></div><div class="rail" style="left:${ly.V*cw+4}px"></div></div>`;
     const g=el.querySelector('.grid'); const L={cells:[[],[]],vl:null,vr:null,grid:g};
-    for(let r=0;r<rows;r++) for(let c=0;c<COLS;c++){
-      if(r===1&&c===OUTC) continue;
-      const cell=rg.c[r][c]; const inSp=!!sp&&c>=sp.from&&c<=sp.to;
+    const put=(r,c,vx)=>{ const cell=rg.c[r][c], inSp=r===0||(!!sp&&c>=sp.from&&c<=sp.to);
       const d=document.createElement('div'); d.dataset.r=r; d.dataset.c=c;
-      d.style.cssText=`left:${4+c*cw}px;top:${r*44}px;width:${cw}px`;
-      const ok=!cell&&posOK(i,r,c); d._b='cell'+(cell?' full':ok?(c===OUTC?' eo':' ec'):' na'); d.className=d._b;
-      d.innerHTML=cellSVG(cell,r,c,cw,inSp,!cell&&!ok); d._cell=cell; d._tv=d.querySelector('.bv'); if(d._tv) d._tv.textContent=tvStatic(cell);
-      g.appendChild(d); L.cells[r][c]=d;
-    }
+      d.style.cssText=`left:${4+vx*cw}px;top:${r*44}px;width:${cw}px`;
+      const ok=!cell&&posOK(i,r,c), hid=ok&&r===1&&c>0&&!rg.c[1].some(Boolean);   // boş kolda yalnız ilk yer görünür, diğerleri sürüklerken işaretlenir
+      d._b='cell'+(cell?' full':ok?(c===OUTC?' eo':' ec')+(hid?' hid':''):' na'); d.className=d._b;
+      d.innerHTML=cellSVG(cell,r,c,cw,inSp||ok,!cell&&!ok); d._cell=cell; d._tv=d.querySelector('.bv'); if(d._tv) d._tv.textContent=tvStatic(cell);
+      g.appendChild(d); L.cells[r][c]=d; };
+    for(let c=0;c<ly.n;c++) put(0,c,c);
+    if(ly.slot) put(0,ly.n,ly.n);
+    if(ly.out) put(0,OUTC,ly.vo);
+    else if(!ly.slot){ /* boş satır, görünüm modu */ }
+    if(rows===2) for(let c=0;c<Math.max(ly.n,1);c++) put(1,c,c);
     if(sp){ for(const [k,x] of [['vl',sp.from*cw+4],['vr',(sp.to+1)*cw+4]]){ const v=document.createElement('div'); v.className='vw'; v.style.cssText=`left:${x-1.5}px;top:22px;height:44px`; g.appendChild(v); L[k]=v; } }
     box.appendChild(el); LIVE.push(L);
   });
   if(S.prog.rungs.length<8&&!S.view){ const b=document.createElement('button'); b.id='addr'; const first=!S.prog.rungs.length; if(first) b.className='mk';
     b.innerHTML=first?I('add_circle','f')+`<span><b>${tx('Satır Oluştur','Create Rung')}</b><small>${tx('Programa ilk satırı ekle, sonra blokları soldan sağa diz','Add the first rung, then line up blocks left to right')}</small></span>`:I('add')+tx('Satır Ekle','Add Rung'); box.appendChild(b); }
-  box.scrollTop=sc; refreshTool();
+  box.scrollTop=sc; box.scrollLeft=sl; refreshTool();
   if(S.popCell){ const [pi,pr,pc]=S.popCell; S.popCell=null; const L=LIVE[pi]; const el=L&&L.cells[pr]&&L.cells[pr][pc]; if(el){ el.classList.add('pop'); setTimeout(()=>el.classList.remove('pop'),450); } }
 }
 function updateLive(){
@@ -2600,7 +2617,8 @@ function setSound(v){ save.sound=v; $('#bSnd').innerHTML=I(v?'volume_up':'volume
 $('#bSnd').onclick=()=>{ setSound(!save.sound); Snd.init(); Snd.click(); };
 // çözümü editördekine benzer görsel ladder diyagramı olarak çiz
 function solLadder(lv){
-  const tags=defaultTags(lv), cw=60, x0=22, W=x0*2+cw*COLS, RH=62, BR=58;
+  const nm=Math.max(2,...lv.sol.rungs.map(rg=>{ let n=0; while(n<OUTC&&rg.c[0][n]) n++; return n; }));
+  const tags=defaultTags(lv), cw=60, x0=22, W=x0*2+cw*(nm+1), RH=62, BR=58;
   const inner=t=>palSym(t).replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
   const lbl=a=>(tags[a]||'').slice(0,11);
   return lv.sol.rungs.map((rg,ri)=>{
@@ -2614,7 +2632,7 @@ function solLadder(lv){
       if(NOADDR.includes(c.t)) return `<rect class="bg" x="${cx-19}" y="${yy-13}" width="38" height="26"/><svg x="${cx-17}" y="${yy-12}" width="34" height="24" viewBox="0 0 34 24" class="sy">${inner(c.t)}</svg>`;
       if(c.t==='CMP') return `<rect class="bg" x="${cx-19}" y="${yy-13}" width="38" height="26"/><svg x="${cx-17}" y="${yy-12}" width="34" height="24" viewBox="0 0 34 24" class="sy"><path d="M0 12H8M26 12H34M8 3V21M26 3V21"/><text x="17" y="17" font-size="12">${OPSYM[c.op]}</text></svg><text class="ad" x="${cx}" y="${yy-17}">${c.a}</text><text class="ad" x="${cx}" y="${yy+24}" style="font-size:8.5px">${OPSYM[c.op]} ${c.pv}</text>`;
       return `<rect class="bg" x="${cx-19}" y="${yy-13}" width="38" height="26"/><svg x="${cx-17}" y="${yy-12}" width="34" height="24" viewBox="0 0 34 24" class="sy">${inner(c.t)}</svg><text class="ad" x="${cx}" y="${yy-17}">${c.a}</text><text class="tg" x="${cx}" y="${yy+24}">${lbl(c.a)}</text>`; };
-    for(let col=0;col<COLS;col++) g+=cell(rg.c[0][col],col,y);
+    for(let col=0;col<OUTC;col++) g+=cell(rg.c[0][col],col,y); g+=cell(rg.c[0][OUTC],nm,y);
     if(sp) for(let col=sp.from;col<=sp.to;col++) g+=cell(rg.c[1][col],col,y+BR);
     return `<svg class="sl" viewBox="0 0 ${W} ${H}" width="100%">${g}</svg>`;
   }).join('');

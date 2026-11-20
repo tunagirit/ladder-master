@@ -21,7 +21,8 @@ function setSound(v){ save.sound=v; $('#bSnd').innerHTML=I(v?'volume_up':'volume
 $('#bSnd').onclick=()=>{ setSound(!save.sound); Snd.init(); Snd.click(); };
 // çözümü editördekine benzer görsel ladder diyagramı olarak çiz
 function solLadder(lv){
-  const tags=defaultTags(lv), cw=60, x0=22, W=x0*2+cw*COLS, RH=62, BR=58;
+  const nm=Math.max(2,...lv.sol.rungs.map(rg=>{ let n=0; while(n<OUTC&&rg.c[0][n]) n++; return n; }));
+  const tags=defaultTags(lv), cw=60, x0=22, W=x0*2+cw*(nm+1), RH=62, BR=58;
   const inner=t=>palSym(t).replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
   const lbl=a=>(tags[a]||'').slice(0,11);
   return lv.sol.rungs.map((rg,ri)=>{
@@ -35,7 +36,7 @@ function solLadder(lv){
       if(NOADDR.includes(c.t)) return `<rect class="bg" x="${cx-19}" y="${yy-13}" width="38" height="26"/><svg x="${cx-17}" y="${yy-12}" width="34" height="24" viewBox="0 0 34 24" class="sy">${inner(c.t)}</svg>`;
       if(c.t==='CMP') return `<rect class="bg" x="${cx-19}" y="${yy-13}" width="38" height="26"/><svg x="${cx-17}" y="${yy-12}" width="34" height="24" viewBox="0 0 34 24" class="sy"><path d="M0 12H8M26 12H34M8 3V21M26 3V21"/><text x="17" y="17" font-size="12">${OPSYM[c.op]}</text></svg><text class="ad" x="${cx}" y="${yy-17}">${c.a}</text><text class="ad" x="${cx}" y="${yy+24}" style="font-size:8.5px">${OPSYM[c.op]} ${c.pv}</text>`;
       return `<rect class="bg" x="${cx-19}" y="${yy-13}" width="38" height="26"/><svg x="${cx-17}" y="${yy-12}" width="34" height="24" viewBox="0 0 34 24" class="sy">${inner(c.t)}</svg><text class="ad" x="${cx}" y="${yy-17}">${c.a}</text><text class="tg" x="${cx}" y="${yy+24}">${lbl(c.a)}</text>`; };
-    for(let col=0;col<COLS;col++) g+=cell(rg.c[0][col],col,y);
+    for(let col=0;col<OUTC;col++) g+=cell(rg.c[0][col],col,y); g+=cell(rg.c[0][OUTC],nm,y);
     if(sp) for(let col=sp.from;col<=sp.to;col++) g+=cell(rg.c[1][col],col,y+BR);
     return `<svg class="sl" viewBox="0 0 ${W} ${H}" width="100%">${g}</svg>`;
   }).join('');

@@ -4,6 +4,7 @@ function loadLevel(id,quiet){
   const dn=save.done[id]; S.redo=false; S.tool=null;
   if(dn&&dn.prog){ S.view=true; S.prog=clone(dn.prog); S.tags=Object.assign(defaultTags(lv),customTags(dn.tags)); }
   else { S.view=false; const d=save.draft[id]; S.prog=d&&d.rungs&&d.rungs.length?{rungs:clone(d.rungs)}:{rungs:[]}; S.tags=Object.assign(defaultTags(lv),customTags(d&&d.tags)); }
+  S.prog.rungs.forEach(fixRung);
   world=new World(lv); plc.reset(); stopSim(true);
   setHeader();
   S.fresh=S.view?[]:freshElems(lv);
@@ -54,6 +55,7 @@ function canPlace(t,i,r,c){
 function posMsg(i,r,c){ const rg=S.prog.rungs[i], row=rg.c[r];
   if(r===0){ if(c<OUTC&&c>0&&!row[c-1]) return tx('Soldan sağa kur: önce soldaki boş yere blok koy','Build left to right: fill the empty spot on the left first');
     if(c===OUTC&&!row[0]) return tx('Önce soldan bir kontak koy — çıkış en sona gelir','Place a contact on the left first — the output comes last'); return ''; }
+  if(c<OUTC&&!rg.c[0][c]) return tx('Paralel kol, üstteki bir kontağın altına konur','A branch block goes under a contact on the main line');
   if(c<OUTC&&row.some(Boolean)&&!row[c-1]&&!row[c+1]) return tx('Paralel kol bitişik olmalı: mevcut kol bloğunun yanına koy','A branch must be continuous: place it next to the existing branch block');
   return ''; }
 const posOK=(i,r,c)=>{ const rg=S.prog.rungs[i]; if(!rg||rg.c[r][c]||(r===1&&!rg.br)) return false; return !posMsg(i,r,c); };

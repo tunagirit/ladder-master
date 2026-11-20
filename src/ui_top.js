@@ -1,6 +1,6 @@
 /*==UI==*/
 const $=(s,r=document)=>r.querySelector(s);
-const VERSION='v1.1.5';
+const VERSION='v1.1.5a';
 const I=(n,c)=>'<span class="ms'+(c?' '+c.split(' ').map(x=>x==='f'?'f':'ms-'+x).join(' '):'')+'">'+n+'</span>';  // Material Symbols ikon
 const SKEY='ladderustasi_v2';
 let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1,theme:'auto',lang:null,seen:{}};
