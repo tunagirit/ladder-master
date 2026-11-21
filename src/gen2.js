@@ -90,13 +90,17 @@ const hHystLine=(r,k,n)=>{
   const {A,io}=mkCtx(r,n,['start','stop'],['pump','lamp'],{lamp:'DOLUYOR'}); const lo=8000, hi=pick(r,[24000,26000,28000]);
   const sol={rungs:[R(['NO '+A.start,'NC '+A.stop,null,null,'COIL M0.0'],['NO M0.0']),R(['NO M0.0','CMP AIW0 <= '+lo,null,null,'SET '+A.pump]),R(['CMP AIW0 >= '+hi,null,null,null,'RST '+A.pump],['NC M0.0']),R(['NO '+A.pump,null,null,null,'COIL '+A.lamp])]};
   const sc={noBelt:true,boxes:0,proc:proc('tank',A.pump,{v0:0.2,up:0.14,down:0.05}),lamps:[{a:A.lamp,c:'amber',n:'DOLUYOR'}],
-    rules:[(w,q)=>{ if(q[A.pump]&&w.t<0.45) return tx('Hata: START\'a basılmadan pompa çalıştı!','Error: The pump ran before START was pressed!'); },hystRule(A.pump,lo,hi),
+    rules:[(w,q)=>{ if(q[A.pump]&&w.t<0.45) return tx('Hata: START\'a basılmadan pompa çalıştı!','Error: The pump ran before START was pressed!'); },
+      (()=>{ const hr=hystRule(A.pump,lo,hi); return (w,q,iv,dt,s)=>{ if(iv[A.stop]&&s.st==null) s.st=w.t;
+        if(s.st!=null){ if(q[A.pump]&&w.t-s.st>0.3) return tx('Hata: STOP\'a basıldı ama pompa durmadı! STOP pompayı da durdurmalı.','Error: STOP was pressed but the pump kept running! STOP must stop the pump too.'); if(!q[A.pump]&&w.t-s.st>0.3) w.f.stopP=true; return; }
+        s.h=s.h||{}; return hr(w,q,iv,dt,s.h); }; })(),
       follow((w,q)=>q[A.pump],(w,q)=>q[A.lamp],tx('Hata: DOLUYOR lambası pompa çalışırken yanmalı!','Error: the FILLING lamp must be on while the pump runs!'))]};
   return {title:tx('Mühürlü Tank Kontrolü','Sealed Tank Control'),
     task:tx(`START (${A.start}) / STOP (${A.stop}) ile M0.0'ı mühürle. Sistem açıkken seviye (AIW0) ${lo}'e inince pompa (${A.pump}) çalışsın, ${hi}'e gelince dursun. STOP pompayı da durdursun. Pompa çalışırken DOLUYOR lambası (${A.lamp}) yansın. 2 döngü.`,
       `Seal M0.0 with START (${A.start}) / STOP (${A.stop}). While the system is on, the pump (${A.pump}) starts when the level (AIW0) drops to ${lo} and stops at ${hi}. STOP also stops the pump. The FILLING lamp (${A.lamp}) is on while the pump runs. 2 cycles.`),
     hint:tx(`M0.0 mühür · M0.0 · CMP AIW0 ≤ ${lo} → (S) ${A.pump} · (CMP AIW0 ≥ ${hi} ∥ KAPALI M0.0) → (R) ${A.pump} · ${A.pump} → ${A.lamp}.`,`M0.0 seal-in · M0.0 · CMP AIW0 ≤ ${lo} → (S) ${A.pump} · (CMP AIW0 ≥ ${hi} ∥ NC M0.0) → (R) ${A.pump} · ${A.pump} → ${A.lamp}.`),
-    io,M:1,T:0,C:0,words:['AIW0'],wt:{AIW0:'SEVİYE'},pal:palOf(sol),scene:sc,goals:[{k:'cnt',f:'cyc',n:2,l:T2('Dolum döngüsü','Fill cycle')}],sol,bot:at([[0.5,A.start]])};
+    io,M:1,T:0,C:0,words:['AIW0'],wt:{AIW0:'SEVİYE'},pal:palOf(sol),scene:sc,goals:[{k:'cnt',f:'cyc',n:2,l:T2('Dolum döngüsü','Fill cycle')},{k:'stopP',l:T2('STOP ile dur','Stop with STOP')}],sol,
+    bot:once((w,P,t,st)=>{ if(!st.a&&t>0.5){ st.a=1; P(A.start); } if(st.a===1&&(w.cnt.cyc||0)>=2&&w.pv<=lo/32000+0.01){ st.a=2; st.t=t; } if(st.a===2&&t>st.t+0.8){ st.a=3; P(A.stop); } })};
 };
 
 /* ===================== KENAR & ÖZEL BİTLER ===================== */
@@ -448,10 +452,10 @@ const safeLock=(r,k,n)=>{
   const rs=[R(['NO '+A.s1,null,null,null,'SET M0.0']),R(['NO '+A.s2,'NO M0.0',null,null,'SET '+A.lamp]),R(['NO '+A.s3,null,null,null,'RST M0.0']),R(['NO '+A.s3,null,null,null,'RST '+A.lamp])];
   const sc={noBelt:true,boxes:0,safe:{a:A.lamp},
     rules:[(w,q,iv,dt,s)=>{ const a=!!iv[A.s1],b=!!iv[A.s2],c=!!iv[A.s3];
-      if(a&&!s.a) s.arm=true; if(c&&!s.c){ s.arm=false; s.open=false; if(s.wasOpen) w.f.relock=true; } if(b&&!s.b){ if(s.arm){ s.open=true; } else s.tried=true; }
+      if(a&&!s.a) s.arm=true; if(c&&!s.c){ s.arm=false; s.open=false; s.ct=w.t; if(s.wasOpen) s.rl=true; } if(b&&!s.b){ if(s.arm){ s.open=true; } else s.tried=true; }
       s.a=a; s.b=b; s.c=c; if(w.t<0.06) return;
-      if(!!q[A.lamp]!==!!s.open){ s.bad=(s.bad||0)+dt; if(s.bad>0.2) return s.open?tx('Hata: Doğru şifre (önce A, sonra B) girildi ama kasa açılmadı!','Error: The right code (A, then B) was entered but the safe did not open!'):tx('Hata: Kasa yanlış şifreyle açıldı! Yalnızca önce A sonra B açar, C her şeyi sıfırlar.','Error: The safe opened with a wrong code! Only A then B opens it; C resets everything.'); }
-      else { s.bad=0; if(s.open){ w.f.open=true; s.wasOpen=true; } } }]};
+      if(!!q[A.lamp]!==!!s.open){ s.bad=(s.bad||0)+dt; if(s.bad>0.2) return !s.open&&s.ct!=null&&w.t-s.ct<1.2?tx('Hata: C\'ye basıldı ama kasa kapanmadı! C açık kasayı da sıfırlamalı.','Error: C was pressed but the safe stayed open! C must close the safe too.'):s.open?tx('Hata: Doğru şifre (önce A, sonra B) girildi ama kasa açılmadı!','Error: The right code (A, then B) was entered but the safe did not open!'):tx('Hata: Kasa yanlış şifreyle açıldı! Yalnızca önce A sonra B açar, C her şeyi sıfırlar.','Error: The safe opened with a wrong code! Only A then B opens it; C resets everything.'); }
+      else { s.bad=0; if(s.open){ w.f.open=true; s.wasOpen=true; } else if(s.rl&&!c){ s.rl=false; w.f.relock=true; } } }]};
   return {title:tx('🔐 Şifreli Kasa','🔐 Code Safe'),
     task:tx(`Kasanın şifresi: önce A (${A.s1}), sonra B (${A.s2}). Doğru sırayla basılınca KASA_AÇIK (${A.lamp}) yansın. Önce B'ye basmak açmasın. C (${A.s3}) girilen şifreyi ve açık kasayı sıfırlasın.`,
       `The safe's code is A (${A.s1}) then B (${A.s2}). Pressed in the right order, SAFE_OPEN (${A.lamp}) lights. Pressing B first must not open it. C (${A.s3}) clears the entered code and closes the safe.`),

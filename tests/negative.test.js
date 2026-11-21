@@ -5,7 +5,8 @@ const M=new Function(code+';return {PLC,World,getLevel,SCAN,tplKey,LEN_115,ROAD_
 function run(lv,prog,maxT=120){ const w=new M.World(lv),p=new M.PLC(),bot=lv.bot(); let t=0;
   for(;t<maxT;t+=M.SCAN){ bot(w,a=>w.press(a),t); const iv=w.sense(); for(const k in iv)p.b[k]=iv[k]; p.scan(prog,20); w.advance(p.b,M.SCAN); if(w.err||w.done)break; } return w; }
 const J=o=>JSON.parse(JSON.stringify(o)); const seen={}; let bad=0, tot=0;
-for(let i=0;i<M.ROAD_END;i++){ const p=M.tplKey(i); if(!(p.c<M.LEN_115.length-1&&p.t>=M.LEN_115[p.c][p.pool])) continue;
+const ALL=process.env.ALL;  // ALL=1: tüm şablonlar (yeni sistemlerle sınırlı kalmadan)
+for(let i=0;i<(ALL?3000:M.ROAD_END);i++){ const p=M.tplKey(i); if(!ALL&&!(p.c<M.LEN_115.length-1&&p.t>=M.LEN_115[p.c][p.pool])) continue;
   const lv=M.getLevel(i), key=lv.title.replace(/\(.*\)/,''); seen[key]=(seen[key]||0)+1; if(seen[key]>3) continue;
   const muts=[]; const R=lv.sol.rungs;
   R.forEach((_,k)=>{ const s=J(lv.sol); s.rungs.splice(k,1); muts.push(['drop R'+(k+1),s]); });

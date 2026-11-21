@@ -1034,7 +1034,7 @@ class World{
     this.sc=Object.assign({speed:20,gap:1.2,sensors:[],pistons:[],valves:[],lamps:[],endDrop:'err',rules:[]},s); this.reset(); }
   mk(id){ return {id,x:0,st:'belt',py:0,fill:0,wait:0,ft:0,chk:false}; }
   reset(){
-    this.t=0; this.boxes=this.sc.noBelt?[]:[this.mk(1)]; this.nid=1; this.spawnT=0; this.err=null; this.done=false;
+    this.t=0; this.boxes=this.sc.noBelt?[]:[this.mk(1)]; this.nid=1; this.spawnT=0; this.err=null; this.done=false; this.settle=0;
     this.delivered=0; this.diverted=0; this.filled=0; this.cntRises=0; this.batches=0;
     this.sw={}; this.pulse={}; this.ext={}; this.f={}; this.gd=this.lv.goals.map(()=>false); this.iv={};
     this.sc.pistons.forEach(p=>{this.ext[p.a]=0;});
@@ -1072,6 +1072,10 @@ class World{
     if(sc.proc){ const P=sc.proc, on=Array.isArray(P.a)?P.a.some(a=>q[a]):q[P.a]; this.pv+=((on?P.up:0)-P.down+(P.drift?P.drift*Math.sin(this.t*P.dw):0))*dt; if(P.out) this.pv-=(q[P.out]?P.outRate:0)*dt;
       if(this.pv>=P.max) return this.fail(P.maxMsg); if(this.pv<=P.min) return this.fail(P.minMsg); }
     for(const p of sc.pistons){ const tg=q[p.a]?1:0, e=this.ext[p.a], d=tg-e, st=PIST_V*dt; this.ext[p.a]=Math.abs(d)<=st?tg:e+Math.sign(d)*st; }
+    // v1.2.0c: limit şalterli piston — tam ilerleyince geri dönmeli; iterken bant durmalı
+    for(const p of sc.pistons){ if(!p.lim) continue; const k='_pl'+p.a, k2='_pb'+p.a;
+      if(this.ext[p.a]>=0.98){ this[k]=(this[k]||0)+dt; if(this[k]>0.8) return this.fail(tx(`Hata: Piston tam ilerledi ama geri dönmedi! Limit (${p.lim}) gelince pistonu geri çek.`,`Error: The piston reached full stroke but did not retract! Pull it back when the limit (${p.lim}) is reached.`)); } else this[k]=0;
+      if(sc.pistStop&&this.ext[p.a]>0.3&&q[sc.motor]){ this[k2]=(this[k2]||0)+dt; if(this[k2]>0.3) return this.fail(tx('Hata: Piston iterken bant çalışıyor! Kutu sensöre gelince bant durmalı.','Error: The belt is running while the piston pushes! The belt must stop when the box reaches the sensor.')); } else this[k2]=0; }
     if(this.motor){ const v=sc.speedW?this.spd:sc.speed; this.beltOff=(this.beltOff+v*dt)%1000; for(const b of this.boxes) if(b.st==='belt') b.x+=v*dt; }
     if(sc.fan&&q[sc.fan.a]) this.fanAng+=dt*14;
     // piston itme
@@ -1109,7 +1113,8 @@ class World{
     this.pm=this.motor;
     // hedefler
     const gl=this.goalList(); for(let i=0;i<gl.length;i++){ if(this.gd[i]) continue; if(gl[i].live) this.gd[i]=true; else break; }   // hedefler ekrandaki sırayla tamamlanır
-    if(this.gd.every(Boolean)){ this.done=true; return; }
+    // v1.2.0c: hedefler bitince 0,6 sn daha izle — son adımın sonucu (ör. C'ye basınca kasa gerçekten kapandı mı) kontrol edilsin
+    if(this.gd.every(Boolean)){ this.settle=(this.settle||0)+dt; if(this.settle>=0.6){ this.done=true; return; } } else this.settle=0;
     const active=this.boxes.some(b=>b.st==='belt'||b.st==='pushed');
     if(!sc.noBelt&&this.nid>=sc.boxes&&!active){ this.idleT+=dt; if(this.idleT>4.5) return this.fail(tx('Hedefe ulaşılamadı: kutular bitti. Programı gözden geçir.','Goal not reached: out of boxes. Review your program.')); } else this.idleT=0;
     if(this.t>240) this.fail(tx('Zaman aşımı: görev süresi doldu.','Timeout: task time is up.'));
@@ -1379,7 +1384,7 @@ const pistBot=(A,sp,sx)=>once((w,P,t,st)=>{ st.n=st.n||0; const per=sx/sp+1.6; i
 const mPist=(r,k,n)=>{
   const {A,io}=mkCtx(r,n,['start','sen','lim'],['motor','pist']); const sp=spd(r,k), sx=ri(r,45,75), nd=ri(r,2,3);
   const sol={rungs:[R(['NO '+A.start,null,null,null,'SET '+A.motor]),R(['NO '+A.sen,null,null,null,'RST '+A.motor]),R(['NO '+A.sen,null,null,null,'SET '+A.pist]),R(['NO '+A.lim,null,null,null,'RST '+A.pist])]};
-  const sc={motor:A.motor,speed:sp,gap:Math.max(1.15,gp(k)),boxes:nd+2,sensors:[{a:A.sen,x:sx}],pistons:[{a:A.pist,x:sx,lim:A.lim}],startA:A.start,startFirst:true};
+  const sc={motor:A.motor,speed:sp,gap:Math.max(1.15,gp(k)),boxes:nd+2,sensors:[{a:A.sen,x:sx}],pistons:[{a:A.pist,x:sx,lim:A.lim}],startA:A.start,startFirst:true,pistStop:true};
   return {title:tx('Pistonla Ayır (S/R)','Divert with Piston (S/R)'),task:tx(`START (${A.start}) bandı başlatsın. Kutu sensöre (${A.sen}) gelince bant dursun, piston (${A.pist}) itsin; tam ilerleyince (${A.lim}) geri dönsün. Her kutu için START'a yeniden bas. ${nd} kutu ayır.`,`START (${A.start}) starts the belt. When a box reaches the sensor (${A.sen}) the belt stops and the piston (${A.pist}) pushes; at full stroke (${A.lim}) it retracts. Press START again for each box. Divert ${nd} boxes.`),
     hint:tx(`${A.start}→(S)${A.motor} · ${A.sen}→(R)${A.motor} · ${A.sen}→(S)${A.pist} · ${A.lim}→(R)${A.pist}. Her kutu için START'a bas.`,`${A.start}→(S)${A.motor} · ${A.sen}→(R)${A.motor} · ${A.sen}→(S)${A.pist} · ${A.lim}→(R)${A.pist}. Press START for each box.`),io,M:2,T:0,C:0,pal:PAL_B,scene:sc,goals:[{k:'divert',n:nd}],sol,bot:pistBot(A,sp,sx)};
 };
@@ -1394,7 +1399,7 @@ const hArriza=(r,k,n)=>{
 const hPistLamp=(r,k,n)=>{
   const {A,io}=mkCtx(r,n,['start','sen','lim'],['motor','pist','lamp'],{lamp:'AYIRMA'}); const sp=spd(r,k), sx=ri(r,50,75), nd=ri(r,2,3);
   const sol={rungs:[R(['NO '+A.start,null,null,null,'SET '+A.motor]),R(['NO '+A.sen,null,null,null,'RST '+A.motor]),R(['NO '+A.sen,null,null,null,'SET '+A.pist]),R(['NO '+A.lim,null,null,null,'RST '+A.pist]),R(['NO '+A.pist,null,null,null,'COIL '+A.lamp])]};
-  const sc={motor:A.motor,speed:sp,gap:Math.max(1.15,gp(k)),boxes:nd+2,sensors:[{a:A.sen,x:sx}],pistons:[{a:A.pist,x:sx,lim:A.lim}],startA:A.start,startFirst:true,lampA:A.lamp,lamps:[{a:A.lamp,c:'amber',n:'AYIRMA'}]};
+  const sc={motor:A.motor,speed:sp,gap:Math.max(1.15,gp(k)),boxes:nd+2,sensors:[{a:A.sen,x:sx}],pistons:[{a:A.pist,x:sx,lim:A.lim}],startA:A.start,startFirst:true,pistStop:true,lampA:A.lamp,lamps:[{a:A.lamp,c:'amber',n:'AYIRMA'}]};
   return {title:tx('Ayırıcı + İkaz Lambası','Diverter + Warning Lamp'),task:tx(`START (${A.start}) bandı Set etsin. Kutu sensörde (${A.sen}) bant dursun, piston (${A.pist}) itsin, ${A.lim} ile geri dönsün. Piston çalışırken sarı lamba (${A.lamp}) yansın. Her kutu için START'a yeniden bas. ${nd} kutu ayır.`,`START (${A.start}) Sets the belt. At the sensor (${A.sen}) the belt stops, the piston (${A.pist}) pushes and retracts on ${A.lim}. The amber lamp (${A.lamp}) is on while the piston works. Press START again for each box. Divert ${nd} boxes.`),
     hint:tx(`5 satır: ${A.start}→(S)${A.motor} · ${A.sen}→(R)${A.motor} · ${A.sen}→(S)${A.pist} · ${A.lim}→(R)${A.pist} · ${A.pist}→${A.lamp}. Set/Reset bandı ve pistonu kilitler; lamba pistonu izler.`,`5 rungs: ${A.start}→(S)${A.motor} · ${A.sen}→(R)${A.motor} · ${A.sen}→(S)${A.pist} · ${A.lim}→(R)${A.pist} · ${A.pist}→${A.lamp}. Set/Reset latch the belt and piston; the lamp follows the piston.`),io,M:2,T:0,C:0,pal:PAL_B,scene:sc,goals:[{k:'seal'},{k:'divert',n:nd},{k:'lampPush'}],sol,bot:pistBot(A,sp,sx)};
 };
@@ -1631,13 +1636,17 @@ const hHystLine=(r,k,n)=>{
   const {A,io}=mkCtx(r,n,['start','stop'],['pump','lamp'],{lamp:'DOLUYOR'}); const lo=8000, hi=pick(r,[24000,26000,28000]);
   const sol={rungs:[R(['NO '+A.start,'NC '+A.stop,null,null,'COIL M0.0'],['NO M0.0']),R(['NO M0.0','CMP AIW0 <= '+lo,null,null,'SET '+A.pump]),R(['CMP AIW0 >= '+hi,null,null,null,'RST '+A.pump],['NC M0.0']),R(['NO '+A.pump,null,null,null,'COIL '+A.lamp])]};
   const sc={noBelt:true,boxes:0,proc:proc('tank',A.pump,{v0:0.2,up:0.14,down:0.05}),lamps:[{a:A.lamp,c:'amber',n:'DOLUYOR'}],
-    rules:[(w,q)=>{ if(q[A.pump]&&w.t<0.45) return tx('Hata: START\'a basılmadan pompa çalıştı!','Error: The pump ran before START was pressed!'); },hystRule(A.pump,lo,hi),
+    rules:[(w,q)=>{ if(q[A.pump]&&w.t<0.45) return tx('Hata: START\'a basılmadan pompa çalıştı!','Error: The pump ran before START was pressed!'); },
+      (()=>{ const hr=hystRule(A.pump,lo,hi); return (w,q,iv,dt,s)=>{ if(iv[A.stop]&&s.st==null) s.st=w.t;
+        if(s.st!=null){ if(q[A.pump]&&w.t-s.st>0.3) return tx('Hata: STOP\'a basıldı ama pompa durmadı! STOP pompayı da durdurmalı.','Error: STOP was pressed but the pump kept running! STOP must stop the pump too.'); if(!q[A.pump]&&w.t-s.st>0.3) w.f.stopP=true; return; }
+        s.h=s.h||{}; return hr(w,q,iv,dt,s.h); }; })(),
       follow((w,q)=>q[A.pump],(w,q)=>q[A.lamp],tx('Hata: DOLUYOR lambası pompa çalışırken yanmalı!','Error: the FILLING lamp must be on while the pump runs!'))]};
   return {title:tx('Mühürlü Tank Kontrolü','Sealed Tank Control'),
     task:tx(`START (${A.start}) / STOP (${A.stop}) ile M0.0'ı mühürle. Sistem açıkken seviye (AIW0) ${lo}'e inince pompa (${A.pump}) çalışsın, ${hi}'e gelince dursun. STOP pompayı da durdursun. Pompa çalışırken DOLUYOR lambası (${A.lamp}) yansın. 2 döngü.`,
       `Seal M0.0 with START (${A.start}) / STOP (${A.stop}). While the system is on, the pump (${A.pump}) starts when the level (AIW0) drops to ${lo} and stops at ${hi}. STOP also stops the pump. The FILLING lamp (${A.lamp}) is on while the pump runs. 2 cycles.`),
     hint:tx(`M0.0 mühür · M0.0 · CMP AIW0 ≤ ${lo} → (S) ${A.pump} · (CMP AIW0 ≥ ${hi} ∥ KAPALI M0.0) → (R) ${A.pump} · ${A.pump} → ${A.lamp}.`,`M0.0 seal-in · M0.0 · CMP AIW0 ≤ ${lo} → (S) ${A.pump} · (CMP AIW0 ≥ ${hi} ∥ NC M0.0) → (R) ${A.pump} · ${A.pump} → ${A.lamp}.`),
-    io,M:1,T:0,C:0,words:['AIW0'],wt:{AIW0:'SEVİYE'},pal:palOf(sol),scene:sc,goals:[{k:'cnt',f:'cyc',n:2,l:T2('Dolum döngüsü','Fill cycle')}],sol,bot:at([[0.5,A.start]])};
+    io,M:1,T:0,C:0,words:['AIW0'],wt:{AIW0:'SEVİYE'},pal:palOf(sol),scene:sc,goals:[{k:'cnt',f:'cyc',n:2,l:T2('Dolum döngüsü','Fill cycle')},{k:'stopP',l:T2('STOP ile dur','Stop with STOP')}],sol,
+    bot:once((w,P,t,st)=>{ if(!st.a&&t>0.5){ st.a=1; P(A.start); } if(st.a===1&&(w.cnt.cyc||0)>=2&&w.pv<=lo/32000+0.01){ st.a=2; st.t=t; } if(st.a===2&&t>st.t+0.8){ st.a=3; P(A.stop); } })};
 };
 
 /* ===================== KENAR & ÖZEL BİTLER ===================== */
@@ -1989,10 +1998,10 @@ const safeLock=(r,k,n)=>{
   const rs=[R(['NO '+A.s1,null,null,null,'SET M0.0']),R(['NO '+A.s2,'NO M0.0',null,null,'SET '+A.lamp]),R(['NO '+A.s3,null,null,null,'RST M0.0']),R(['NO '+A.s3,null,null,null,'RST '+A.lamp])];
   const sc={noBelt:true,boxes:0,safe:{a:A.lamp},
     rules:[(w,q,iv,dt,s)=>{ const a=!!iv[A.s1],b=!!iv[A.s2],c=!!iv[A.s3];
-      if(a&&!s.a) s.arm=true; if(c&&!s.c){ s.arm=false; s.open=false; if(s.wasOpen) w.f.relock=true; } if(b&&!s.b){ if(s.arm){ s.open=true; } else s.tried=true; }
+      if(a&&!s.a) s.arm=true; if(c&&!s.c){ s.arm=false; s.open=false; s.ct=w.t; if(s.wasOpen) s.rl=true; } if(b&&!s.b){ if(s.arm){ s.open=true; } else s.tried=true; }
       s.a=a; s.b=b; s.c=c; if(w.t<0.06) return;
-      if(!!q[A.lamp]!==!!s.open){ s.bad=(s.bad||0)+dt; if(s.bad>0.2) return s.open?tx('Hata: Doğru şifre (önce A, sonra B) girildi ama kasa açılmadı!','Error: The right code (A, then B) was entered but the safe did not open!'):tx('Hata: Kasa yanlış şifreyle açıldı! Yalnızca önce A sonra B açar, C her şeyi sıfırlar.','Error: The safe opened with a wrong code! Only A then B opens it; C resets everything.'); }
-      else { s.bad=0; if(s.open){ w.f.open=true; s.wasOpen=true; } } }]};
+      if(!!q[A.lamp]!==!!s.open){ s.bad=(s.bad||0)+dt; if(s.bad>0.2) return !s.open&&s.ct!=null&&w.t-s.ct<1.2?tx('Hata: C\'ye basıldı ama kasa kapanmadı! C açık kasayı da sıfırlamalı.','Error: C was pressed but the safe stayed open! C must close the safe too.'):s.open?tx('Hata: Doğru şifre (önce A, sonra B) girildi ama kasa açılmadı!','Error: The right code (A, then B) was entered but the safe did not open!'):tx('Hata: Kasa yanlış şifreyle açıldı! Yalnızca önce A sonra B açar, C her şeyi sıfırlar.','Error: The safe opened with a wrong code! Only A then B opens it; C resets everything.'); }
+      else { s.bad=0; if(s.open){ w.f.open=true; s.wasOpen=true; } else if(s.rl&&!c){ s.rl=false; w.f.relock=true; } } }]};
   return {title:tx('🔐 Şifreli Kasa','🔐 Code Safe'),
     task:tx(`Kasanın şifresi: önce A (${A.s1}), sonra B (${A.s2}). Doğru sırayla basılınca KASA_AÇIK (${A.lamp}) yansın. Önce B'ye basmak açmasın. C (${A.s3}) girilen şifreyi ve açık kasayı sıfırlasın.`,
       `The safe's code is A (${A.s1}) then B (${A.s2}). Pressed in the right order, SAFE_OPEN (${A.lamp}) lights. Pressing B first must not open it. C (${A.s3}) clears the entered code and closes the safe.`),
@@ -2354,7 +2363,7 @@ const MACH_SLOTS=[]; TPL.forEach((p,c)=>{ if(c<LEN_115.length-1) p.forEach((l,po
 const ROAD_END=10000;   // yol 10.000 bölümde biter
 /*==UI==*/
 const $=(s,r=document)=>r.querySelector(s);
-const VERSION='v1.2.0b';
+const VERSION='v1.2.0c';
 const I=(n,c)=>'<span class="ms'+(c?' '+c.split(' ').map(x=>x==='f'?'f':'ms-'+x).join(' '):'')+'">'+n+'</span>';  // Material Symbols ikon
 const SKEY='ladderustasi_v2';
 let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1,theme:'auto',lang:null,seen:{}};

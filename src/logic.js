@@ -115,7 +115,7 @@ class World{
     this.sc=Object.assign({speed:20,gap:1.2,sensors:[],pistons:[],valves:[],lamps:[],endDrop:'err',rules:[]},s); this.reset(); }
   mk(id){ return {id,x:0,st:'belt',py:0,fill:0,wait:0,ft:0,chk:false}; }
   reset(){
-    this.t=0; this.boxes=this.sc.noBelt?[]:[this.mk(1)]; this.nid=1; this.spawnT=0; this.err=null; this.done=false;
+    this.t=0; this.boxes=this.sc.noBelt?[]:[this.mk(1)]; this.nid=1; this.spawnT=0; this.err=null; this.done=false; this.settle=0;
     this.delivered=0; this.diverted=0; this.filled=0; this.cntRises=0; this.batches=0;
     this.sw={}; this.pulse={}; this.ext={}; this.f={}; this.gd=this.lv.goals.map(()=>false); this.iv={};
     this.sc.pistons.forEach(p=>{this.ext[p.a]=0;});
@@ -153,6 +153,10 @@ class World{
     if(sc.proc){ const P=sc.proc, on=Array.isArray(P.a)?P.a.some(a=>q[a]):q[P.a]; this.pv+=((on?P.up:0)-P.down+(P.drift?P.drift*Math.sin(this.t*P.dw):0))*dt; if(P.out) this.pv-=(q[P.out]?P.outRate:0)*dt;
       if(this.pv>=P.max) return this.fail(P.maxMsg); if(this.pv<=P.min) return this.fail(P.minMsg); }
     for(const p of sc.pistons){ const tg=q[p.a]?1:0, e=this.ext[p.a], d=tg-e, st=PIST_V*dt; this.ext[p.a]=Math.abs(d)<=st?tg:e+Math.sign(d)*st; }
+    // v1.2.0c: limit şalterli piston — tam ilerleyince geri dönmeli; iterken bant durmalı
+    for(const p of sc.pistons){ if(!p.lim) continue; const k='_pl'+p.a, k2='_pb'+p.a;
+      if(this.ext[p.a]>=0.98){ this[k]=(this[k]||0)+dt; if(this[k]>0.8) return this.fail(tx(`Hata: Piston tam ilerledi ama geri dönmedi! Limit (${p.lim}) gelince pistonu geri çek.`,`Error: The piston reached full stroke but did not retract! Pull it back when the limit (${p.lim}) is reached.`)); } else this[k]=0;
+      if(sc.pistStop&&this.ext[p.a]>0.3&&q[sc.motor]){ this[k2]=(this[k2]||0)+dt; if(this[k2]>0.3) return this.fail(tx('Hata: Piston iterken bant çalışıyor! Kutu sensöre gelince bant durmalı.','Error: The belt is running while the piston pushes! The belt must stop when the box reaches the sensor.')); } else this[k2]=0; }
     if(this.motor){ const v=sc.speedW?this.spd:sc.speed; this.beltOff=(this.beltOff+v*dt)%1000; for(const b of this.boxes) if(b.st==='belt') b.x+=v*dt; }
     if(sc.fan&&q[sc.fan.a]) this.fanAng+=dt*14;
     // piston itme
@@ -190,7 +194,8 @@ class World{
     this.pm=this.motor;
     // hedefler
     const gl=this.goalList(); for(let i=0;i<gl.length;i++){ if(this.gd[i]) continue; if(gl[i].live) this.gd[i]=true; else break; }   // hedefler ekrandaki sırayla tamamlanır
-    if(this.gd.every(Boolean)){ this.done=true; return; }
+    // v1.2.0c: hedefler bitince 0,6 sn daha izle — son adımın sonucu (ör. C'ye basınca kasa gerçekten kapandı mı) kontrol edilsin
+    if(this.gd.every(Boolean)){ this.settle=(this.settle||0)+dt; if(this.settle>=0.6){ this.done=true; return; } } else this.settle=0;
     const active=this.boxes.some(b=>b.st==='belt'||b.st==='pushed');
     if(!sc.noBelt&&this.nid>=sc.boxes&&!active){ this.idleT+=dt; if(this.idleT>4.5) return this.fail(tx('Hedefe ulaşılamadı: kutular bitti. Programı gözden geçir.','Goal not reached: out of boxes. Review your program.')); } else this.idleT=0;
     if(this.t>240) this.fail(tx('Zaman aşımı: görev süresi doldu.','Timeout: task time is up.'));
