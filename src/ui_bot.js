@@ -95,6 +95,7 @@ function onWin(){
 const BAR=(v,max,c)=>`<div class="bar"><i style="width:${(100*v/max).toFixed(1)}%;background:${c}"></i></div>`;
 function showMenu(scr,cat,diff){
   if(S.running) stopSim(true);
+  if(scr==='main'&&typeof UPD!=='undefined'&&UPD.later) setTimeout(checkUpdate,400);
   S.mscr=scr; if(cat!==undefined){ S.mcat=cat; } if(diff!==undefined) S.mdiff=diff; cat=S.mcat; diff=S.mdiff;
   const back=t=>`<button class="ib" data-go="${t==='main'&&S.setBack==='game'&&scr==='set'?'game':t}">${I('arrow_back')}</button>`; let h='';
   if(scr==='main'){
@@ -341,7 +342,18 @@ function maybeAskInstall(){
   if($('#ovCard').classList.contains('show')||S.running) return;
   setTimeout(()=>{ if(!$('#ovCard').classList.contains('show')&&!S.running) installFlow(false); },900);
 }
-if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{}); }); }
+/* v1.2.0b: açık uygulama yeni sürümü kendisi fark eder (açılışta, uygulamaya dönünce ve 10 dk'da bir) */
+const UPD={busy:false,shown:false};
+async function checkUpdate(){ if(UPD.busy||UPD.shown||location.protocol!=='https:') return; UPD.busy=true;
+  try{ const h=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():''); const m=h.match(/const VERSION='([^']+)'/);
+    if(m&&m[1]!==VERSION){ UPD.shown=true; try{ const rg=await navigator.serviceWorker.getRegistration(); rg&&rg.update(); }catch(_){}
+      const go=()=>{ location.replace(location.pathname+'?u='+m[1]); };
+      if($('#menu').classList.contains('show')&&!S.running&&!$('#ovCard').classList.contains('show')) card(`<h3>${I('system_update')} ${tx('Yeni sürüm hazır','New version ready')}</h3><p class="t">${tx(`Ladder Master <b>${m[1]}</b> yayında. İlerlemen korunur.`,`Ladder Master <b>${m[1]}</b> is out. Your progress is kept.`)}</p><div class="brow"><button class="btn wide" id="uLater">${tx('Sonra','Later')}</button><button class="btn pri wide" id="uNow">${tx('Güncelle','Update')}</button></div>`,e=>{ const id=e.target.closest('button')&&e.target.closest('button').id; if(id==='uNow') go(); else if(id==='uLater') closeAll(); });
+      else { if(!UPD.later) toast(tx(`Yeni sürüm ${m[1]} hazır — ana menüde güncelleyebilirsin`,`New version ${m[1]} ready — update from the main menu`)); UPD.shown=false; UPD.later=m[1]; } } }catch(_){}
+  UPD.busy=false; }
+setTimeout(checkUpdate,4000); setInterval(checkUpdate,600000);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') checkUpdate(); });
 
 /* ---------- KONFETİ ---------- */
 function confetti(){
