@@ -897,6 +897,10 @@ html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscro
  .iob{height:38px} #run,#ctrl .ib.big{height:40px}
  #goals .gl{height:25px}
 }
+
+/* v1.2.0: dokunmatikte yerleşik bloklar kaydırmayı engellemez; basılı tutunca sürüklenir */
+.cell.full{touch-action:pan-x pan-y}
+.cell.armed{transform:scale(1.08);box-shadow:0 0 0 2px var(--md-primary),0 6px 16px rgba(0,0,0,.35);transition:transform .12s var(--ease-sp)}
 </style></head><body>
 <div id="app">
  <div id="top"><button class="ib" id="bMenu" aria-label="Duraklat / Pause"><span class="ms">pause</span></button><div id="title"></div><span id="pill">STOP</span><button class="ib" id="bSnd"><span class="ms">volume_up</span></button></div>
@@ -2352,7 +2356,7 @@ const MACH_SLOTS=[]; TPL.forEach((p,c)=>{ if(c<LEN_115.length-1) p.forEach((l,po
 const ROAD_END=10000;   // yol 10.000 bölümde biter
 /*==UI==*/
 const $=(s,r=document)=>r.querySelector(s);
-const VERSION='v1.1.9';
+const VERSION='v1.2.0';
 const I=(n,c)=>'<span class="ms'+(c?' '+c.split(' ').map(x=>x==='f'?'f':'ms-'+x).join(' '):'')+'">'+n+'</span>';  // Material Symbols ikon
 const SKEY='ladderustasi_v2';
 let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1,theme:'auto',lang:null,seen:{}};
@@ -2743,7 +2747,7 @@ $('#rungs').addEventListener('click',e=>{
 let drag=null;
 function cellAt(x,y){ const el=document.elementFromPoint(x,y); return el&&el.closest?el.closest('#rungs .cell'):null; }
 function inPalette(x,y){ const el=document.elementFromPoint(x,y); return !!(el&&el.closest&&el.closest('#palette')); }
-function dragClean(){ document.querySelectorAll('.cell.dz,.dragsrc').forEach(x=>x.classList.remove('dz','sw','dragsrc')); $('#ghost').style.display='none'; $('#ghost').classList.remove('lift'); document.body.classList.remove('dragging'); $('#palette').classList.remove('trash','hot'); refreshTool(); }
+function dragClean(){ document.querySelectorAll('.cell.armed').forEach(x=>x.classList.remove('armed')); document.querySelectorAll('.cell.dz,.dragsrc').forEach(x=>x.classList.remove('dz','sw','dragsrc')); $('#ghost').style.display='none'; $('#ghost').classList.remove('lift'); document.body.classList.remove('dragging'); $('#palette').classList.remove('trash','hot'); refreshTool(); }
 // hedef hücre için eylem: 'move' | 'swap' | hata mesajı
 function dropAction(d,i,r,c){
   if(!d.from) return canPlace(d.t,i,r,c)||'new';
@@ -2769,7 +2773,7 @@ function showTip(el,t,extra){
   Hap.info(); Snd.init(); Snd.click();
 }
 const isMouse=e=>e&&e.pointerType==='mouse';
-function armTip(el,t,extra,e){ clearTimeout(tipT); if(isMouse(e)) return; tipT=setTimeout(()=>{ if(drag&&!drag.on){ drag.tip=true; showTip(el,t,extra); } },430); }
+function armTip(el,t,extra,e,ms){ clearTimeout(tipT); if(isMouse(e)) return; tipT=setTimeout(()=>{ if(drag&&!drag.on){ drag.tip=true; showTip(el,t,extra); } },ms||430); }
 // parçayı tutulduğu noktadan kaldır (hayalet, imleç/parmak altındaki noktayı korur)
 function grab(e,el,o){ const rc=el.getBoundingClientRect(); o.gx=(e.clientX-rc.left)/rc.width; o.gy=(e.clientY-rc.top)/rc.height; o.mouse=isMouse(e);
   if(o.mouse){ e.preventDefault(); try{ el.setPointerCapture(e.pointerId); }catch(_){} } return o; }
@@ -2781,13 +2785,16 @@ $('#rungs').addEventListener('pointerdown',e=>{
   const ce=e.target.closest('.cell'); if(!ce||e.button>0) return;
   const i=+ce.closest('.rung').dataset.i, r=+ce.dataset.r, c=+ce.dataset.c, cell=S.prog.rungs[i].c[r][c]; if(!cell) return;
   drag=grab(e,ce,{t:cell.t,x:e.clientX,y:e.clientY,pid:e.pointerId,on:false,from:{i,r,c,el:ce},ro:S.view});
-  armTip(ce,cell.t,cellDesc(cell),e);
+  // v1.2.0: dokunmatikte yerleşik blok ancak kısa basılı tutunca (220 ms) sürüklenir; hemen kaydırırsan liste kayar
+  if(!drag.mouse&&!drag.ro){ const d=drag; d.wait=true; d.armT=setTimeout(()=>{ if(drag===d&&d.wait){ d.wait=false; ce.classList.add('armed'); Hap.pick(); } },220); }
+  armTip(ce,cell.t,cellDesc(cell),e,650);
 });
 window.addEventListener('pointermove',e=>{
   if(!drag||e.pointerId!==drag.pid) return;
   if(drag.tip||drag.ro) return;
   if(!drag.on){
     const dx=e.clientX-drag.x, dy=e.clientY-drag.y, dist=Math.hypot(dx,dy);
+    if(drag.wait){ if(dist>8){ clearTimeout(drag.armT); clearTimeout(tipT); drag=null; } return; }   // basılı tutmadan hareket = kaydırma
     if(dist<(drag.mouse?4:drag.from?7:10)) return;
     if(!drag.from&&!drag.mouse&&Math.abs(dy)<Math.abs(dx)*0.45){ clearTimeout(tipT); drag=null; return; }   // belirgin yatay hareket = palet kaydırma
     if(drag.from){ drag.from.el.classList.add('dragsrc'); $('#palette').classList.add('trash'); }
@@ -2808,9 +2815,9 @@ window.addEventListener('pointermove',e=>{
   if(ce){ const a=dropAction(drag,+ce.closest('.rung').dataset.i,+ce.dataset.r,+ce.dataset.c);
     if(a==='new'||a==='move'||a==='swap'){ if(!ce.classList.contains('dz')) Hap.tap(); ce.classList.add('dz'); ce.classList.toggle('sw',a==='swap'); } }
 },{passive:false});
-document.addEventListener('touchmove',e=>{ if(drag&&drag.on) e.preventDefault(); },{passive:false});
+document.addEventListener('touchmove',e=>{ if(drag&&(drag.on||(drag.from&&!drag.mouse&&!drag.wait&&!drag.ro))) e.preventDefault(); },{passive:false});
 window.addEventListener('pointerup',e=>{
-  if(!drag||e.pointerId!==drag.pid) return; const d=drag; drag=null; clearTimeout(tipT); dragClean();
+  if(!drag||e.pointerId!==drag.pid) return; const d=drag; drag=null; clearTimeout(tipT); clearTimeout(d.armT); dragClean();
   if(d.tip){ justDragged=true; setTimeout(()=>justDragged=false,80); setTimeout(hideTip,2600); return; }
   if(!d.on) return; Hap.drop(); justDragged=true; setTimeout(()=>justDragged=false,60); Snd.init();
   const rs=S.prog.rungs;
@@ -2826,7 +2833,7 @@ window.addEventListener('pointerup',e=>{
   else if(a==='swap'){ const t=rs[i].c[r][c]; rs[i].c[r][c]=rs[d.from.i].c[d.from.r][d.from.c]; rs[d.from.i].c[d.from.r][d.from.c]=t; S.popCell=[i,r,c]; saveDraft(); renderLadder(); Snd.place(); toast(tx('Bloklar yer değiştirdi','Blocks swapped')); }
   else if(a!=='dolu'&&a!=='x') toast(a);
 });
-window.addEventListener('pointercancel',e=>{ if(drag&&e.pointerId===drag.pid){ clearTimeout(tipT); drag=null; dragClean(); } });
+window.addEventListener('pointercancel',e=>{ if(drag&&e.pointerId===drag.pid){ clearTimeout(tipT); clearTimeout(drag.armT); drag=null; dragClean(); } });
 $('#palette').addEventListener('contextmenu',e=>e.preventDefault()); $('#rungs').addEventListener('contextmenu',e=>e.preventDefault());
 /* ---------- Ladder çizimi ---------- */
 function calcCW(V){ const w=$('#rungs').clientWidth-12-30-10, c=Math.min(150,Math.floor(w/5)); return Math.max(46,(V||5)*c>w?Math.floor(w/V):c); }
@@ -3381,12 +3388,12 @@ const TOUR=[
     `<p class="t">Task: <b>run the motor while START is pressed.</b> The solution is one rung: START's open contact (I0.0) → MOTOR coil (Q0.0).</p>${tDemo()}<p class="t" style="font-size:12.5px;color:var(--dim)">Hold the button: the contact closes, the line turns green, the motor runs. Let go and it stops.</p>`)},
   {ic:'sports_esports',t:['Nasıl oynanır?','How to play'],b:()=>tx(
     `<div class="tsteps"><div><i>1</i><span><b>Görevi oku.</b> Hangi giriş neyi çalıştırmalı, yazıyor.</span></div>
-     <div><i>2</i><span><b>Satır Oluştur</b>, sonra alttaki bloğu <b>sürükle</b> (ya da bloğa dokun, sonra kutuya dokun). Bloklar soldan sağa dizilir.</span></div>
+     <div><i>2</i><span><b>Satır Oluştur</b>, sonra alttaki bloğu <b>sürükle</b> (ya da bloğa dokun, sonra kutuya dokun). Bloklar soldan sağa dizilir. Yerleşik bloğu taşımak için kısa <b>basılı tut</b>, sonra sürükle.</span></div>
      <div><i>3</i><span>Açılan pencerede <b>adresi seç</b>: I giriş, Q çıkış.</span></div>
      <div><i>4</i><span><b>RUN</b>'a bas, sahnedeki butonlarla dene. Hedefler tamamlanınca <b>+1 puan</b>!</span></div>
      <div><i>${I('lightbulb','sm')}</i><span>Takılırsan <b>ampul</b> butonu ipucu ve çözüm verir.</span></div></div>`,
     `<div class="tsteps"><div><i>1</i><span><b>Read the task.</b> It says which input should switch what.</span></div>
-     <div><i>2</i><span>Tap <b>Create Rung</b>, then <b>drag</b> a block from the bottom (or tap the block, then the cell). Blocks go left to right.</span></div>
+     <div><i>2</i><span>Tap <b>Create Rung</b>, then <b>drag</b> a block from the bottom (or tap the block, then the cell). Blocks go left to right. To move a placed block, <b>press and hold</b> briefly, then drag.</span></div>
      <div><i>3</i><span>In the popup <b>pick the address</b>: I input, Q output.</span></div>
      <div><i>4</i><span>Press <b>RUN</b> and try the buttons in the scene. Finish the goals for <b>+1 point</b>!</span></div>
      <div><i>${I('lightbulb','sm')}</i><span>Stuck? The <b>bulb</b> button gives hints and the solution.</span></div></div>`)},

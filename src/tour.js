@@ -27,12 +27,12 @@ const TOUR=[
     `<p class="t">Task: <b>run the motor while START is pressed.</b> The solution is one rung: START's open contact (I0.0) → MOTOR coil (Q0.0).</p>${tDemo()}<p class="t" style="font-size:12.5px;color:var(--dim)">Hold the button: the contact closes, the line turns green, the motor runs. Let go and it stops.</p>`)},
   {ic:'sports_esports',t:['Nasıl oynanır?','How to play'],b:()=>tx(
     `<div class="tsteps"><div><i>1</i><span><b>Görevi oku.</b> Hangi giriş neyi çalıştırmalı, yazıyor.</span></div>
-     <div><i>2</i><span><b>Satır Oluştur</b>, sonra alttaki bloğu <b>sürükle</b> (ya da bloğa dokun, sonra kutuya dokun). Bloklar soldan sağa dizilir.</span></div>
+     <div><i>2</i><span><b>Satır Oluştur</b>, sonra alttaki bloğu <b>sürükle</b> (ya da bloğa dokun, sonra kutuya dokun). Bloklar soldan sağa dizilir. Yerleşik bloğu taşımak için kısa <b>basılı tut</b>, sonra sürükle.</span></div>
      <div><i>3</i><span>Açılan pencerede <b>adresi seç</b>: I giriş, Q çıkış.</span></div>
      <div><i>4</i><span><b>RUN</b>'a bas, sahnedeki butonlarla dene. Hedefler tamamlanınca <b>+1 puan</b>!</span></div>
      <div><i>${I('lightbulb','sm')}</i><span>Takılırsan <b>ampul</b> butonu ipucu ve çözüm verir.</span></div></div>`,
     `<div class="tsteps"><div><i>1</i><span><b>Read the task.</b> It says which input should switch what.</span></div>
-     <div><i>2</i><span>Tap <b>Create Rung</b>, then <b>drag</b> a block from the bottom (or tap the block, then the cell). Blocks go left to right.</span></div>
+     <div><i>2</i><span>Tap <b>Create Rung</b>, then <b>drag</b> a block from the bottom (or tap the block, then the cell). Blocks go left to right. To move a placed block, <b>press and hold</b> briefly, then drag.</span></div>
      <div><i>3</i><span>In the popup <b>pick the address</b>: I input, Q output.</span></div>
      <div><i>4</i><span>Press <b>RUN</b> and try the buttons in the scene. Finish the goals for <b>+1 point</b>!</span></div>
      <div><i>${I('lightbulb','sm')}</i><span>Stuck? The <b>bulb</b> button gives hints and the solution.</span></div></div>`)},

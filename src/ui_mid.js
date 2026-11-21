@@ -93,7 +93,7 @@ $('#rungs').addEventListener('click',e=>{
 let drag=null;
 function cellAt(x,y){ const el=document.elementFromPoint(x,y); return el&&el.closest?el.closest('#rungs .cell'):null; }
 function inPalette(x,y){ const el=document.elementFromPoint(x,y); return !!(el&&el.closest&&el.closest('#palette')); }
-function dragClean(){ document.querySelectorAll('.cell.dz,.dragsrc').forEach(x=>x.classList.remove('dz','sw','dragsrc')); $('#ghost').style.display='none'; $('#ghost').classList.remove('lift'); document.body.classList.remove('dragging'); $('#palette').classList.remove('trash','hot'); refreshTool(); }
+function dragClean(){ document.querySelectorAll('.cell.armed').forEach(x=>x.classList.remove('armed')); document.querySelectorAll('.cell.dz,.dragsrc').forEach(x=>x.classList.remove('dz','sw','dragsrc')); $('#ghost').style.display='none'; $('#ghost').classList.remove('lift'); document.body.classList.remove('dragging'); $('#palette').classList.remove('trash','hot'); refreshTool(); }
 // hedef hücre için eylem: 'move' | 'swap' | hata mesajı
 function dropAction(d,i,r,c){
   if(!d.from) return canPlace(d.t,i,r,c)||'new';
@@ -119,7 +119,7 @@ function showTip(el,t,extra){
   Hap.info(); Snd.init(); Snd.click();
 }
 const isMouse=e=>e&&e.pointerType==='mouse';
-function armTip(el,t,extra,e){ clearTimeout(tipT); if(isMouse(e)) return; tipT=setTimeout(()=>{ if(drag&&!drag.on){ drag.tip=true; showTip(el,t,extra); } },430); }
+function armTip(el,t,extra,e,ms){ clearTimeout(tipT); if(isMouse(e)) return; tipT=setTimeout(()=>{ if(drag&&!drag.on){ drag.tip=true; showTip(el,t,extra); } },ms||430); }
 // parçayı tutulduğu noktadan kaldır (hayalet, imleç/parmak altındaki noktayı korur)
 function grab(e,el,o){ const rc=el.getBoundingClientRect(); o.gx=(e.clientX-rc.left)/rc.width; o.gy=(e.clientY-rc.top)/rc.height; o.mouse=isMouse(e);
   if(o.mouse){ e.preventDefault(); try{ el.setPointerCapture(e.pointerId); }catch(_){} } return o; }
@@ -131,13 +131,16 @@ $('#rungs').addEventListener('pointerdown',e=>{
   const ce=e.target.closest('.cell'); if(!ce||e.button>0) return;
   const i=+ce.closest('.rung').dataset.i, r=+ce.dataset.r, c=+ce.dataset.c, cell=S.prog.rungs[i].c[r][c]; if(!cell) return;
   drag=grab(e,ce,{t:cell.t,x:e.clientX,y:e.clientY,pid:e.pointerId,on:false,from:{i,r,c,el:ce},ro:S.view});
-  armTip(ce,cell.t,cellDesc(cell),e);
+  // v1.2.0: dokunmatikte yerleşik blok ancak kısa basılı tutunca (220 ms) sürüklenir; hemen kaydırırsan liste kayar
+  if(!drag.mouse&&!drag.ro){ const d=drag; d.wait=true; d.armT=setTimeout(()=>{ if(drag===d&&d.wait){ d.wait=false; ce.classList.add('armed'); Hap.pick(); } },220); }
+  armTip(ce,cell.t,cellDesc(cell),e,650);
 });
 window.addEventListener('pointermove',e=>{
   if(!drag||e.pointerId!==drag.pid) return;
   if(drag.tip||drag.ro) return;
   if(!drag.on){
     const dx=e.clientX-drag.x, dy=e.clientY-drag.y, dist=Math.hypot(dx,dy);
+    if(drag.wait){ if(dist>8){ clearTimeout(drag.armT); clearTimeout(tipT); drag=null; } return; }   // basılı tutmadan hareket = kaydırma
     if(dist<(drag.mouse?4:drag.from?7:10)) return;
     if(!drag.from&&!drag.mouse&&Math.abs(dy)<Math.abs(dx)*0.45){ clearTimeout(tipT); drag=null; return; }   // belirgin yatay hareket = palet kaydırma
     if(drag.from){ drag.from.el.classList.add('dragsrc'); $('#palette').classList.add('trash'); }
@@ -158,9 +161,9 @@ window.addEventListener('pointermove',e=>{
   if(ce){ const a=dropAction(drag,+ce.closest('.rung').dataset.i,+ce.dataset.r,+ce.dataset.c);
     if(a==='new'||a==='move'||a==='swap'){ if(!ce.classList.contains('dz')) Hap.tap(); ce.classList.add('dz'); ce.classList.toggle('sw',a==='swap'); } }
 },{passive:false});
-document.addEventListener('touchmove',e=>{ if(drag&&drag.on) e.preventDefault(); },{passive:false});
+document.addEventListener('touchmove',e=>{ if(drag&&(drag.on||(drag.from&&!drag.mouse&&!drag.wait&&!drag.ro))) e.preventDefault(); },{passive:false});
 window.addEventListener('pointerup',e=>{
-  if(!drag||e.pointerId!==drag.pid) return; const d=drag; drag=null; clearTimeout(tipT); dragClean();
+  if(!drag||e.pointerId!==drag.pid) return; const d=drag; drag=null; clearTimeout(tipT); clearTimeout(d.armT); dragClean();
   if(d.tip){ justDragged=true; setTimeout(()=>justDragged=false,80); setTimeout(hideTip,2600); return; }
   if(!d.on) return; Hap.drop(); justDragged=true; setTimeout(()=>justDragged=false,60); Snd.init();
   const rs=S.prog.rungs;
@@ -176,5 +179,5 @@ window.addEventListener('pointerup',e=>{
   else if(a==='swap'){ const t=rs[i].c[r][c]; rs[i].c[r][c]=rs[d.from.i].c[d.from.r][d.from.c]; rs[d.from.i].c[d.from.r][d.from.c]=t; S.popCell=[i,r,c]; saveDraft(); renderLadder(); Snd.place(); toast(tx('Bloklar yer değiştirdi','Blocks swapped')); }
   else if(a!=='dolu'&&a!=='x') toast(a);
 });
-window.addEventListener('pointercancel',e=>{ if(drag&&e.pointerId===drag.pid){ clearTimeout(tipT); drag=null; dragClean(); } });
+window.addEventListener('pointercancel',e=>{ if(drag&&e.pointerId===drag.pid){ clearTimeout(tipT); clearTimeout(drag.armT); drag=null; dragClean(); } });
 $('#palette').addEventListener('contextmenu',e=>e.preventDefault()); $('#rungs').addEventListener('contextmenu',e=>e.preventDefault());

@@ -181,3 +181,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscro
  .iob{height:38px} #run,#ctrl .ib.big{height:40px}
  #goals .gl{height:25px}
 }
+
+/* v1.2.0: dokunmatikte yerleşik bloklar kaydırmayı engellemez; basılı tutunca sürüklenir */
+.cell.full{touch-action:pan-x pan-y}
+.cell.armed{transform:scale(1.08);box-shadow:0 0 0 2px var(--md-primary),0 6px 16px rgba(0,0,0,.35);transition:transform .12s var(--ease-sp)}
