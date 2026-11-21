@@ -150,9 +150,6 @@ html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscro
 #task li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.55}
 #task li.ts{font-style:italic;opacity:.92} #task li.ts::before{content:"✓";width:auto;height:auto;background:none;top:0;left:0;opacity:.8;font-style:normal}
 #task b.ad{font:700 .82em ui-monospace,monospace;padding:0 5px;border-radius:6px;background:color-mix(in srgb,var(--md-primary) 16%,transparent);white-space:nowrap}
-#task{cursor:pointer;transition:max-height .25s var(--ease-sp)}
-#task.cl{overflow:hidden}
-#task.cl::after{content:"expand_more";font-family:'Material Symbols Rounded';position:absolute;right:8px;top:4px;font-size:20px;opacity:.7}
 /* ===== v1.1.9: telefon dikey — ladder alanı büyür, diğerleri küçülür ===== */
 @media (max-width:599px) and (orientation:portrait){
  #top{padding:2px 6px 0 2px}
@@ -161,9 +158,6 @@ html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscro
  #taskBox{padding:0 10px 6px}
  #task{max-height:7.8em;font-size:13px;padding:21px 12px 8px}
  #task::before{top:6px}
- #task.cl{max-height:3.05em;padding-bottom:4px}
- #task.cl ul{display:none}
- #task.cl .tg{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:18px}
  #goals{margin-top:5px;gap:5px} .gl{height:27px;font-size:11.5px}
  #sceneWrap{height:clamp(92px,15dvh,138px);margin-top:4px}
  #io{padding:6px 10px 0;gap:8px} .iob{height:42px}
@@ -185,3 +179,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscro
 /* v1.2.0: dokunmatikte yerleşik bloklar kaydırmayı engellemez; basılı tutunca sürüklenir */
 .cell.full{touch-action:pan-x pan-y}
 .cell.armed{transform:scale(1.08);box-shadow:0 0 0 2px var(--md-primary),0 6px 16px rgba(0,0,0,.35);transition:transform .12s var(--ease-sp)}
+
+/* v1.2.0a: görev kutusu sabit yükseklik — açılıp kapanmaz, uzun metin kendi içinde kayar */
+@media (max-width:599px) and (orientation:portrait){ #task{height:auto;max-height:12em;overflow-y:auto} }
+@media (max-width:599px) and (max-height:700px) and (orientation:portrait){ #task{max-height:9.5em} }

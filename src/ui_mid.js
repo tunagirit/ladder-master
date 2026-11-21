@@ -16,7 +16,7 @@ function loadLevel(id,quiet){
 function lvLabel(lv){ return `${tx('Bölüm','Level')} ${lv.n+1} · ${lv.bonus?'🎉 Bonus':CATS[lv.cat].n}`; }
 function setHeader(){ const lv=S.lv, C=CATS[lv.cat]; $('#task').dataset.lbl=tx('GÖREV','TASK');
   $('#title').innerHTML=`<small style="color:${lv.extra?'var(--red)':C.c}">${lvLabel(lv).toUpperCase()}${lv.extra?' · '+tx('EKSTRA ZOR','EXTRA HARD'):''}</small>${lv.title}`;
-  $('#task').innerHTML=fmtTask(lv.task); $('#task').classList.remove('cl'); $('#task').scrollTop=0; }
+  $('#task').innerHTML=fmtTask(lv.task); $('#task').scrollTop=0; }
 /* v1.1.9: görev metni — ilk cümle hedef, kalanı madde madde; yöntemi ele veren (TON), (WOR maske 0101) gibi parantezler gizlenir (ipucunda var) */
 const TASK_KW=new Set('TON TOF TONR CTU CTD CMP MOV INC DEC ADD SUB DIV MUL SEG SHL SHR INV WAND WOR NOT P N Set Reset S/R SM mühür histerezis kilitleme maske kenarıyla ile'.split(' '));
 function fmtTask(t){
@@ -25,9 +25,7 @@ function fmtTask(t){
   const hl=s=>esc(s).replace(/\s?\(((?:SM|[IQM])\d\.\d|AIW\d|[QI]B\d)\)/g,' <b class="ad">$1</b>').replace(/(^|[^\w>])((?:SM|[IQM])\d\.\d|[TC]\d|VW\d|AIW\d|[QI]B\d)\b(?![^<]*<\/b>)/g,'$1<b>$2</b>');
   const li=ss.slice(1).map(s=>{ const tst=/^Test:/i.test(s); return `<li${tst?' class="ts"':''}>${hl(tst?s.replace(/^Test:\s*/i,''):s)}</li>`; }).join('');
   return `<p class="tg">${hl(ss[0]||'')}</p>`+(li?`<ul>${li}</ul>`:''); }
-$('#task').addEventListener('click',()=>$('#task').classList.toggle('cl'));
-// dokunma bitince (tıklama işlendikten sonra) daralt: dokunuş sırasında yerleşim kaymasın
-['#editor','#palette'].forEach(q=>$(q).addEventListener('pointerup',()=>setTimeout(()=>{ if(!$('#task').classList.contains('cl')){ $('#task').classList.add('cl'); } },0),{passive:true}));
+// v1.2.0a: görev kutusu sabit boyutta, hep açık
 function refreshMode(){
   $('#palette').style.display=S.view?'none':'flex'; $('#doneBar').style.display=S.view?'flex':'none';
   $('#bClear').style.visibility=S.view?'hidden':'visible'; updInfo();

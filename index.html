@@ -866,9 +866,6 @@ html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscro
 #task li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.55}
 #task li.ts{font-style:italic;opacity:.92} #task li.ts::before{content:"✓";width:auto;height:auto;background:none;top:0;left:0;opacity:.8;font-style:normal}
 #task b.ad{font:700 .82em ui-monospace,monospace;padding:0 5px;border-radius:6px;background:color-mix(in srgb,var(--md-primary) 16%,transparent);white-space:nowrap}
-#task{cursor:pointer;transition:max-height .25s var(--ease-sp)}
-#task.cl{overflow:hidden}
-#task.cl::after{content:"expand_more";font-family:'Material Symbols Rounded';position:absolute;right:8px;top:4px;font-size:20px;opacity:.7}
 /* ===== v1.1.9: telefon dikey — ladder alanı büyür, diğerleri küçülür ===== */
 @media (max-width:599px) and (orientation:portrait){
  #top{padding:2px 6px 0 2px}
@@ -877,9 +874,6 @@ html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscro
  #taskBox{padding:0 10px 6px}
  #task{max-height:7.8em;font-size:13px;padding:21px 12px 8px}
  #task::before{top:6px}
- #task.cl{max-height:3.05em;padding-bottom:4px}
- #task.cl ul{display:none}
- #task.cl .tg{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:18px}
  #goals{margin-top:5px;gap:5px} .gl{height:27px;font-size:11.5px}
  #sceneWrap{height:clamp(92px,15dvh,138px);margin-top:4px}
  #io{padding:6px 10px 0;gap:8px} .iob{height:42px}
@@ -901,6 +895,10 @@ html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscro
 /* v1.2.0: dokunmatikte yerleşik bloklar kaydırmayı engellemez; basılı tutunca sürüklenir */
 .cell.full{touch-action:pan-x pan-y}
 .cell.armed{transform:scale(1.08);box-shadow:0 0 0 2px var(--md-primary),0 6px 16px rgba(0,0,0,.35);transition:transform .12s var(--ease-sp)}
+
+/* v1.2.0a: görev kutusu sabit yükseklik — açılıp kapanmaz, uzun metin kendi içinde kayar */
+@media (max-width:599px) and (orientation:portrait){ #task{height:auto;max-height:12em;overflow-y:auto} }
+@media (max-width:599px) and (max-height:700px) and (orientation:portrait){ #task{max-height:9.5em} }
 </style></head><body>
 <div id="app">
  <div id="top"><button class="ib" id="bMenu" aria-label="Duraklat / Pause"><span class="ms">pause</span></button><div id="title"></div><span id="pill">STOP</span><button class="ib" id="bSnd"><span class="ms">volume_up</span></button></div>
@@ -2356,7 +2354,7 @@ const MACH_SLOTS=[]; TPL.forEach((p,c)=>{ if(c<LEN_115.length-1) p.forEach((l,po
 const ROAD_END=10000;   // yol 10.000 bölümde biter
 /*==UI==*/
 const $=(s,r=document)=>r.querySelector(s);
-const VERSION='v1.2.0';
+const VERSION='v1.2.0a';
 const I=(n,c)=>'<span class="ms'+(c?' '+c.split(' ').map(x=>x==='f'?'f':'ms-'+x).join(' '):'')+'">'+n+'</span>';  // Material Symbols ikon
 const SKEY='ladderustasi_v2';
 let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1,theme:'auto',lang:null,seen:{}};
@@ -2670,7 +2668,7 @@ function loadLevel(id,quiet){
 function lvLabel(lv){ return `${tx('Bölüm','Level')} ${lv.n+1} · ${lv.bonus?'🎉 Bonus':CATS[lv.cat].n}`; }
 function setHeader(){ const lv=S.lv, C=CATS[lv.cat]; $('#task').dataset.lbl=tx('GÖREV','TASK');
   $('#title').innerHTML=`<small style="color:${lv.extra?'var(--red)':C.c}">${lvLabel(lv).toUpperCase()}${lv.extra?' · '+tx('EKSTRA ZOR','EXTRA HARD'):''}</small>${lv.title}`;
-  $('#task').innerHTML=fmtTask(lv.task); $('#task').classList.remove('cl'); $('#task').scrollTop=0; }
+  $('#task').innerHTML=fmtTask(lv.task); $('#task').scrollTop=0; }
 /* v1.1.9: görev metni — ilk cümle hedef, kalanı madde madde; yöntemi ele veren (TON), (WOR maske 0101) gibi parantezler gizlenir (ipucunda var) */
 const TASK_KW=new Set('TON TOF TONR CTU CTD CMP MOV INC DEC ADD SUB DIV MUL SEG SHL SHR INV WAND WOR NOT P N Set Reset S/R SM mühür histerezis kilitleme maske kenarıyla ile'.split(' '));
 function fmtTask(t){
@@ -2679,9 +2677,7 @@ function fmtTask(t){
   const hl=s=>esc(s).replace(/\s?\(((?:SM|[IQM])\d\.\d|AIW\d|[QI]B\d)\)/g,' <b class="ad">$1</b>').replace(/(^|[^\w>])((?:SM|[IQM])\d\.\d|[TC]\d|VW\d|AIW\d|[QI]B\d)\b(?![^<]*<\/b>)/g,'$1<b>$2</b>');
   const li=ss.slice(1).map(s=>{ const tst=/^Test:/i.test(s); return `<li${tst?' class="ts"':''}>${hl(tst?s.replace(/^Test:\s*/i,''):s)}</li>`; }).join('');
   return `<p class="tg">${hl(ss[0]||'')}</p>`+(li?`<ul>${li}</ul>`:''); }
-$('#task').addEventListener('click',()=>$('#task').classList.toggle('cl'));
-// dokunma bitince (tıklama işlendikten sonra) daralt: dokunuş sırasında yerleşim kaymasın
-['#editor','#palette'].forEach(q=>$(q).addEventListener('pointerup',()=>setTimeout(()=>{ if(!$('#task').classList.contains('cl')){ $('#task').classList.add('cl'); } },0),{passive:true}));
+// v1.2.0a: görev kutusu sabit boyutta, hep açık
 function refreshMode(){
   $('#palette').style.display=S.view?'none':'flex'; $('#doneBar').style.display=S.view?'flex':'none';
   $('#bClear').style.visibility=S.view?'hidden':'visible'; updInfo();
