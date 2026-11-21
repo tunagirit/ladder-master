@@ -1,5 +1,5 @@
 // Ladder Master service worker — çevrimdışı oynama için uygulama dosyalarını önbelleğe alır
-const CACHE='ladder-master-v1.2.0c';
+const CACHE='ladder-master-v1.2.0d';
 const FONT_CACHE='ladder-master-fonts-1';
 const SHELL=['./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/maskable-512.png','./icons/apple-touch-icon.png','./icons/favicon-32.png'];
 self.addEventListener('install',e=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL.map(u=>new Request(u,{cache:'reload'})))).then(()=>self.skipWaiting())); });

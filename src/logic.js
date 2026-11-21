@@ -195,6 +195,8 @@ class World{
     // hedefler
     const gl=this.goalList(); for(let i=0;i<gl.length;i++){ if(this.gd[i]) continue; if(gl[i].live) this.gd[i]=true; else break; }   // hedefler ekrandaki sırayla tamamlanır
     // v1.2.0c: hedefler bitince 0,6 sn daha izle — son adımın sonucu (ör. C'ye basınca kasa gerçekten kapandı mı) kontrol edilsin
+    // son kontrolde kutu sensörden ayrılırsa (bant yeniden kalktıysa) 'Sensörde dur' geri alınır
+    if(this.gd.every(Boolean)){ const pi=this.lv.goals.findIndex(g=>g.k==='park'); if(pi>=0&&pi===this.lv.goals.length-1&&this.parkT===0){ this.gd[pi]=false; this.settle=0; } }
     if(this.gd.every(Boolean)){ this.settle=(this.settle||0)+dt; if(this.settle>=0.6){ this.done=true; return; } } else this.settle=0;
     const active=this.boxes.some(b=>b.st==='belt'||b.st==='pushed');
     if(!sc.noBelt&&this.nid>=sc.boxes&&!active){ this.idleT+=dt; if(this.idleT>4.5) return this.fail(tx('Hedefe ulaşılamadı: kutular bitti. Programı gözden geçir.','Goal not reached: out of boxes. Review your program.')); } else this.idleT=0;
@@ -229,7 +231,7 @@ class World{
     if(this.pendB!==null){ this.pendB-=dt; if(this.pendB<=0){ this.pendB=null; if(q[sc.lampA]) this.batches++; else return this.fail(tx('Hata: Parti tamamlandı ama lamba yanmadı!','Error: Batch finished but the lamp did not light!')); } }
     const pk=goals.find(g=>g.k==='park');
     if(pk){ if(!this.motor&&this.sensorOn(pk.s)) this.parkT+=dt; else this.parkT=0; }
-    if(sc.lampA&&pk){ if(this.parkT>0&&q[sc.lampA]) this.lpT+=dt; if(this.lpT>=0.8) this.f.lampPark=true; }
+    if(sc.lampA&&pk){ if(this.parkT>0&&q[sc.lampA]) this.lpT+=dt; if(this.lpT>=0.3) this.f.lampPark=true; }
     if(sc.ackA){
       const a=!!iv[sc.ackA];
       if(a&&!this.pA){ if(this.pl) this.ackSeen=true;
@@ -240,8 +242,8 @@ class World{
     }
     if(goals.some(g=>g.k==='lampRun')){
       if(this.motor&&q[sc.lampA]) this.lrT+=dt;
-      if(!this.motor&&this.parkT>0.2&&!q[sc.lampA]) this.loT+=dt;
-      if(this.lrT>=1&&this.loT>=0.5) this.f.lampRun=true;
+      if(this.lrT>=1) this.f.lampRun=true;      // v1.2.0d: lamba bantla birlikte yanınca hemen tamamlanır
+      if(!this.motor&&this.t>0.3&&q[sc.lampA]){ this.loT+=dt; if(this.loT>0.4) return this.fail(tx('Hata: Bant durdu ama ÇALIŞIYOR lambası hâlâ yanıyor! Lamba motoru izlemeli.','Error: The belt stopped but the RUNNING lamp is still on! The lamp must follow the motor.')); } else this.loT=0;
     }
     if(goals.some(g=>g.k==='lampPush')){ const e=Math.max(...sc.pistons.map(p=>this.ext[p.a]),0); if(q[sc.lampA]&&e>0.4) this.f.lampPush=true; }
     if(sc.fan){
@@ -281,7 +283,7 @@ class World{
         case 'divert': l=tx('Ayrılan ','Diverted ')+Math.min(this.diverted,g.n)+'/'+g.n; ok=this.diverted>=g.n; break;
         case 'fill': l=(g.lb||tx('Dolum','Filled'))+' '+Math.min(this.filled,g.n)+'/'+g.n; ok=this.filled>=g.n; break;
         case 'batch': l=tx('Parti ','Batch ')+Math.min(this.batches,g.n)+'/'+g.n; ok=this.batches>=g.n; break;
-        case 'park': l=tx('Sensörde dur','Stop at sensor'); ok=this.parkT>=g.hold; break;
+        case 'park': l=tx('Sensörde dur','Stop at sensor'); ok=this.parkT>=0.12; break;   // v1.2.0d: kutu sensörde durduğu an tamamlanır
         case 'stopDelay': l=tx(fx(g.t||3)+' sn gecikmeli dur',(g.t||3)+' s delayed stop'); ok=!!this.f.stopDelay; break;
         case 'fanHold': l=tx('Fan '+fx(g.t||3)+' sn nöbet','Fan '+(g.t||3)+' s run-on'); ok=!!this.f.fanHold; break;
         case 'cnt': l=tx(g.l[0],g.l[1])+' '+Math.min(this.cnt[g.f]||0,g.n)+'/'+g.n; ok=(this.cnt[g.f]||0)>=g.n; break;
