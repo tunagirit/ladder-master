@@ -3,7 +3,7 @@
 <meta name="theme-color" content="#0d1117">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,100..1000&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=account_circle,add,add_circle,arrow_back,arrow_downward,arrow_forward,arrow_upward,bolt,brightness_auto,build,call_split,celebration,check,check_circle,close,cloud,dark_mode,delete,delete_history,delete_sweep,edit,electrical_services,emoji_events,factory,help,home,insights,install_mobile,inventory_2,ios_share,key,leaderboard,light_mode,lightbulb,local_fire_department,lock,lock_open,login,logout,map,memory,menu,more_vert,new_releases,oil_barrel,play_arrow,precision_manufacturing,radio_button_unchecked,refresh,remove,restart_alt,resume,rocket_launch,school,science,sensors,settings,sports_esports,stairs,stop,sync,touch_app,vibration,visibility,volume_off,volume_up,waving_hand,workspace_premium&display=block">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=account_circle,add,add_circle,arrow_back,arrow_downward,arrow_forward,arrow_upward,bolt,brightness_auto,build,call_split,celebration,check,check_circle,close,cloud,dark_mode,delete,delete_history,delete_sweep,edit,electrical_services,emoji_events,expand_more,factory,help,home,insights,install_mobile,inventory_2,ios_share,key,leaderboard,light_mode,lightbulb,local_fire_department,lock,lock_open,login,logout,map,memory,menu,more_vert,new_releases,oil_barrel,pause,play_arrow,precision_manufacturing,radio_button_unchecked,refresh,remove,restart_alt,resume,rocket_launch,school,science,sensors,settings,sports_esports,stairs,stop,sync,touch_app,vibration,visibility,volume_off,volume_up,waving_hand,workspace_premium&display=block">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -858,9 +858,48 @@ html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscro
  .sheet{max-height:94%}
  .card{max-height:94%;padding:16px}
 }
+
+/* ===== v1.1.9: görev metni düzeni ===== */
+#task .tg{margin:0;font-weight:650}
+#task ul{margin:6px 0 0;padding:0 0 0 2px;list-style:none;display:flex;flex-direction:column;gap:3px}
+#task li{position:relative;padding-left:14px}
+#task li::before{content:"";position:absolute;left:2px;top:.62em;width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.55}
+#task li.ts{font-style:italic;opacity:.92} #task li.ts::before{content:"✓";width:auto;height:auto;background:none;top:0;left:0;opacity:.8;font-style:normal}
+#task b.ad{font:700 .82em ui-monospace,monospace;padding:0 5px;border-radius:6px;background:color-mix(in srgb,var(--md-primary) 16%,transparent);white-space:nowrap}
+#task{cursor:pointer;transition:max-height .25s var(--ease-sp)}
+#task.cl{overflow:hidden}
+#task.cl::after{content:"expand_more";font-family:'Material Symbols Rounded';position:absolute;right:8px;top:4px;font-size:20px;opacity:.7}
+/* ===== v1.1.9: telefon dikey — ladder alanı büyür, diğerleri küçülür ===== */
+@media (max-width:599px) and (orientation:portrait){
+ #top{padding:2px 6px 0 2px}
+ #top .ib{width:44px;height:44px}
+ #title{font-size:17px}
+ #taskBox{padding:0 10px 6px}
+ #task{max-height:7.8em;font-size:13px;padding:21px 12px 8px}
+ #task::before{top:6px}
+ #task.cl{max-height:3.05em;padding-bottom:4px}
+ #task.cl ul{display:none}
+ #task.cl .tg{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:18px}
+ #goals{margin-top:5px;gap:5px} .gl{height:27px;font-size:11.5px}
+ #sceneWrap{height:clamp(92px,15dvh,138px);margin-top:4px}
+ #io{padding:6px 10px 0;gap:8px} .iob{height:42px}
+ #ctrl{padding:6px 10px} #run,#ctrl .ib.big{height:44px} #ctrl .ib.big{width:50px;min-width:50px}
+ #ehead{padding:4px 12px 0;font-size:11.5px;line-height:1.3}
+ #einfo br{display:none} #einfo .em{display:none} #einfo .em.on{display:inline}
+ #editor{flex:1 1 0;min-height:150px}
+ #rungs{padding-top:4px}
+ #addr:not(.mk){height:38px;margin-top:4px}
+ #palette{flex-basis:70px;padding-top:6px} .pal{height:56px;flex-basis:56px}
+ #doneBar{flex-basis:64px}
+}
+@media (max-width:599px) and (max-height:760px) and (orientation:portrait){
+ #sceneWrap{height:clamp(84px,13dvh,112px)}
+ .iob{height:38px} #run,#ctrl .ib.big{height:40px}
+ #goals .gl{height:25px}
+}
 </style></head><body>
 <div id="app">
- <div id="top"><button class="ib" id="bMenu" aria-label="Menu"><span class="ms">menu</span></button><div id="title"></div><span id="pill">STOP</span><button class="ib" id="bSnd"><span class="ms">volume_up</span></button></div>
+ <div id="top"><button class="ib" id="bMenu" aria-label="Duraklat / Pause"><span class="ms">pause</span></button><div id="title"></div><span id="pill">STOP</span><button class="ib" id="bSnd"><span class="ms">volume_up</span></button></div>
  <div id="taskBox"><div id="task"></div><div id="goals"></div></div>
  <div id="sceneWrap"><canvas id="cv"></canvas><div id="err"><b id="errT"></b><div class="row"><button class="btn pri wide" id="errRetry"></button><button class="btn wide" id="errEdit"></button></div></div></div>
  <div id="io"></div>
@@ -2195,8 +2234,8 @@ const lift=seg=>(r,k,n)=>{
   if(seg) sc.rules.push((w,q,iv,dt,s)=>{ if(w.ms.pos<=0.005) s.fl=1; if(w.ms.pos>=0.995) s.fl=2; if(!s.fl) return; const want=SEGT[s.fl], got=qb(q,'Q1.')&127;
     if(want!==got){ s.b=(s.b||0)+dt; if(s.b>0.3) return tx(`Hata: Kat göstergesi ${s.fl} göstermeli!`,`Error: The floor display must show ${s.fl}!`); } else s.b=0; });
   return {title:seg?tx('Asansör + Kat Göstergesi','Lift + Floor Display'):tx('2 Katlı Asansör','Two-Floor Lift'),
-    task:tx(`ÇAĞRI_2 (${A.call2}) kabini yukarı (${A.lup}), ÇAĞRI_1 (${A.call1}) aşağı (${A.ldn}) götürsün; kabin KAT_2 (${A.f2}) / KAT_1 (${A.f1}) sensöründe dursun. Motor aynı anda iki yöne sürülmesin.`+(seg?' Kabinin bulunduğu kat QB1\'deki 7-segment göstergede yazsın (kat sensörü → MOV VW0, sonra SEG).':''),
-      `CALL_2 (${A.call2}) takes the cabin up (${A.lup}), CALL_1 (${A.call1}) takes it down (${A.ldn}); the cabin stops at the FLOOR_2 (${A.f2}) / FLOOR_1 (${A.f1}) sensor. Never drive both directions.`+(seg?' Show the current floor on the 7-segment display on QB1 (floor sensor → MOV VW0, then SEG).':'')),
+    task:tx(`ÇAĞRI_2 (${A.call2}) kabini yukarı (${A.lup}), ÇAĞRI_1 (${A.call1}) aşağı (${A.ldn}) götürsün; kabin KAT_2 (${A.f2}) / KAT_1 (${A.f1}) sensöründe dursun. Motor aynı anda iki yöne sürülmesin.`+(seg?' Kabinin bulunduğu kat QB1\'deki 7-segment göstergede yazsın.':''),
+      `CALL_2 (${A.call2}) takes the cabin up (${A.lup}), CALL_1 (${A.call1}) takes it down (${A.ldn}); the cabin stops at the FLOOR_2 (${A.f2}) / FLOOR_1 (${A.f1}) sensor. Never drive both directions.`+(seg?' Show the current floor on the 7-segment display on QB1.':'')),
     hint:tx(`(ÇAĞRI_2 ∥ ${A.lup}) · KAPALI KAT_2 · KAPALI ${A.ldn} → ${A.lup} · (ÇAĞRI_1 ∥ ${A.ldn}) · KAPALI KAT_1 · KAPALI ${A.lup} → ${A.ldn}`+(seg?' · KAT_1 → MOV VW0 ← 1 · KAT_2 → MOV VW0 ← 2 · SM0.0 → SEG QB1 ← VW0.':'.'),`(CALL_2 ∥ ${A.lup}) · NC FLOOR_2 · NC ${A.ldn} → ${A.lup} · (CALL_1 ∥ ${A.ldn}) · NC FLOOR_1 · NC ${A.lup} → ${A.ldn}`+(seg?' · FLOOR_1 → MOV VW0 ← 1 · FLOOR_2 → MOV VW0 ← 2 · SM0.0 → SEG QB1 ← VW0.':'.')),
     io,M:0,T:0,C:0,SM:!!seg,words:seg?['VW0','QB1']:[],wt:seg?{VW0:'KAT',QB1:'GÖSTERGE'}:{},pal:seg?palOf({rungs:rs}):PAL_B,scene:sc,goals:[{k:'up2',l:T2('2. kata çık','Go up to 2')},{k:'down1',l:T2('1. kata in','Come down to 1')}],sol:{rungs:rs},
     bot:once((w,P,t,st)=>{ if(!st.a&&t>0.5){ st.a=1; P(A.call2); } if(st.a===1&&w.f.up2){ st.a=2; st.t=t; } if(st.a===2&&t>st.t+0.8){ st.a=3; P(A.call1); } })};
@@ -2313,7 +2352,7 @@ const MACH_SLOTS=[]; TPL.forEach((p,c)=>{ if(c<LEN_115.length-1) p.forEach((l,po
 const ROAD_END=10000;   // yol 10.000 bölümde biter
 /*==UI==*/
 const $=(s,r=document)=>r.querySelector(s);
-const VERSION='v1.1.8';
+const VERSION='v1.1.9';
 const I=(n,c)=>'<span class="ms'+(c?' '+c.split(' ').map(x=>x==='f'?'f':'ms-'+x).join(' '):'')+'">'+n+'</span>';  // Material Symbols ikon
 const SKEY='ladderustasi_v2';
 let save={done:{},draft:{},sound:true,unlock:false,intro:false,last:-1,theme:'auto',lang:null,seen:{}};
@@ -2627,7 +2666,18 @@ function loadLevel(id,quiet){
 function lvLabel(lv){ return `${tx('Bölüm','Level')} ${lv.n+1} · ${lv.bonus?'🎉 Bonus':CATS[lv.cat].n}`; }
 function setHeader(){ const lv=S.lv, C=CATS[lv.cat]; $('#task').dataset.lbl=tx('GÖREV','TASK');
   $('#title').innerHTML=`<small style="color:${lv.extra?'var(--red)':C.c}">${lvLabel(lv).toUpperCase()}${lv.extra?' · '+tx('EKSTRA ZOR','EXTRA HARD'):''}</small>${lv.title}`;
-  $('#task').innerHTML=esc(lv.task).replace(/\b((?:SM|[IQM])\d\.\d|[TC]\d|VW\d|AIW\d|[QI]B\d)\b/g,'<b>$1</b>'); }
+  $('#task').innerHTML=fmtTask(lv.task); $('#task').classList.remove('cl'); $('#task').scrollTop=0; }
+/* v1.1.9: görev metni — ilk cümle hedef, kalanı madde madde; yöntemi ele veren (TON), (WOR maske 0101) gibi parantezler gizlenir (ipucunda var) */
+const TASK_KW=new Set('TON TOF TONR CTU CTD CMP MOV INC DEC ADD SUB DIV MUL SEG SHL SHR INV WAND WOR NOT P N Set Reset S/R SM mühür histerezis kilitleme maske kenarıyla ile'.split(' '));
+function fmtTask(t){
+  t=t.replace(/\s*\(([^()]*)\)/g,(m,c)=>{ const w=c.split(/[\s,+\/]+/).filter(Boolean); return w.length&&w.every(x=>TASK_KW.has(x)||/^[\d≥≤≠<>=]+$/.test(x))&&!/[IQ]\d\.\d/.test(c)?'':m; });
+  const ss=t.split(/(?<=[.!?])\s+(?=[A-ZÇĞİÖŞÜ0-9"'(])/).map(s=>s.trim()).filter(Boolean);
+  const hl=s=>esc(s).replace(/\s?\(((?:SM|[IQM])\d\.\d|AIW\d|[QI]B\d)\)/g,' <b class="ad">$1</b>').replace(/(^|[^\w>])((?:SM|[IQM])\d\.\d|[TC]\d|VW\d|AIW\d|[QI]B\d)\b(?![^<]*<\/b>)/g,'$1<b>$2</b>');
+  const li=ss.slice(1).map(s=>{ const tst=/^Test:/i.test(s); return `<li${tst?' class="ts"':''}>${hl(tst?s.replace(/^Test:\s*/i,''):s)}</li>`; }).join('');
+  return `<p class="tg">${hl(ss[0]||'')}</p>`+(li?`<ul>${li}</ul>`:''); }
+$('#task').addEventListener('click',()=>$('#task').classList.toggle('cl'));
+// dokunma bitince (tıklama işlendikten sonra) daralt: dokunuş sırasında yerleşim kaymasın
+['#editor','#palette'].forEach(q=>$(q).addEventListener('pointerup',()=>setTimeout(()=>{ if(!$('#task').classList.contains('cl')){ $('#task').classList.add('cl'); } },0),{passive:true}));
 function refreshMode(){
   $('#palette').style.display=S.view?'none':'flex'; $('#doneBar').style.display=S.view?'flex':'none';
   $('#bClear').style.visibility=S.view?'hidden':'visible'; updInfo();
@@ -2649,12 +2699,15 @@ function refreshTool(){
   document.querySelectorAll('.pal').forEach(b=>b.classList.toggle('sel',b.dataset.t===S.tool));
   $('#rungs').dataset.tool=S.tool?(isOut(S.tool)?'o':'c'):''; updInfo();
 }
+/* yeni satır eklenince: yeni satırın başı görünsün, ekle tuşu onun altında kalsın */
+function scrollToNewRung(){ const r=$('#rungs'), rs=r.querySelectorAll('.rung'), el=rs[rs.length-1]; if(!el) return;
+  r.scrollTo({top:Math.max(0,el.getBoundingClientRect().top-r.getBoundingClientRect().top+r.scrollTop-6),behavior:'smooth'}); }
 function updInfo(){
   const n=countBlocks(S.prog);
   const msg=S.view?tx('<span style="color:var(--neon)">Kayıtlı çözümün</span> — RUN ile çalıştırıp izle','<span style="color:var(--neon)">Your saved solution</span> — press RUN to watch')
     :S.redo?tx('<span style="color:var(--amb)">Yeniden çözüyorsun</span> — yeni çözüm bulana kadar eskisi korunur','<span style="color:var(--amb)">Re-solving</span> — old solution kept until you solve it again')
     :S.tool?tx(`Seçili: <b style="color:var(--blu)">${BN[S.tool]}</b> — ${isOut(S.tool)?'son sütuna':'sol sütunlara'} dokun`,`Selected: <b style="color:var(--blu)">${BN[S.tool]}</b> — tap ${isOut(S.tool)?'the last column':'a left column'}`):tx('Bloğu yukarı <b>sürükle-bırak</b> ya da seç &amp; dokun','<b>Drag &amp; drop</b> a block up, or select &amp; tap');
-  $('#einfo').innerHTML=tx(`Blok <b>${n}</b> · referans çözüm ${S.lv.opt} blok`,`Blocks <b>${n}</b> · reference solution ${S.lv.opt}`)+`<br>${msg}`;
+  $('#einfo').innerHTML=tx(`Blok <b>${n}</b> · referans çözüm ${S.lv.opt} blok`,`Blocks <b>${n}</b> · reference solution ${S.lv.opt}`)+`<br><span class="em${S.tool||S.view||S.redo?' on':''}"> · ${msg}</span>`;
 }
 function canPlace(t,i,r,c){
   const rg=S.prog.rungs[i]; if(!rg||rg.c[r][c]) return 'dolu'; if(r===1&&!rg.br) return 'x';
@@ -2676,7 +2729,7 @@ function compact(i){ const row=S.prog.rungs[i]&&S.prog.rungs[i].c[0]; if(!row) r
 /* ---------- Ladder etkileşimi ---------- */
 $('#rungs').addEventListener('click',e=>{
   if(justDragged) return; Snd.init();
-  if(e.target.closest('#addr')){ if(guard()) return; S.prog.rungs.push(mkRung()); saveDraft(); renderLadder(); Snd.click(); const r=$('#rungs'); r.scrollTop=r.scrollHeight; return; }
+  if(e.target.closest('#addr')){ if(guard()) return; S.prog.rungs.push(mkRung()); saveDraft(); renderLadder(); Snd.click(); scrollToNewRung(); return; }
   const rm=e.target.closest('.rm'); if(rm){ if(guard()) return; rungMenu(+rm.closest('.rung').dataset.i); return; }
   const ce=e.target.closest('.cell'); if(!ce) return; if(guard()) return;
   const i=+ce.closest('.rung').dataset.i, r=+ce.dataset.r, c=+ce.dataset.c, cell=S.prog.rungs[i].c[r][c];

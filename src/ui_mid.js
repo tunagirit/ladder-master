@@ -16,7 +16,18 @@ function loadLevel(id,quiet){
 function lvLabel(lv){ return `${tx('Bölüm','Level')} ${lv.n+1} · ${lv.bonus?'🎉 Bonus':CATS[lv.cat].n}`; }
 function setHeader(){ const lv=S.lv, C=CATS[lv.cat]; $('#task').dataset.lbl=tx('GÖREV','TASK');
   $('#title').innerHTML=`<small style="color:${lv.extra?'var(--red)':C.c}">${lvLabel(lv).toUpperCase()}${lv.extra?' · '+tx('EKSTRA ZOR','EXTRA HARD'):''}</small>${lv.title}`;
-  $('#task').innerHTML=esc(lv.task).replace(/\b((?:SM|[IQM])\d\.\d|[TC]\d|VW\d|AIW\d|[QI]B\d)\b/g,'<b>$1</b>'); }
+  $('#task').innerHTML=fmtTask(lv.task); $('#task').classList.remove('cl'); $('#task').scrollTop=0; }
+/* v1.1.9: görev metni — ilk cümle hedef, kalanı madde madde; yöntemi ele veren (TON), (WOR maske 0101) gibi parantezler gizlenir (ipucunda var) */
+const TASK_KW=new Set('TON TOF TONR CTU CTD CMP MOV INC DEC ADD SUB DIV MUL SEG SHL SHR INV WAND WOR NOT P N Set Reset S/R SM mühür histerezis kilitleme maske kenarıyla ile'.split(' '));
+function fmtTask(t){
+  t=t.replace(/\s*\(([^()]*)\)/g,(m,c)=>{ const w=c.split(/[\s,+\/]+/).filter(Boolean); return w.length&&w.every(x=>TASK_KW.has(x)||/^[\d≥≤≠<>=]+$/.test(x))&&!/[IQ]\d\.\d/.test(c)?'':m; });
+  const ss=t.split(/(?<=[.!?])\s+(?=[A-ZÇĞİÖŞÜ0-9"'(])/).map(s=>s.trim()).filter(Boolean);
+  const hl=s=>esc(s).replace(/\s?\(((?:SM|[IQM])\d\.\d|AIW\d|[QI]B\d)\)/g,' <b class="ad">$1</b>').replace(/(^|[^\w>])((?:SM|[IQM])\d\.\d|[TC]\d|VW\d|AIW\d|[QI]B\d)\b(?![^<]*<\/b>)/g,'$1<b>$2</b>');
+  const li=ss.slice(1).map(s=>{ const tst=/^Test:/i.test(s); return `<li${tst?' class="ts"':''}>${hl(tst?s.replace(/^Test:\s*/i,''):s)}</li>`; }).join('');
+  return `<p class="tg">${hl(ss[0]||'')}</p>`+(li?`<ul>${li}</ul>`:''); }
+$('#task').addEventListener('click',()=>$('#task').classList.toggle('cl'));
+// dokunma bitince (tıklama işlendikten sonra) daralt: dokunuş sırasında yerleşim kaymasın
+['#editor','#palette'].forEach(q=>$(q).addEventListener('pointerup',()=>setTimeout(()=>{ if(!$('#task').classList.contains('cl')){ $('#task').classList.add('cl'); } },0),{passive:true}));
 function refreshMode(){
   $('#palette').style.display=S.view?'none':'flex'; $('#doneBar').style.display=S.view?'flex':'none';
   $('#bClear').style.visibility=S.view?'hidden':'visible'; updInfo();
@@ -38,12 +49,15 @@ function refreshTool(){
   document.querySelectorAll('.pal').forEach(b=>b.classList.toggle('sel',b.dataset.t===S.tool));
   $('#rungs').dataset.tool=S.tool?(isOut(S.tool)?'o':'c'):''; updInfo();
 }
+/* yeni satır eklenince: yeni satırın başı görünsün, ekle tuşu onun altında kalsın */
+function scrollToNewRung(){ const r=$('#rungs'), rs=r.querySelectorAll('.rung'), el=rs[rs.length-1]; if(!el) return;
+  r.scrollTo({top:Math.max(0,el.getBoundingClientRect().top-r.getBoundingClientRect().top+r.scrollTop-6),behavior:'smooth'}); }
 function updInfo(){
   const n=countBlocks(S.prog);
   const msg=S.view?tx('<span style="color:var(--neon)">Kayıtlı çözümün</span> — RUN ile çalıştırıp izle','<span style="color:var(--neon)">Your saved solution</span> — press RUN to watch')
     :S.redo?tx('<span style="color:var(--amb)">Yeniden çözüyorsun</span> — yeni çözüm bulana kadar eskisi korunur','<span style="color:var(--amb)">Re-solving</span> — old solution kept until you solve it again')
     :S.tool?tx(`Seçili: <b style="color:var(--blu)">${BN[S.tool]}</b> — ${isOut(S.tool)?'son sütuna':'sol sütunlara'} dokun`,`Selected: <b style="color:var(--blu)">${BN[S.tool]}</b> — tap ${isOut(S.tool)?'the last column':'a left column'}`):tx('Bloğu yukarı <b>sürükle-bırak</b> ya da seç &amp; dokun','<b>Drag &amp; drop</b> a block up, or select &amp; tap');
-  $('#einfo').innerHTML=tx(`Blok <b>${n}</b> · referans çözüm ${S.lv.opt} blok`,`Blocks <b>${n}</b> · reference solution ${S.lv.opt}`)+`<br>${msg}`;
+  $('#einfo').innerHTML=tx(`Blok <b>${n}</b> · referans çözüm ${S.lv.opt} blok`,`Blocks <b>${n}</b> · reference solution ${S.lv.opt}`)+`<br><span class="em${S.tool||S.view||S.redo?' on':''}"> · ${msg}</span>`;
 }
 function canPlace(t,i,r,c){
   const rg=S.prog.rungs[i]; if(!rg||rg.c[r][c]) return 'dolu'; if(r===1&&!rg.br) return 'x';
@@ -65,7 +79,7 @@ function compact(i){ const row=S.prog.rungs[i]&&S.prog.rungs[i].c[0]; if(!row) r
 /* ---------- Ladder etkileşimi ---------- */
 $('#rungs').addEventListener('click',e=>{
   if(justDragged) return; Snd.init();
-  if(e.target.closest('#addr')){ if(guard()) return; S.prog.rungs.push(mkRung()); saveDraft(); renderLadder(); Snd.click(); const r=$('#rungs'); r.scrollTop=r.scrollHeight; return; }
+  if(e.target.closest('#addr')){ if(guard()) return; S.prog.rungs.push(mkRung()); saveDraft(); renderLadder(); Snd.click(); scrollToNewRung(); return; }
   const rm=e.target.closest('.rm'); if(rm){ if(guard()) return; rungMenu(+rm.closest('.rung').dataset.i); return; }
   const ce=e.target.closest('.cell'); if(!ce) return; if(guard()) return;
   const i=+ce.closest('.rung').dataset.i, r=+ce.dataset.r, c=+ce.dataset.c, cell=S.prog.rungs[i].c[r][c];
