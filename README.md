@@ -1,78 +1,111 @@
-# ⚡ Ladder Master — PLC Merdiven Mantığı Bulmacası
+<p align="center">
+  <img src="icons/icon-192.png" width="104" alt="Ladder Master" />
+</p>
 
-*PLC ladder logic puzzle game for mobile — Türkçe / English* · **Sürüm v1.2.1**
+<h1 align="center">⚡ Ladder Master</h1>
 
-[![Testler](https://github.com/tunagirit/ladder-master/actions/workflows/test.yml/badge.svg)](https://github.com/tunagirit/ladder-master/actions/workflows/test.yml) · Lisans: [MIT](LICENSE)
+<p align="center">
+  <b>A PLC ladder logic puzzle game for your phone.</b><br/>
+  Program real factory machines — belts, motors, doors, lifts — and watch them come alive.
+</p>
 
-Telefon ekranı için tasarlanmış, tarayıcıda çalışan bir **PLC Ladder (merdiven) mantık bulmaca oyunu**.
-Tek bir HTML dosyası; harici kütüphane, görsel veya ses dosyası yok.
+<p align="center">
+  <a href="https://tunagirit.github.io/ladder-master/"><img src="https://img.shields.io/badge/▶_Play_now-00c853?style=for-the-badge" alt="Play now"></a>
+  &nbsp;
+  <img src="https://img.shields.io/badge/version-v1.2.2-1e88e5?style=for-the-badge" alt="v1.2.2">
+  &nbsp;
+  <img src="https://img.shields.io/badge/levels-10%2C000-ff9800?style=for-the-badge" alt="10,000 levels">
+</p>
 
-## Oyna
-**▶ Hemen oyna / Play now:** https://tunagirit.github.io/ladder-master/
+<p align="center">
+  <a href="https://github.com/tunagirit/ladder-master/actions/workflows/test.yml"><img src="https://github.com/tunagirit/ladder-master/actions/workflows/test.yml/badge.svg" alt="Tests"></a>
+  <img src="https://img.shields.io/badge/PWA-offline-5e35b1" alt="PWA">
+  <img src="https://img.shields.io/badge/lang-EN%20%7C%20TR-546e7a" alt="EN | TR">
+  <img src="https://img.shields.io/badge/license-All%20rights%20reserved-b71c1c" alt="All rights reserved">
+</p>
 
-Ya da `index.html` dosyasını tarayıcıda aç.
+<p align="center">
+  <a href="#english">English</a> · <a href="#türkçe">Türkçe</a>
+</p>
 
-## Özellikler
-- **Yol haritası:** 10.000 bölümlük, giderek zorlaşan tek bir yol. Temel mantıkla başlar; 16. bölümde zamanlayıcılar, 36. bölümde sayıcılar, sonra karşılaştırma (46), kenar ve özel bitler (56), taşıma ve matematik (66), 7-segment dönüştürme (81), kaydırma (91), bayt mantığı (101) ve saat (111) katılır. Sonra hepsi karışık gelir; her 10. bölüm 🔥 Ekstra Zor ve birden fazla komut ailesini birleştirir. Arada, ekstra zordan daha seyrek 🎉 Bonus bölümler gelir: trafik lambası, şifreli kasa, disko ışıkları, turbo bant rekoru
-- **Bant dışı sistemler (v1.1.6):** motor yol verme, termik arıza kilidi, yıldız-üçgen, ileri-geri (kilitlemeli) motor, garaj kapısı (+ fotosel), 2 katlı asansör (+ kat göstergesi), otopark bariyeri, oto yıkama, çift el emniyetli pres, sera iklimi, dönüşümlü pompalar ve ev alarmı. 60. bölümden sonra yolun yaklaşık %40'ı bu sistemlerden oluşur.
-- **Sanal PLC (S7-200 tarzı):** 20 ms scan cycle
-  - Bit mantığı: Açık/Kapalı kontak, Bobin, Set/Reset, paralel kol (OR), kenar algılama P/N, NOT, özel bitler SM0.0 / SM0.1 / SM0.5
-  - Zamanlayıcılar ve sayıcılar: TON, TOF, TONR, CTU, CTD
-  - Karşılaştırma: =, ≠, ≥, ≤, >, < (sayıcı değeri, VW değişkeni, AIW analog giriş)
-  - Taşıma ve tam sayı matematiği: MOV, ADD, SUB, MUL, DIV, INC, DEC
-  - Kaydırma: SHL, SHR · Bayt mantığı: WAND, WOR, INV (QB0/IB0)
-  - Dönüştürme: SEG (7-segment) · Saat: READ_RTC
-- **Adresler sıralı:** girişler I0.0, I0.1, I0.2…, çıkışlar Q0.0, Q0.1… diye sırayla verilir
-- **Canlı izleme:** RUN modunda enerjili hatlar neon yeşil, zamanlayıcı/sayıcı değerleri canlı
-- **Fabrika simülasyonu:** konveyör (VW0 ile hız ayarı), sensörler, pistonlar, dolum valfi, boya kabini, lambalar, analog seviyeli tank, ısıtmalı fırın, 7-segment gösterge, lamba panosu, gerçek zaman saati
-- **Sürükle-bırak editör:** blok yerleştir, taşı, yer değiştir, palete sürükleyerek sil; bloğa basılı tutunca ne işe yaradığını anlatan balon
-- **Titreşim ve animasyonlar:** dokunsal geri bildirim (Android, iOS 18+), geçiş animasyonları, kazanınca konfeti
-- **Puan sistemi:** her tamamlanan bölüm 1 puan; çözümler `localStorage`'a ve (giriş yapıldıysa) buluta kaydedilir
-- **Web Audio** ile üretilen röle, piston ve melodi sesleri
-- **Uygulama olarak yükle (PWA):** telefonda ana ekrana eklenir, tam ekran ve internetsiz çalışır
-- **Tasarım:** Material 3 Expressive — Roboto Flex, Material Symbols, dinamik renk şeması, yay (spring) animasyonları, ifadeli şekiller
-- **Tema:** Açık / Karanlık / Otomatik (sistem temasını izler)
-- **Dil:** Türkçe / English (tüm bölüm metinleri dahil)
+<p align="center">
+  <img src="docs/menu.png" width="200" alt="Main menu">
+  <img src="docs/belt.png" width="200" alt="Conveyor level">
+  <img src="docs/stardelta.png" width="200" alt="Star-delta motor starter">
+  <img src="docs/carwash.png" width="200" alt="Car wash sequence">
+</p>
 
-## Geliştirme
-Kaynak `src/` klasöründe parçalar halinde durur:
+---
 
-| Dosya | İçerik |
+<a id="english"></a>
+
+## 🇬🇧 English
+
+### What is it?
+**Ladder Master** teaches you how industrial machines are programmed — by playing. Every level is a small automation job: a conveyor that has to stop at a sensor, a motor that needs a star-delta start, a garage door with a safety photocell, a car park that counts its spaces. You build the program from ladder logic blocks, press **RUN**, and a live simulation shows whether your machine behaves.
+
+No experience needed: a short intro explains what a PLC is, and every new instruction is introduced the first time a level needs it.
+
+### 🎮 How it plays
+1. **Read the task** — what should switch on, and when.
+2. **Build rungs** — drag contacts and coils onto the ladder, left to right.
+3. **Pick addresses** — inputs `I0.x`, outputs `Q0.x`, memory, timers, counters.
+4. **Press RUN** — energised lines glow green, timers and counters tick live.
+5. **Pass the goals** — each finished level is worth one point on the leaderboard.
+
+### ✨ Highlights
+| | |
 |---|---|
-| `logic.js` | PLC motoru (scan cycle) ve fabrika dünyası (`World`) |
-| `gen.js` | Bölüm üreticisi — temel şablonlar, adres düzeni |
-| `mach.js` | Bant dışı makinelerin fiziği (motor, kapı, asansör, otopark…) |
-| `gen3.js` | v1.1.6 makine bölümleri ve 10.000 bölümlük yol |
-| `mdraw.js` | Makine çizimleri |
-| `tour.js` | İlk giriş tanıtımı (PLC nedir, ladder, örnek, nasıl oynanır) ve Nasıl Oynanır sayfası |
-| `nav.js` | Geri tuşu: uygulama içinde bir adım geri (ana menüde iki kez basınca çıkar) |
-| `gen2.js` | Yeni komut aileleri şablonları, yol haritası (`TPL`), adres kuralları, eski kayıt taşıma |
-| `ui_*.js`, `part_*.js`, `canvas_part.js` | Arayüz, menüler, editör, canvas sahnesi |
+| 🗺️ **10,000 levels** | One long road that gets harder step by step, with 🔥 extra-hard levels and rare 🎉 bonus levels. |
+| 🏭 **Real machines** | Conveyors, pistons, filling and paint stations, tanks, ovens — plus motors, star-delta starters, forward/reverse hoists, garage doors, lifts, car parks, car washes, two-hand presses, greenhouses, pump stations and home alarms. |
+| 🧠 **S7-200 style PLC** | Contacts, coils, Set/Reset, edge detection, timers (TON/TOF/TONR), counters (CTU/CTD), compare, move & math, shift, byte logic, 7-segment and real-time clock. |
+| 📱 **Made for phones** | Drag & drop editor, haptics, spring animations, Material 3 Expressive design, light & dark themes. |
+| ☁️ **Account & leaderboard** | Sign in to back up your solutions and compete. Scores are calculated on the server, so they can't be faked. |
+| 📴 **Works offline** | Install it as an app; it runs without internet. |
 
-```sh
-./build.sh                      # src/ → index.html
-node tests/levels.test.js       # 10.000 bölümün hepsini referans çözümle simülasyonda doğrular (FROM/TO ile aralık)
-node tests/negative.test.js     # bozulmuş çözümlerin geçmediğini doğrular (ALL=1: tüm şablonlar)
-node tests/solutions.test.js    # çözümlerin editörde kurulabilir olduğunu (palet, adres, süre) doğrular
-```
+### 📸 More screenshots
+<p>
+  <img src="docs/map.png" width="200" alt="Level map">
+  <img src="docs/tour.png" width="200" alt="What is a PLC?">
+</p>
 
-Yeni bölüm tipi eklemek için `gen2.js` içindeki `TPL` dizisine bir şablon fonksiyonu eklemek yeterli.
+### ▶️ Play
+**https://tunagirit.github.io/ladder-master/** — open it in your phone's browser and choose *Install app* to add it to your home screen.
 
-Her `main` push'unda ve pull request'te **GitHub Actions** (`.github/workflows/test.yml`) tüm testleri çalıştırır; 10.000 bölümlük simülasyon 4 paralel parçaya bölünür.
+---
 
-## Çevrimiçi hesap ve liderlik tablosu (Supabase)
-1. [supabase.com](https://supabase.com) → yeni proje oluştur.
-2. **SQL Editor** → önce `supabase.sql`, sonra `supabase_v121.sql` dosyasının içeriğini yapıştır → **Run**.
-3. **Authentication → Sign In / Providers → Email** → *Confirm email* seçeneğini **kapat** (kullanıcı adı + şifre ile giriş için).
-4. **Project Settings → API**'den *Project URL* ve *anon public* anahtarını `src/net.js` içindeki `SB_URL` ve `SB_KEY`'e yaz, `./build.sh` çalıştır.
+<a id="türkçe"></a>
 
-`SB_URL` boşsa oyun çevrimdışı çalışır; hesap ve liderlik ekranları "yapılandırılmadı" der.
+## 🇹🇷 Türkçe
 
-### Güvenlik (v1.2.1)
-- `anon` anahtarı istemcide durur (normaldir); yetkiler veritabanındaki satır ve sütun kurallarıyla sınırlanır.
-- **Puanı istemci yazamaz.** `profiles` tablosunda oyuncu yalnızca `id` ve `username` yazabilir; `points` sütununa yazma yetkisi yoktur, ayrıca bir tetikleyici istemciden gelen puan değişikliğini geri alır.
-- Puan, kaydedilen ilerlemeden (`progress.data.done`) sunucudaki `security definer` fonksiyonuyla hesaplanır: en fazla 10.000, ve son güncellemeden bu yana en fazla *30 + dakika × 2* artabilir. İlerleme verisi en fazla 6 MB.
-- Sayfada içerik güvenlik politikası (CSP) var: yalnızca kendi dosyaları, Google Fonts ve Supabase'e bağlanabilir.
+### Nedir?
+**Ladder Master**, fabrikalardaki makinelerin nasıl programlandığını oynayarak öğreten bir **PLC ladder (merdiven) mantığı bulmaca oyunu**. Her bölüm küçük bir otomasyon görevi: sensörde durması gereken bir konveyör, yıldız-üçgen ile kalkması gereken bir motor, fotoselli bir garaj kapısı, boş yerlerini sayan bir otopark. Programı ladder bloklarıyla kurarsın, **RUN**'a basarsın, canlı simülasyon makinenin doğru çalışıp çalışmadığını gösterir.
 
-## Lisans
-[MIT](LICENSE) — kodu kullanabilir, değiştirebilir ve dağıtabilirsin; telif bildirimini koruman yeterli.
+Hiç bilmiyorsan sorun yok: kısa bir tanıtım PLC'nin ne olduğunu anlatır, her yeni komut da ilk kez gerektiği bölümde tanıtılır.
+
+### 🎮 Nasıl oynanır?
+1. **Görevi oku** — neyin, ne zaman çalışması gerektiği yazar.
+2. **Satır kur** — kontakları ve bobinleri soldan sağa sürükle.
+3. **Adres seç** — girişler `I0.x`, çıkışlar `Q0.x`, hafıza, zamanlayıcı, sayıcı.
+4. **RUN'a bas** — enerjili hatlar yeşil yanar, zamanlayıcı ve sayıcılar canlı ilerler.
+5. **Hedefleri tamamla** — her bölüm liderlik tablosunda bir puan.
+
+### ✨ Öne çıkanlar
+| | |
+|---|---|
+| 🗺️ **10.000 bölüm** | Adım adım zorlaşan tek bir yol; arada 🔥 ekstra zor ve nadir 🎉 bonus bölümler. |
+| 🏭 **Gerçek makineler** | Konveyör, piston, dolum ve boya istasyonu, tank, fırın — ayrıca motor, yıldız-üçgen, ileri-geri vinç, garaj kapısı, asansör, otopark, oto yıkama, çift el pres, sera, pompa istasyonu ve ev alarmı. |
+| 🧠 **S7-200 tarzı PLC** | Kontak, bobin, Set/Reset, kenar algılama, zamanlayıcılar (TON/TOF/TONR), sayıcılar (CTU/CTD), karşılaştırma, taşıma ve matematik, kaydırma, bayt mantığı, 7-segment ve gerçek zaman saati. |
+| 📱 **Telefon için** | Sürükle-bırak editör, titreşim, yaylı animasyonlar, Material 3 Expressive tasarım, açık ve koyu tema. |
+| ☁️ **Hesap ve liderlik** | Giriş yap, çözümlerin yedeklensin, sıralamada yarış. Puan sunucuda hesaplanır, sahtesi yapılamaz. |
+| 📴 **İnternetsiz çalışır** | Uygulama olarak yükle, internet olmadan da oyna. |
+
+### ▶️ Oyna
+**https://tunagirit.github.io/ladder-master/** — telefonunun tarayıcısında aç, *Uygulamayı yükle* ile ana ekrana ekle.
+
+---
+
+<p align="center">
+  © 2026 tunagirit · <b>All rights reserved / Tüm hakları saklıdır.</b><br/>
+  The source is public for viewing only — see <a href="LICENSE">LICENSE</a>. · Kaynak kodu yalnızca incelenmek için açıktır — <a href="LICENSE">LICENSE</a>.
+</p>
