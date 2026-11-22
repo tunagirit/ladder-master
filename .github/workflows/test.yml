@@ -1,0 +1,46 @@
+name: Testler
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Derleme + kurulabilirlik + yanlış çözüm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: index.html derlenir ve depodakiyle aynı mı?
+        run: |
+          sh build.sh
+          git diff --exit-code index.html || (echo "::error::index.html güncel değil — build.sh çalıştırıp commit et" && exit 1)
+      - name: Çözümler editörde kurulabilir mi (10.000 bölüm)
+        run: node tests/solutions.test.js
+      - name: Bozulmuş çözümler geçmemeli (tüm şablonlar)
+        run: ALL=1 node tests/negative.test.js
+
+  levels:
+    name: Bölüm simülasyonu ${{ matrix.from }}–${{ matrix.to }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { from: 0, to: 2500 }
+          - { from: 2500, to: 5000 }
+          - { from: 5000, to: 7500 }
+          - { from: 7500, to: 10000 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tests/levels.test.js
+        env:
+          FROM: ${{ matrix.from }}
+          TO: ${{ matrix.to }}

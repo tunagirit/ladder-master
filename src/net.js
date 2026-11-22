@@ -67,7 +67,7 @@ async function register(u,p){
   const {j}=await sb('/auth/v1/signup',{method:'POST',auth:false,body:{email:u.toLowerCase()+MAILDOM,password:p,data:{username:u}}});
   if(!j||!j.access_token) throw {msg:errMsg({msg:'confirm'})};
   setSess(j,u);
-  try{ await sb('/rest/v1/profiles',{method:'POST',body:{id:j.user.id,username:u,points:points()},headers:{Prefer:'return=minimal'}}); }
+  try{ await sb('/rest/v1/profiles',{method:'POST',body:{id:j.user.id,username:u},headers:{Prefer:'return=minimal'}}); }
   catch(e){ NET.sess=null; saveSess(); throw e.status===409?{msg:tx('Bu kullanıcı adı alınmış','This username is taken')}:e; }
   await pushProgress(true);
 }
@@ -90,14 +90,15 @@ let pushT=null;
 function schedulePush(){ if(!me()) return; clearTimeout(pushT); pushT=setTimeout(()=>pushProgress().catch(()=>{}),1500); }
 async function pushProgress(now){
   if(!me()) return; const id=me().id, ts=new Date().toISOString();
-  await sb('/rest/v1/profiles?on_conflict=id',{method:'POST',body:{id,username:me().username,points:points(),updated_at:ts},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
+  // v1.2.1: puan istemciden yazılmaz — sunucu, kaydedilen ilerlemeden hesaplar (supabase_v121.sql)
   await sb('/rest/v1/progress?on_conflict=id',{method:'POST',body:{id,data:{v:7,done:save.done},updated_at:ts},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
   NET.lastPush=Date.now();
 }
 async function fetchBoard(){
   const {j}=await sb('/rest/v1/profiles?select=id,username,points&order=points.desc,updated_at.asc&limit=50',{auth:false});
   let rank=null; if(me()){ const i=j.findIndex(x=>x.id===me().id); if(i>=0) rank=i+1; else {
-    const {r}=await sb(`/rest/v1/profiles?select=id&points=gt.${points()}`,{auth:false,method:'HEAD',headers:{Prefer:'count=exact'}});
+    const {j:mine}=await sb(`/rest/v1/profiles?select=points&id=eq.${me().id}`,{auth:false}); const mp=(mine&&mine[0]&&mine[0].points)|0;
+    const {r}=await sb(`/rest/v1/profiles?select=id&points=gt.${mp}`,{auth:false,method:'HEAD',headers:{Prefer:'count=exact'}});
     const cr=r.headers.get('content-range')||''; const tot=+cr.split('/')[1]; if(!isNaN(tot)) rank=tot+1; } }
   return {list:j||[],rank};
 }

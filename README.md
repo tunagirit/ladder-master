@@ -1,6 +1,8 @@
 # ⚡ Ladder Master — PLC Merdiven Mantığı Bulmacası
 
-*PLC ladder logic puzzle game for mobile — Türkçe / English* · **Sürüm v1.2.0d**
+*PLC ladder logic puzzle game for mobile — Türkçe / English* · **Sürüm v1.2.1**
+
+[![Testler](https://github.com/tunagirit/ladder-master/actions/workflows/test.yml/badge.svg)](https://github.com/tunagirit/ladder-master/actions/workflows/test.yml) · Lisans: [MIT](LICENSE)
 
 Telefon ekranı için tasarlanmış, tarayıcıda çalışan bir **PLC Ladder (merdiven) mantık bulmaca oyunu**.
 Tek bir HTML dosyası; harici kütüphane, görsel veya ses dosyası yok.
@@ -56,10 +58,21 @@ node tests/solutions.test.js    # çözümlerin editörde kurulabilir olduğunu 
 
 Yeni bölüm tipi eklemek için `gen2.js` içindeki `TPL` dizisine bir şablon fonksiyonu eklemek yeterli.
 
+Her `main` push'unda ve pull request'te **GitHub Actions** (`.github/workflows/test.yml`) tüm testleri çalıştırır; 10.000 bölümlük simülasyon 4 paralel parçaya bölünür.
+
 ## Çevrimiçi hesap ve liderlik tablosu (Supabase)
 1. [supabase.com](https://supabase.com) → yeni proje oluştur.
-2. **SQL Editor** → `supabase.sql` dosyasının içeriğini yapıştır → **Run**.
+2. **SQL Editor** → önce `supabase.sql`, sonra `supabase_v121.sql` dosyasının içeriğini yapıştır → **Run**.
 3. **Authentication → Sign In / Providers → Email** → *Confirm email* seçeneğini **kapat** (kullanıcı adı + şifre ile giriş için).
 4. **Project Settings → API**'den *Project URL* ve *anon public* anahtarını `src/net.js` içindeki `SB_URL` ve `SB_KEY`'e yaz, `./build.sh` çalıştır.
 
 `SB_URL` boşsa oyun çevrimdışı çalışır; hesap ve liderlik ekranları "yapılandırılmadı" der.
+
+### Güvenlik (v1.2.1)
+- `anon` anahtarı istemcide durur (normaldir); yetkiler veritabanındaki satır ve sütun kurallarıyla sınırlanır.
+- **Puanı istemci yazamaz.** `profiles` tablosunda oyuncu yalnızca `id` ve `username` yazabilir; `points` sütununa yazma yetkisi yoktur, ayrıca bir tetikleyici istemciden gelen puan değişikliğini geri alır.
+- Puan, kaydedilen ilerlemeden (`progress.data.done`) sunucudaki `security definer` fonksiyonuyla hesaplanır: en fazla 10.000, ve son güncellemeden bu yana en fazla *30 + dakika × 2* artabilir. İlerleme verisi en fazla 6 MB.
+- Sayfada içerik güvenlik politikası (CSP) var: yalnızca kendi dosyaları, Google Fonts ve Supabase'e bağlanabilir.
+
+## Lisans
+[MIT](LICENSE) — kodu kullanabilir, değiştirebilir ve dağıtabilirsin; telif bildirimini koruman yeterli.
